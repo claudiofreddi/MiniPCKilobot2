@@ -183,3 +183,11 @@ People/Chiara.jpg
 People/Claudio.jpg
 Test_Videos/
 CaffeModel/
+People/Claudio2.jpg
+People/Claudio3.jpg
+People/Claudio4.jpg
+People/Elisabetta.jpg
+TrainedObjData/coco_names Original.txt
+TrainedObjData/coco_names.txt
+TrainedObjData/frozen_inference_graph.pb
+TrainedObjData/normalized_input_image_tensor.pbtxt
