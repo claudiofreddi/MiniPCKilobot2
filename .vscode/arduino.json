@@ -1,0 +1,7 @@
+{
+    "board": "arduino:avr:mega",
+    "port": "COM5",
+    "programmer": "avrisp",
+    "output": "../ArduinoOutput",
+    "sketch": "ArduinoCode\\Arduino_Actions\\Arduino_Actions.ino"
+}
