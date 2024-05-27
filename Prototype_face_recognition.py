@@ -5,12 +5,13 @@ import cv2
 import face_recognition as fr
 from os.path import exists, os
 import numpy as np
+from Robot_Envs import * 
 
 # Variabili
 listofknown_images = []
 listofknown_encoded_images = []
 known_face_names = []
-Peoplepath = "C://Dati//MiniPCKilobot//People"
+Peoplepath = PATH_FACE_REC_PEOPLE
 
 
 # Object

@@ -102,7 +102,7 @@ class RobotVision_Object_Classifier():
     
 if (__name__== "__main__"):
         
-    _GetFromCam = True
+    _GetFromCam = False
     
     MyRobotVision_Obj_Classifier = RobotVision_Object_Classifier()
     MyRobotVision_Obj_Classifier.Load()
