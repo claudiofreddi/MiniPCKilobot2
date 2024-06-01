@@ -21,6 +21,10 @@ class RobotLidar_Info:
     FrontDistance = 200
     LastUpdate:time = None
     
+class RobotLidar_Info:
+    FrontDistance = 200
+    LastUpdate:time = None
+    
 class VisionRequestTypes:
     IDLE  = "IDLE"
     TRACK_OBJECT = "TRACK_OBJECT"  #track a single object

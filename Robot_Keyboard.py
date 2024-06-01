@@ -37,6 +37,7 @@ class RobotKeyboard_Obj(ProcessSuperClass):
     def on_press(self,key):
         try:
             cmd = str(key.char)
+            ArdCmd = ""
             
             if self._PrintCommand: print('alphanumeric key {0} pressed'.format(cmd))
             # se diverso da ultimo accodo
@@ -50,17 +51,25 @@ class RobotKeyboard_Obj(ProcessSuperClass):
                 else:   
                     if (cmd == self._Mov_Stop):
                         self.SharedMem.ArduinoCommandQ.Clear()
-                        self.AddQueueArduino(RobotListOfAvailableCommands.STOP)
+                        ArdCmd = RobotListOfAvailableCommands.STOP
                     elif (cmd == self._Mov_Fw):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.MOVE_FW)
+                        ArdCmd = RobotListOfAvailableCommands.MOVE_FW
                     elif (cmd == self._Mov_Bw):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.MOVE_BW)
+                        ArdCmd = RobotListOfAvailableCommands.MOVE_BW
                     elif (cmd == self._Mov_Right):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.ROT_CW)
+                        ArdCmd =  RobotListOfAvailableCommands.ROT_CW
                     elif (cmd == self._Mov_Left):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.ROT_ACW)
+                        ArdCmd = RobotListOfAvailableCommands.ROT_ACW
                     else:
-                        print("command not found")    
+                        ArdCmd = "*"
+                        print("command not found")   
+                    
+                    if (ArdCmd != "" and ArdCmd != "*"):
+                        self.AddQueueArduino(ArdCmd)
+                        self.SharedMem.GlobalMem["KeyPressed"] = cmd + " " + ArdCmd
+                        
+                    if (ArdCmd == "*"):
+                        self.SharedMem.GlobalMem["KeyPressed"] = "No command"
                 
         except AttributeError:
             if self._PrintCommand: print('special key {0} pressed'.format(key))
@@ -112,25 +121,32 @@ class RobotKeyboard_Obj(ProcessSuperClass):
             #Insert here loop command
             #eefdsdprint(".")  
 
-               
+            self.ArdCmd = ""
             if (not self._DirectQueue):
                 if (self.LocalQ.qsize()>0):
                     self.cmd = self.LocalQ.get()
                     
                     if (self.cmd == self._Mov_Stop):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.STOP)
+                        self.SharedMem.ArduinoCommandQ.Clear()
+                        self.ArdCmd = RobotListOfAvailableCommands.STOP
                     elif (self.cmd == self._Mov_Fw):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.MOVE_FW)
+                        self.ArdCmd = RobotListOfAvailableCommands.MOVE_FW
                     elif (self.cmd == self._Mov_Bw):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.MOVE_BW)
-                    elif (self.cmd ==  self._Mov_Right):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.ROT_CW)
-                    elif (self.cmd ==  self._Mov_Left):
-                        self.AddQueueArduino(RobotListOfAvailableCommands.ROT_ACW)
+                        self.ArdCmd = RobotListOfAvailableCommands.MOVE_BW
+                    elif (self.cmd == self._Mov_Right):
+                        self.ArdCmd =  RobotListOfAvailableCommands.ROT_CW
+                    elif (self.cmd == self._Mov_Left):
+                        self.ArdCmd = RobotListOfAvailableCommands.ROT_ACW
                     else:
-                        print("command not found")
-                                        
-                    print("kb cmd: ", self.cmd)
+                        self.ArdCmd = "*"
+                        print("command not found")   
+                    
+                    if (self.ArdCmd != "" and self.ArdCmd != "*"):
+                        self.AddQueueArduino(self.ArdCmd)
+                        self.SharedMem.GlobalMem["KeyPressed"] = self.cmd + " " + self.ArdCmd
+                        
+                    if (self.ArdCmd == "*"):
+                        self.SharedMem.GlobalMem["KeyPressed"] = "No command"
             
             #End loop commands
             time.sleep(.1)
@@ -148,6 +164,7 @@ if (__name__== "__main__"):
     MySharedObjs = SharedObjs()
     
     #RobotKeyboard_Run(MySharedObjs)  
+    
    
     run_io_tasks_in_parallel([
         Arduino_A_DoActions_Run
