@@ -69,30 +69,31 @@ class RobotVision_Object_Classifier():
                 
                 classIds, confs, bbox = self.net.detect(frame,confThreshold=self.thres)   
                 i = 0 
-                for classId, confidence,box in zip(classIds.flatten(),confs.flatten(),bbox):
-                    Match = (len(self.LookForSpecificObjs)==0) # se richiesti tutti 
-                    if (len(self.LookForSpecificObjs)>0):
-                        ret = np.where(np.array(self.LookForSpecificObjs) == np.array(self.classNames)[classId-1])[0]
-                        Match = (len(ret) > 0 and confidence*100 > self.LookForSpecificObjsConf)
-                        if (Match and BestConf < confidence*100): #get The best Confidence 
-                            FoundIndex = i   #only if on LookForSpecificObjs
-                            BestConf = confidence*100
-                            FoundBox = bbox[i]
-                             
-                    if (Match):     
-                        success = True
-                        if (ShowBoxes):
-                            color = self.GreenColor if (confidence*100 >= self.ConfidenceColorThres) else self.RedColor
-                            #color = self.GreenColor
-                            cv2.rectangle(frame,box,color=color,thickness=2)
-                            cv2.putText(frame,self.classNames[classId-1].upper(),(box[0]+10,box[1]+30),
-                                        cv2.FONT_HERSHEY_COMPLEX,1,color,2)
-                            cv2.putText(frame,str(round(confidence*100,2)),(box[0]+200,box[1]+30),
-                                        cv2.FONT_HERSHEY_COMPLEX,1,color,2)
+                if len(classIds)>0:
+                    for classId, confidence,box in zip(classIds.flatten(),confs.flatten(),bbox):
+                        Match = (len(self.LookForSpecificObjs)==0) # se richiesti tutti 
+                        if (len(self.LookForSpecificObjs)>0):
+                            ret = np.where(np.array(self.LookForSpecificObjs) == np.array(self.classNames)[classId-1])[0]
+                            Match = (len(ret) > 0 and confidence*100 > self.LookForSpecificObjsConf)
+                            if (Match and BestConf < confidence*100): #get The best Confidence 
+                                FoundIndex = i   #only if on LookForSpecificObjs
+                                BestConf = confidence*100
+                                FoundBox = bbox[i]
+                                
+                        if (Match):     
+                            success = True
+                            if (ShowBoxes):
+                                color = self.GreenColor if (confidence*100 >= self.ConfidenceColorThres) else self.RedColor
+                                #color = self.GreenColor
+                                cv2.rectangle(frame,box,color=color,thickness=2)
+                                cv2.putText(frame,self.classNames[classId-1].upper(),(box[0]+10,box[1]+30),
+                                            cv2.FONT_HERSHEY_COMPLEX,1,color,2)
+                                cv2.putText(frame,str(round(confidence*100,2)),(box[0]+200,box[1]+30),
+                                            cv2.FONT_HERSHEY_COMPLEX,1,color,2)
+                            
+                                cv2.putText(frame,Title,(10,30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
                         
-                            cv2.putText(frame,Title,(10,30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
-                    
-                    i = i + 1
+                        i = i + 1
         
         if (success):
             return success,  classIds, confs, bbox, FoundIndex, BestConf, FoundBox
