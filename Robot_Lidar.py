@@ -4,27 +4,36 @@ from Lib_Commands_Interfaces import *
 
 import math
 import matplotlib.pyplot as plt
+
 import numpy as np
 from multiprocessing import Manager
 import time
 
 from Robot_lidar_base import lidarfunc
+from Robot_Keyboard import RobotKeyboard_Run
+from Robot_UI import RobotUI_Run
+from Robot_Arduino_B_ReadSensors import ArduinoReadSensors_Run
+from Robot_Arduino_A_DoActions import Arduino_A_DoActions_Run
+
+
+
 import serial
    
 
-class RobotLidar_Obj(ProcessSuperClass):
+class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
   
     RangingIdleInSeconds = 1
     SliceHalfSize = 10
     SliceFullSize = SliceHalfSize * 2
     NumOfAnglesInterval = 360/SliceFullSize #18    
+    GraphOn = True
     
-    #fig = plt.figure(figsize=(8, 8))
     
     def __init__(self,processName):
+        threading.Thread.__init__(self)
         super().__init__(processName)
         self.EnableConsoleLogLevel = ProcessSuperClassLogLevel.Always
-
+        
    
     def GetDistanceAngle(self,Angle,dataAN, dataD):
         Anglefrom = Angle - self.SliceHalfSize
@@ -90,15 +99,14 @@ class RobotLidar_Obj(ProcessSuperClass):
         self.MaxScale = 200
         self.TraceAllLines = False
         self.TraceSafetyLine = True
-        self.GraphOn = True
         last_min_front = 0
 
     
         # Make a figure for the LiDAR polar graph
         if (self.GraphOn):
             self.fig = plt.figure(figsize=(8, 8))
-            ax = self.fig.add_subplot(111, projection='polar')
-            ax.set_title('Scanning environment..', fontsize=18)
+            self.ax = self.fig.add_subplot(111, projection='polar')
+            self.ax.set_title('Scanning environment..', fontsize=18)
         
         theta = np.linspace(0 ,2*np.pi,self.SliceFullSize) # [0, 30, 60 , 90, 120, 150, 180... 360]
 
@@ -130,14 +138,14 @@ class RobotLidar_Obj(ProcessSuperClass):
                 # Disegno confini
                 if ('line' in locals()):
                     line.remove()
-                line = ax.scatter(lidar_data.angles, lidar_data.distances, c="blue", s=5)
+                line = self.ax.scatter(lidar_data.angles, lidar_data.distances, c="blue", s=5)
                 #ax.set_theta_offset(0)
-                ax.set_theta_offset(math.pi / 2)  # zero del grafico in alto
-                ax.set_theta_direction(-1)
+                self.ax.set_theta_offset(math.pi / 2)  # zero del grafico in alto
+                self.ax.set_theta_direction(-1)
                 #Settore di visibilità
-                ax.set_thetamin(0)
-                ax.set_thetamax(360)
-                ax.set_ylim(0,self.MaxScale)  #1 = 0.01 m
+                self.ax.set_thetamin(0)
+                self.ax.set_thetamax(360)
+                self.ax.set_ylim(0,self.MaxScale)  #1 = 0.01 m
 
             
             # Array di appoggio 0-360° e distanze cm
@@ -170,20 +178,20 @@ class RobotLidar_Obj(ProcessSuperClass):
                     super().LogConsole("radius:")
                     if ('lineav' in locals()):
                         lineav.remove()
-                    lineav = ax.scatter(theta, radiusAv, c="yellow", s=5)
+                    lineav = self.ax.scatter(theta, radiusAv, c="yellow", s=5)
                     
                     if ('linemi' in locals()):
                         linemi.remove()
-                    linemi = ax.scatter(theta, radiusMin, c="red", s=5)
+                    linemi = self.ax.scatter(theta, radiusMin, c="red", s=5)
                     
                     if ('linema' in locals()):
                         linema.remove()
-                    linema = ax.scatter(theta, radiusMax, c="green", s=5)
+                    linema = self.ax.scatter(theta, radiusMax, c="green", s=5)
 
                 if (self.TraceSafetyLine):
                     if ('linesaf' in locals()):
                         linesaf.remove()
-                    linesaf, = ax.plot(theta, radiusSafe, c="green")
+                    linesaf, = self.ax.plot(theta, radiusSafe, c="green")
                 
                 
             #Vedo quanto sono libero davatni
@@ -222,14 +230,67 @@ class RobotLidar_Obj(ProcessSuperClass):
         super().Run_Kill()
         
         
-def RobotLidar_Run(SharedMem):
+def RobotLidar_Run(SharedMem, _GraphOn = True):
     MyRobotLidar_Obj = RobotLidar_Obj(ProcessList.Robot_Lidar)
+    MyRobotLidar_Obj.GraphOn = _GraphOn
     MyRobotLidar_Obj.Run(SharedMem)
-   
+
+import logging 
 
 if (__name__== "__main__"):
     
+    useThreads = True
     
     MySharedObjs = SharedObjs()
     
-    RobotLidar_Run(MySharedObjs)     
+    if not (useThreads):
+        if (False):
+            RobotLidar_Run(MySharedObjs)     
+        else:        
+            run_io_tasks_in_parallel([
+                RobotLidar_Run
+                ,ArduinoReadSensors_Run
+                ,Arduino_A_DoActions_Run
+                ,RobotKeyboard_Run
+                ,RobotUI_Run
+                
+            ], MySharedObjs)    
+    else: 
+        
+        
+        
+        print("Start Threading...")   
+        
+        #RobotLidar_Run(MySharedObjs)
+        
+        threads = list()
+        x = threading.Thread(target=RobotLidar_Run, args=(MySharedObjs,False,))
+        threads.append(x)
+        x.start()        
+        
+        x = threading.Thread(target=RobotUI_Run, args=(MySharedObjs,))
+        threads.append(x)
+        x.start()        
+
+        x = threading.Thread(target=RobotKeyboard_Run, args=(MySharedObjs,))
+        threads.append(x)
+        x.start()  
+
+        
+        x = threading.Thread(target=ArduinoReadSensors_Run, args=(MySharedObjs,))
+        threads.append(x)
+        x.start()  
+        
+        x = threading.Thread(target=Arduino_A_DoActions_Run, args=(MySharedObjs,))
+        threads.append(x)
+        x.start()  
+        
+        print("End Threading...", len(threads))
+        
+        for index, thread in enumerate(threads):
+            logging.info("Main    : before joining thread %d.", index)
+            thread.join()
+            logging.info("Main    : thread %d done", index)    
+        
+        print("End Joining...", len(threads))
+            

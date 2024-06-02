@@ -1,17 +1,19 @@
 import tkinter as tk
 from Lib_Processes import *
 from Robot_Arduino_A_DoActions import *
-from Robot_Keyboard import *
+from Robot_Keyboard import RobotKeyboard_Run
 import threading
 import datetime
+
 
 class LabelIndex:
     Compass = 0
     FrontDistance = 1
     keyPressed = 2
     SpeakerStatus = 3
+    ArduinoActionReady =4
     
-class TestClass(threading.Thread):              
+class Robot_UI(threading.Thread):              
 
 
     #root = tk.Tk()
@@ -36,7 +38,7 @@ class TestClass(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
-        print("************************************** TestClass init") 
+        print("************************************** Robot_UI init") 
         try:
             self.root = tk.Tk()
             self.root.geometry("500x600")
@@ -56,20 +58,22 @@ class TestClass(threading.Thread):
             self.AddLabel_Pair(self.container,LabelIndex.FrontDistance,"Front Distance:","",CURR_ROW,0)
             self.AddLabel_Pair(self.container,LabelIndex.SpeakerStatus,"Speaker:","",CURR_ROW,1)
             
+            CURR_ROW = CURR_ROW + 1
+            self.AddLabel_Pair(self.container,LabelIndex.ArduinoActionReady,"Arduino Action Ready:","",CURR_ROW,0)
+            
 
 
-           
             self.start_updates()
             
             return
         except Exception as error:
-            print("**************************************  TestClass init  ",error) 
+            print("**************************************  Robot_UI init Error:  ",error) 
             
             
     
 
-    def update_label(self):
-
+    def update_label(self): 
+ 
         self.root.title('Kilobot ' + str(datetime.datetime.now().time())[:8])
             
         if not (self._SharedMem is None):
@@ -77,9 +81,11 @@ class TestClass(threading.Thread):
             self.SetLabel_Pair(LabelIndex.FrontDistance,str(self._SharedMem.LidarInfo.FrontDistance))
             self.SetLabel_Pair(LabelIndex.SpeakerStatus,str(self._SharedMem.SpeakerOn))
             
+            self.SetLabel_Pair(LabelIndex.ArduinoActionReady,str(self._SharedMem.ArduinoCommandQ.IsReady()))
+            
         
-        if ("Key" in self._SharedMem.GlobalMem.keys()):
-            self.SetLabel_Pair(LabelIndex.keyPressed, self._SharedMem.GlobalMem["KeyPressed"])
+        if (SharedObjs.GLB_KEY_KeyPressed in self._SharedMem.GlobalMem.keys()):
+            self.SetLabel_Pair(LabelIndex.keyPressed, self._SharedMem.GlobalMem[SharedObjs.GLB_KEY_KeyPressed])
         
         self.root.after(1000, self.update_label)
         
@@ -91,37 +97,32 @@ class TestClass(threading.Thread):
 
     def Run(self, SharedMem:SharedObjs):
         self._SharedMem = SharedMem 
-        print("************************************** TestClass Run")    
+ 
         try:
           
 
 
-            print("************************************** main loop")
+
             self.root.mainloop()
             return    
         except Exception as error:
-            print("**************************************  TestClass Run ",error) 
+            print("**************************************  Robot_UI Run ",error) 
  
- 
-def RobotKeyboard_Run(SharedMem):
-    MyRobotKeyboard_Obj = RobotKeyboard_Obj(ProcessList.Robot_Keyboard)
-    MyRobotKeyboard_Obj.Run(SharedMem)
     
-    
-def UI_Run(SharedMem):
-    MyTestClass_Obj = TestClass()
-    MyTestClass_Obj.Run(SharedMem)    
+def RobotUI_Run(SharedMem):
+    MyRobot_UI_Obj = Robot_UI()
+    MyRobot_UI_Obj.Run(SharedMem)    
         
 if (__name__== "__main__"):
 
     MySharedObjs = SharedObjs()
-    UI_Run(MySharedObjs)
     
     
-    if (False) :
-
+    if (True) :
+        RobotUI_Run(MySharedObjs)
+    else:
         run_io_tasks_in_parallel([
-            UI_Run
+            RobotUI_Run
             ,Arduino_A_DoActions_Run
             ,RobotKeyboard_Run
             

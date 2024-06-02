@@ -55,6 +55,8 @@ class  ProcessSuperClassLogLevel:
     Always = 2
     
         
+#assert threading.current_thread() is threading.main_thread()       
+        
 class  ProcessSuperClass:
     
     

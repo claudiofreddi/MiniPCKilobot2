@@ -66,10 +66,10 @@ class RobotKeyboard_Obj(ProcessSuperClass):
                     
                     if (ArdCmd != "" and ArdCmd != "*"):
                         self.AddQueueArduino(ArdCmd)
-                        self.SharedMem.GlobalMem["KeyPressed"] = cmd + " " + ArdCmd
+                        self.SharedMem.GlobalMem[SharedObjs.GLB_KEY_KeyPressed] = cmd + " " + ArdCmd
                         
                     if (ArdCmd == "*"):
-                        self.SharedMem.GlobalMem["KeyPressed"] = "No command"
+                        self.SharedMem.GlobalMem[SharedObjs.GLB_KEY_KeyPressed] = "No command"
                 
         except AttributeError:
             if self._PrintCommand: print('special key {0} pressed'.format(key))
@@ -143,10 +143,10 @@ class RobotKeyboard_Obj(ProcessSuperClass):
                     
                     if (self.ArdCmd != "" and self.ArdCmd != "*"):
                         self.AddQueueArduino(self.ArdCmd)
-                        self.SharedMem.GlobalMem["KeyPressed"] = self.cmd + " " + self.ArdCmd
+                        self.SharedMem.GlobalMem[SharedObjs.GLB_KEY_KeyPressed] = self.cmd + " " + self.ArdCmd
                         
                     if (self.ArdCmd == "*"):
-                        self.SharedMem.GlobalMem["KeyPressed"] = "No command"
+                        self.SharedMem.GlobalMem[SharedObjs.GLB_KEY_KeyPressed] = "No command"
             
             #End loop commands
             time.sleep(.1)

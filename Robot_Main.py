@@ -25,6 +25,8 @@ from Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
 from Robot_Lidar import RobotLidar_Run
 from Robot_Brain import RobotBrain_Run
 from Robot_Speaker import RobotSpeaker_Run
+from Robot_Keyboard import RobotKeyboard_Run
+from Robot_UI import RobotUI_Run
           
 
 if (__name__== "__main__"):
@@ -64,10 +66,12 @@ if (__name__== "__main__"):
          ArduinoReadSensors_Run
         ,Arduino_A_DoActions_Run
         ,RobotTelegram_Run
-        ,RobotSharedParamsMonitor_Run
-        ,RobotShowCam_Run
+        #,RobotSharedParamsMonitor_Run
+        #,RobotShowCam_Run
         ,RobotLidar_Run
         ,RobotBrain_Run
         ,RobotSpeaker_Run
-    ], MySharedObjs)    
+        ,RobotKeyboard_Run
+        ,RobotUI_Run    
+        ], MySharedObjs)    
 

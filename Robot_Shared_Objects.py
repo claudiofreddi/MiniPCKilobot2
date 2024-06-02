@@ -12,7 +12,7 @@ class SpeakerCommandInterface:
        
        
 class TelegramMsgInterface:
-    TextToSend = ''
+    TextToSend = '' 
     
     def __init__(self,Text):
        self.TextToSend = Text     
@@ -21,9 +21,7 @@ class RobotLidar_Info:
     FrontDistance = 200
     LastUpdate:time = None
     
-class RobotLidar_Info:
-    FrontDistance = 200
-    LastUpdate:time = None
+
     
 class VisionRequestTypes:
     IDLE  = "IDLE"
@@ -69,6 +67,8 @@ class SharedObjs:
     Init_ARDUINO_A_COM_PORT = "COM5"
     Init_ARDUINO_B_COM_PORT = "COM3"
     Init_LIDAR_COM_PORT = "COM10"
+    
+    GLB_KEY_KeyPressed = "KeyPressed"
     
     _ReadFromDatabase = True
     _WriteOnDatabase = True
