@@ -95,6 +95,7 @@ class SharedObjs:
         self.MailOn = True
         self.TelegramOn = True
         self.VideoOn = True
+        self.GraphOn = True
              
         #ShowStatus      
         self.Show(True)

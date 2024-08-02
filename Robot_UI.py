@@ -4,6 +4,11 @@ from Robot_Arduino_A_DoActions import *
 from Robot_Keyboard import RobotKeyboard_Run
 import threading
 import datetime
+from matplotlib.figure import Figure 
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
+NavigationToolbar2Tk) 
+
+
 
 
 class LabelIndex:
@@ -65,6 +70,8 @@ class Robot_UI(threading.Thread):
 
             self.start_updates()
             
+            self.plot()
+            
             return
         except Exception as error:
             print("**************************************  Robot_UI init Error:  ",error) 
@@ -94,13 +101,58 @@ class Robot_UI(threading.Thread):
 
     def start_updates(self):
         self.root.after(1000, self.update_label)
+        
+        
+    # plot function is created for 
+    # plotting the graph in 
+    # tkinter window 
+    def plot(self): 
+        try:
+            # the figure that will contain the plot 
+            fig = Figure(figsize = (5, 5),                 dpi = 100) 
+
+            # list of squares 
+            y = [i**2 for i in range(101)] 
+
+            # adding the subplot 
+            plot1 = fig.add_subplot(111) 
+
+            # plotting the graph 
+            plot1.plot(y) 
+
+            # creating the Tkinter canvas 
+            # containing the Matplotlib figure 
+            canvas = FigureCanvasTkAgg(fig, 
+                                    master = self.root) 
+
+            canvas.draw() 
+            
+            
+
+            # placing the canvas on the Tkinter window 
+            #canvas.get_tk_widget().pack() 
+
+            # creating the Matplotlib toolbar 
+            toolbar = NavigationToolbar2Tk(canvas, 
+                                        self.root) 
+            
+            toolbar.grid(row=9, column=0,  sticky=tk.W, padx=5, pady=5)
+            toolbar.update() 
+
+            # placing the toolbar on the Tkinter window 
+            #canvas.get_tk_widget().pack()     
+            
+            return
+        except Exception as error:
+            print("**************************************  Robot_UI init Error:  ",error) 
+            
 
     def Run(self, SharedMem:SharedObjs):
         self._SharedMem = SharedMem 
  
         try:
           
-
+            
 
 
             self.root.mainloop()

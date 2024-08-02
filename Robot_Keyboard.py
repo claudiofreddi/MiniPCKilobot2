@@ -12,8 +12,8 @@ class RobotKeyboard_Obj(ProcessSuperClass):
     
     _Mov_Fw = 'w'
     _Mov_Bw = 's'
-    _Mov_Left = 'a'
-    _Mov_Right = 'd'
+    _Mov_Left = 'd'
+    _Mov_Right = 'a'
     _Mov_Stop = 'e'
 
     
@@ -25,6 +25,15 @@ class RobotKeyboard_Obj(ProcessSuperClass):
     LocalQ = Queue()
     
     _DirectQueue = True
+    
+    
+    def PrintUsageCommands(self):
+        print('Forward key {0} '.format(self._Mov_Fw))
+        print('Backward key {0} '.format(self._Mov_Bw))
+        print('Left key {0} '.format(self._Mov_Left))
+        print('Right key {0} '.format(self._Mov_Right))
+        print('Stop key {0} '.format(self._Mov_Stop))
+        
     
     def __init__(self,processName):
         super().__init__(processName)
@@ -105,7 +114,7 @@ class RobotKeyboard_Obj(ProcessSuperClass):
         #Insert here start  command
         super().LogConsole('RobotKeyboar Started')    
     
-            
+        self.PrintUsageCommands()
             
         #End start commands      
         while not self.SharedMem.ArduinoCommandQ.IsReady():

@@ -26,7 +26,7 @@ class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
     SliceHalfSize = 10
     SliceFullSize = SliceHalfSize * 2
     NumOfAnglesInterval = 360/SliceFullSize #18    
-    GraphOn = True
+    GraphOn = False
     
     
     def __init__(self,processName):
@@ -94,7 +94,7 @@ class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
 
     def Run(self,SharedMem:SharedObjs):
         super().Run_Pre(SharedMem)
-        
+        self.GraphOn = MySharedObjs.GraphOn
         #Params
         self.MaxScale = 200
         self.TraceAllLines = False
