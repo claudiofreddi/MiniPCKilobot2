@@ -95,6 +95,7 @@ class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
     def Run(self,SharedMem:SharedObjs):
         super().Run_Pre(SharedMem)
         self.GraphOn = MySharedObjs.GraphOn
+        print(self.GraphOn,MySharedObjs.GraphOn, "**********************")
         #Params
         self.MaxScale = 200
         self.TraceAllLines = False

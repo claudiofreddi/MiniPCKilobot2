@@ -4,6 +4,7 @@ from Lib_ArduinoConnection import *
 
 class Robot_Arduino_Sensor_Params:
      SENSOR_COMPASS = "SENSORS_COMPASS"
+     SENSORS_BATTERY = "SENSORS_BATTERY"
 
 
 class ArduinoReadSensors_Obj(ProcessSuperClass):
@@ -35,12 +36,19 @@ class ArduinoReadSensors_Obj(ProcessSuperClass):
                 if (bFound):
                     intval = int(val)
                     if (intval != self.SharedMem.Compass):
-                        super().LogConsole(str(self.SharedMem.Compass))
+                        super().LogConsole("Compass: " + str(self.SharedMem.Compass))
                     self.SharedMem.Compass = int(val)
                     RetVal = True
                     
-                #Add Here Other Methods
-                
+               #Battery
+                bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSORS_BATTERY)
+                if (bFound):
+                    intval = int(val)
+                    if (intval != self.SharedMem.Battery):
+                        super().LogConsole("Battery: " + str(self.SharedMem.Battery))
+                    self.SharedMem.Battery = int(val)
+                    RetVal = True
+                 
                 
                 #Add Here Other Methods
                 

@@ -88,6 +88,7 @@ class SharedObjs:
         self.VisionResponseQ = MyQ[VisionObjectTrackingInterface]("Vision Response Q")
         self.VisionTargetObjectTracked:VisionObjectTrackingInterface = VisionObjectTrackingInterface()
         self.Compass:int = 0
+        self.Battery:int = 0
         self.LidarInfo = RobotLidar_Info()
 
         #default

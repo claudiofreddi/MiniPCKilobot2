@@ -50,7 +50,7 @@ if (__name__== "__main__"):
     MySharedObjs.MailOn = _EnableOutputs
     MySharedObjs.SpeakerOn = _EnableOutputs 
     MySharedObjs.TelegramOn = _EnableOutputs
-    MySharedObjs.GraphOn = _EnableOutputs
+    MySharedObjs.GraphOn = True #_EnableOutputs
     
         
     #Speaker
@@ -75,4 +75,3 @@ if (__name__== "__main__"):
         ,RobotKeyboard_Run
         #,RobotUI_Run    
         ], MySharedObjs)    
-
