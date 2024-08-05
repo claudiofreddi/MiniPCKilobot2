@@ -1,129 +1,193 @@
 import socket
 import threading
 import time
+import pickle
+
+from Robot_Envs import * 
+from Lib_Sockets import * 
+
 from Lib_Commands_Interfaces import *
 from Lib_Utils_MyQ import *
 
 
-#GlobalVars
-Sensor_Compass = 0
-BrainCommandQ = MyQ[RobotCommandInterface]("Brain Command Q")
-
-# Connection Data
-host = '127.0.0.1'
-port = 55555
-
-# Starting Server
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
-server.listen()
-
-# Lists For Clients and Their Nicknames
-# clients = []
-# nicknames = []
 
 class client_object:
     client:socket = None
-    nickname:str = ''
+    servicename:str = ''
     address = ('',0)
     
-client_objects = []
-
-# Sending Messages To All Connected Clients
-def broadcast(EncodedMessage):
-    global client_objects
-    c:client_object
-    for c in client_objects:
-        c.client.send(EncodedMessage)        
-        
-
-# List all nicknames
-def ListActiveNickNames():
-    global client_objects
-    print("Active Nicknames")
-    c:client_object
-    for c in client_objects:
-          print(c.nickname)
-        
-def GetClientObject(client:socket)->client_object:
-    global client_objects
-    c:client_object
-    for c in client_objects:
-          if (c.client == client):
-              return c
-   
-
-# Handling Messages From Clients
-def handle(client:socket):
-    count = 0
-    global Sensor_Compass 
-    while True:
-        try:
-            # Broadcasting Messages
-            message = client.recv(1024).decode('ascii')
-            
-            c:client_object = GetClientObject(client)
-            print(c.nickname + " called")
-            #MessageFromClient
-            messageCmd = ''
-            messageVal = ''
-            SubMsgs = message.split(':')
-            messageCmd = SubMsgs[0]
-            if (len(SubMsgs)>1):
-                messageVal = SubMsgs[1]
-            print(messageCmd, ' ', messageVal)
-            
-            if (messageCmd == "Get_Sensor_Compass"):
-                client.send(str(Sensor_Compass).encode('ascii'))
-            elif (messageCmd == "Set_Sensor_Compass"):
-                Sensor_Compass = int(messageVal)
-            else:
-                broadcast(message.encode('ascii'))
-        except:
-            c:client_object = GetClientObject(client)
-            client.close()
-            broadcast('{} left!'.format(c.nickname).encode('ascii'))     
-            client_objects.remove(c)
-            
-            break
+    def __init__(self):
+        pass
     
-# Sending Messages To Server
-def ServerTimer():
-    while True:
-        time.sleep(30)
-        ListActiveNickNames()
+    def __init__(self,Client:socket, ServiceName:str, Address):
+        self.client = Client
+        self.servicename = ServiceName
+        self.address = Address
 
         
-        
-# Receiving / Listening Function
-def receive():
-    global client_objects
-    while True:
-        # Accept Connection
-        client, address = server.accept()
-        print("Connected with {}".format(str(address)))
 
-        # Request And Store Nickname
-        client.send('NICK'.encode('ascii'))
-        nickname = client.recv(1024).decode('ascii')
-        
-        myclient_object = client_object()
-        myclient_object.client = client
-        myclient_object.nickname = nickname
-        myclient_object.address = address
-        
-        client_objects.append(myclient_object)
+class Robot_Socket_Server_Brain: 
 
-        # Print And Broadcast Nickname
-        print("Nickname is {}".format(nickname))
-        broadcast("{} joined!".format(nickname).encode('ascii'))
-        client.send('Connected to server!'.encode('ascii'))
 
-        # Start Handling Thread For Client
-        thread = threading.Thread(target=handle, args=(client,))
-        thread.start()
+    # Connection Data
+    ServerIP = SOCKET_SERVER_IP
+    ServerPort = SOCKET_SERVER_PORT
+    buffer = SOCKET_BUFFER
+    SOCKET_QUIT_MSG = "Exit"
+    server:socket = None
+    client_objects = []
+    ShowNormalTrace = True
+    
+    def __init__(self,ForceServerIP = '',ForcePort=''):
+        # Starting Server
+        if (ForceServerIP!= ''):
+            self.ServerIP = ForceServerIP
+            
+        if (ForcePort!= ''):
+            self.ServerPort = ForcePort  
+              
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind((self.ServerIP, self.ServerPort))
+        self.server.listen()
+        t = "Brain Server Listening on " + SOCKET_SERVER_IP + ":" + str(SOCKET_SERVER_PORT) + " buffer:" +  str(SOCKET_BUFFER)
+        self.TraceLog(t)
         
-        thread = threading.Thread(target=ServerTimer, args=())
-        thread.start()
+    
+    def SerializeObj_And_Send(self,client, myobj):
+        ser_obj = pickle.dumps(myobj) 
+        client.send(ser_obj)
+    
+    def Receive_And_DeserializedObj(self,client):
+        try:
+            ser_obj = client.recv(self.buffer)
+            myobj = pickle.loads(ser_obj)
+            return myobj
+        except:
+            err = BaseMsgClass()
+            err.IsError = True
+            return err
+   
         
-receive()
+    # List all servicenames
+    def ListActiveservicenames(self):
+        self.TraceLog("Active servicenames")
+        c:client_object
+        for c in self.client_objects:
+            print(c.servicename)   
+
+
+    def GetClientObject(self,client:socket)->client_object:
+        
+        c:client_object
+        for c in self.client_objects:
+            if (c.client == client):
+                return c
+
+    def Quit(self, client): 
+        c:client_object = self.GetClientObject(client)
+        ServiceName = c.servicename
+        self.client_objects.remove(c)
+        client.close()
+        msg = '{} left!'.format(ServiceName)
+        self.TraceLog(msg)
+        ObjToSend:SimpleMessage = SimpleMessage(msg)
+        self.broadcastObj(ObjToSend)
+                     
+
+    def broadcastObj(self,MyMessageObj):
+        c:client_object
+        for c in self.client_objects:
+            self.SerializeObj_And_Send (c.client, MyMessageObj)
+ 
+    # Handling Messages From Clients
+    def handle(self,client:socket):
+
+        while True:
+            try:
+            
+                myObject = self.Receive_And_DeserializedObj(client)
+                message = myObject.Message
+                            
+                if (message == SOCKET_QUIT_MSG):
+                    self.TraceLog("Server Message Got: " + message + " from Unknown")
+                    self.Quit(client)
+                    break
+                else:    
+                    c:client_object = self.GetClientObject(client)
+                    self.TraceLog("Server Message Got: " + message + " from " + str(c.servicename))               
+                    # confirm message
+                    ObjToSend:SimpleMessage = SimpleMessage(message)
+                    self.SerializeObj_And_Send(client,ObjToSend)
+                    
+            except:
+                self.Quit(client)
+                break
+        
+    # Sending Messages To Server
+    def ServerTimer(self):
+        while True:
+            time.sleep(30)
+            #ListActiveservicenames()
+
+        
+            
+    # Receiving / Listening Function
+    def receive(self):
+        
+        self.TraceLog("Waiting for Clients...")
+        
+        while True:
+            # Accept Connection
+            client, address = self.server.accept()
+            self.TraceLog("Connected with {}".format(str(address)))
+            ObjToSend:SimpleMessage = SimpleMessage(SOCKET_LOGIN_MSG)
+            self.SerializeObj_And_Send(client,ObjToSend)
+            
+            # Request And Store servicename
+        
+            MyObj = self.Receive_And_DeserializedObj(client)
+            servicename = MyObj.Message
+            self.TraceLog("Server Message Got: " + servicename)
+                        
+            myclient_object = client_object(client,servicename,address)
+            self.client_objects.append(myclient_object)
+            
+            self.TraceLog("servicename is {}".format(servicename))
+
+            # Start Handling Thread For Client
+            thread = threading.Thread(target=self.handle, args=(client,))
+            thread.start()
+            
+            thread = threading.Thread(target=self.ServerTimer, args=())
+            thread.start()
+            
+    def IsTraceLogEnabled(self) -> bool:
+        return self.ShowNormalTrace
+    
+    def TraceLog(self, Text):
+        if (self.IsTraceLogEnabled()):
+            print(Text)        
+            
+    def simul(self):
+        count = 0
+        self.TraceLog("Simul Enabled")
+        while True:
+            time.sleep(20)
+            message = "Server Broad cast tick: " + str(count)
+            ObjToSend:SimpleMessage = SimpleMessage(message)
+            self.broadcastObj(ObjToSend)
+            
+            count = count + 1
+        
+    def Run(self,SimulOn = False):
+        self.receive()
+        
+        if (SimulOn):
+            simul_thread = threading.Thread(target=self.simul)
+            simul_thread.start()
+        
+if (__name__== "__main__"):
+    
+    MyRobot_Socket_Server_Brain = Robot_Socket_Server_Brain()
+    
+    MyRobot_Socket_Server_Brain.Run(True)

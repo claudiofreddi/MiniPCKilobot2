@@ -10,6 +10,7 @@ class Robot_Socket_Client_Object:
     ServerPort = SOCKET_SERVER_PORT
     client = None
     IsConnected = False
+    buffer = SOCKET_BUFFER
 
     def __init__(self,ClientName):
        self.ClientName = ClientName 
@@ -29,7 +30,7 @@ class Robot_Socket_Client_Object:
             
             
                 # Receive Message From Server
-                message = self.client.recv(1024)
+                message = self.client.recv(self.buffer)
                 
                 self.Actions(message)
                 
