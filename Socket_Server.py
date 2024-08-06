@@ -38,6 +38,10 @@ class Robot_Socket_Server_Brain:
     client_objects = []
     ShowNormalTrace = True
     
+    # SensorMessage List 
+    #MyListOfSensors:ListOfSensors = ListOfSensors()
+    MyListOfSensors = MyQ[SensorMessage2]("MyListOfSensors")
+    
     def __init__(self,ForceServerIP = '',ForcePort=''):
         # Starting Server
         if (ForceServerIP!= ''):
@@ -53,19 +57,20 @@ class Robot_Socket_Server_Brain:
         self.TraceLog(t)
         
     
-    def SerializeObj_And_Send(self,client, myobj):
-        ser_obj = pickle.dumps(myobj) 
-        client.send(ser_obj)
-    
-    def Receive_And_DeserializedObj(self,client):
+    def SerializeObj_And_Send(self,client:socket, myobj):
+        try:
+            ser_obj = pickle.dumps(myobj,protocol=5) 
+            client.send(ser_obj)
+        except Exception as e:
+            self.TraceLog("Server Error in Receive_And_DeserializedObj  " + str(e))
+            
+    def Receive_And_DeserializedObj(self,client:socket):
         try:
             ser_obj = client.recv(self.buffer)
             myobj = pickle.loads(ser_obj)
             return myobj
-        except:
-            err = BaseMsgClass()
-            err.IsError = True
-            return err
+        except Exception as e:
+            self.TraceLog("Server Error in Receive_And_DeserializedObj " + str(e))
    
         
     # List all servicenames
@@ -112,6 +117,18 @@ class Robot_Socket_Server_Brain:
                     self.TraceLog("Server Message Got: " + message + " from Unknown")
                     self.Quit(client)
                     break
+                
+                elif (myObject.Type == BaseMsgClassTypes.SENSOR):
+                    
+                    print("Received Type SENSOR:" + myObject.Key)
+                    found = False
+                    for x in self.MyListOfSensors:
+                        if (x.key == myObject.key):
+                            found = True
+                    if (not found):
+                        self.MyListOfSensors.put(myObject)
+                        print(myObject.Key + " added")
+                
                 else:    
                     c:client_object = self.GetClientObject(client)
                     self.TraceLog("Server Message Got: " + message + " from " + str(c.servicename))               

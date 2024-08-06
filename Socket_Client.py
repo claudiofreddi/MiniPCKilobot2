@@ -3,8 +3,10 @@ import threading
 import time
 import pickle
 import uuid
+from typing import cast
 from Robot_Envs import *
 from Lib_Sockets import * 
+from Socket_Json import * 
 
 class Robot_Socket_Client_Service:
     # Choosing ServiceName
@@ -39,22 +41,28 @@ class Robot_Socket_Client_Service:
     
     def SerializeObj_And_Send(self,client:socket, myobj):
         try:
-            ser_obj = pickle.dumps(myobj) 
-            client.send(ser_obj)
-        except:
-            self.TraceLog("Error in sending object ")    
+            ser_obj = pickle.dumps(myobj,protocol=5) 
+            if (self.IsConnected):
+                self.client.send(ser_obj)
+            else:
+                self.TraceLog("Not Connected") 
+        except Exception as e:
+            self.TraceLog("Client Error in SerializeObj_And_Send " + str(e))
     
     def Receive_And_DeserializedObj(self,client:socket):
         try:
-            ser_obj = client.recv(self.buffer)
+            #if (self.IsConnected):
+            ser_obj = self.client.recv(self.buffer)
             myobj = pickle.loads(ser_obj)
             return myobj
-        except:
-            err = BaseMsgClass()
-            err.IsError = True
-            return err        
+            # else:
+            #     self.TraceLog("Not Connected")    
+            #     return None
+        except Exception as e:
+            self.TraceLog("Client Error in Receive_And_DeserializedObj " + str(e))
+            return None
       
-    def OnClient_Receive(self, DeserializedMsgObj:any):
+    def OnClient_Receive(self, client:socket, DeserializedMsgObj:any):
         print("OnClient_Receive")
          
     
@@ -78,22 +86,32 @@ class Robot_Socket_Client_Service:
                 # Receive Message From Server
                 # If 'NICK' Send ServiceName
                 MyReceivedObj = self.Receive_And_DeserializedObj(self.client)
-                message = MyReceivedObj.Message
                 
-                self.TraceLog("Client receive: " + str(message))
-                
-                if (message == SOCKET_LOGIN_MSG):            
-                    self.TraceLog("Client send: " + str(self.ServiceName))   
-                    ObjToSend:SimpleMessage = SimpleMessage(str(self.ServiceName))
-                    self.SerializeObj_And_Send(self.client, ObjToSend)         
-                
-                elif (message == SOCKET_QUIT_MSG): 
-                    self.Quit()
-                
+                if (MyReceivedObj == None):
+                    self.TraceLog("Client received None Msg")
                 else:
+                    message = MyReceivedObj.Message
                     
-                    self.TraceLog("OnClient_Receive -> " + MyReceivedObj.Message)
-                    self.OnClient_Receive(MyReceivedObj)
+                    self.TraceLog("Client receive: " + str(message))
+                    
+                    if (message == SOCKET_LOGIN_MSG):            
+                        self.TraceLog("Client send: " + str(self.ServiceName))   
+                        ObjToSend:SimpleMessage = SimpleMessage(str(self.ServiceName))
+                        self.SerializeObj_And_Send(self.client, ObjToSend)         
+                    
+                    elif (message == SOCKET_QUIT_MSG): 
+                        self.Quit()
+                    
+                    else:
+                        if (self.IsConnected):
+                            if (MyReceivedObj.Message != ""):
+                                
+                                if (MyReceivedObj.Type == BaseMsgClassTypes.SENSOR):
+                                
+                                    MyReceivedObj = cast(SensorMessage,MyReceivedObj)     
+                                
+                                self.TraceLog("OnClient_Receive -> " + MyReceivedObj.Message + " " + str(MyReceivedObj.IntValue))
+                                self.OnClient_Receive(self.client,MyReceivedObj)
                 
                    
                     
@@ -148,8 +166,8 @@ class Robot_Socket_Client_Service:
     
     
      
-    def Client_Send(self,DeserializedMsgObj:any):
-        self.SerializeObj_And_Send(self.client, DeserializedMsgObj) 
+    def Client_Send(self, client:socket, DeserializedMsgObj:any):
+        self.SerializeObj_And_Send(client, DeserializedMsgObj) 
          
     
     def IsTraceLogEnabled(self) -> bool:
