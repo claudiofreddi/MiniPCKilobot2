@@ -4,56 +4,71 @@ import socket
 from json import JSONEncoder
 from Robot_Envs import * 
 import uuid
+import pickle
 
 
-class SocketObjectClassType:
-    MESSAGE = "MESSAGE"    
-    SENSOR = "SENSOR"
 
 class SocketEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__  
 
-class SocketObject(object):
-    def __init__(self,ClassType, Key,Message,Value=0,Error=""):
+class SocketDecoder:
+    def get(CodedJson):
+        return  json.loads(CodedJson)
+
+class SocketContent_STANDARD_Type:
+    MESSAGE = "MESSAGE"    
+    SENSOR = "SENSOR"
+
+
+class SocketContent_STANDARD(object):
+    def __init__(self,ClassType=SocketContent_STANDARD_Type.MESSAGE, SubClassType = '', UID = '',Message ="",Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error =""):
         self.ClassType = ClassType
-        self.Key = Key
+        self.SubClassType = SubClassType  #Compass, Battery, .. user defined
         self.Message = Message
         self.Value = Value
         self.Error = Error
+        self.IsAlert = IsAlert
+        if (UID==''):
+            self.UID =  str(uuid.uuid4())
+        self.RefreshInterval = RefreshInterval
+        self.LastRefresh = LastRefresh
         
         
 
     def json(self):
         return json.dumps(self,cls=SocketEncoder,indent=4)
     
-    def Copy(self,Source:SocketObject):
+    def Copy(self,Source:SocketContent_STANDARD):
         self.ClassType = Source.ClassType
         self.Key = Source.Key
         self.Message = Source.Message
         self.Value = Source.Value
         self.Error = Source.Error
+
+#A = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, SubClassType = '', UID = '',Message ="",Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
     
-class SocketDecoder:
-    def get(CodedJson):
-        return  json.loads(CodedJson)
 
 
-class SensorObject(SocketObject):
+class SensorObject(SocketContent_STANDARD):
     def __init__(self,ClassType, Key,Message,Value,Error="",IsAlert=False):
         super().__init__(ClassType, Key,Message,Value,Error)
         self.IsAlert  = IsAlert
         
-    def Copy(self,Source:SocketObject):
+    def Copy(self,Source:SocketContent_STANDARD):
         super().Copy()
         self.IsAlert  = Source.IsAlert
         
-
+class SocketMessageEnvelopeContentType:
+    STANDARD = "STANDARD"
+    
 class SocketMessageEnvelope:
-    def  __init__(self,ClassType,EncodedJson): 
-        self.ClassType = ClassType
+    def  __init__(self,Uid = "",ContentType=SocketMessageEnvelopeContentType.STANDARD,EncodedJson='',NeedResponse=False,Response=''): 
+        self.Uid = uuid.uuid4
+        self.ContentType = ContentType
         self.EncodedJson = EncodedJson
-
+        self.NeedResponse = NeedResponse
+        self.Response = Response
 
 class client_object:
     client:socket = None
@@ -80,6 +95,7 @@ class Robot_Socket_BaseClass:
     IsConnected = False
     ShowNormalTrace = True
     IsQuitCalled = False
+    ShowJsonData = False
     
     SOCKET_QUIT_MSG = "Quit"
     SOCKET_LOGIN_MSG = "ServiceName"
@@ -124,7 +140,8 @@ class Robot_Socket_BaseClass:
             return True        
         
         except Exception as e:
-            self.TraceLog("Error in Connect()  " + str(e))
+            if (str(e).find("target machine actively refused it")==0):
+                self.TraceLog("Error in Connect()  " + str(e))
             self.IsConnected = False
             return False
     
@@ -138,7 +155,7 @@ class Robot_Socket_BaseClass:
     
     
     def Quit(self):
-        self.TraceLog("Quit Command..")
+        
         try:
             if (self.IsServer):
                 self.ServerConnection.close()
@@ -160,28 +177,50 @@ class Robot_Socket_BaseClass:
     def TraceLog(self, Text):
         if (self.IsTraceLogEnabled()):
             print(Text)  
-            
+    
+    def LogPrefix(self)->str:
+        if (self.IsServer):
+            Prefix = "Server"
+        else:
+            Prefix = "Client"
+        return Prefix
+    
+    def Pack_StardardEnvelope_And_Serialize(self,Obj:SocketContent_STANDARD):
+        try:
+            if (self.ShowJsonData):
+                print(Obj.json())
+                print(Obj.ClassType)
+            myobj =  SocketMessageEnvelope("",SocketMessageEnvelopeContentType.STANDARD,Obj.json())    
+            ser_obj = pickle.dumps(myobj,protocol=5) 
+            if (self.ShowJsonData):
+                print(len(ser_obj))
+            return ser_obj
+        
+        except Exception as e:
+            self.TraceLog(self.LogPrefix + " Error in Pack_StardardEnvelope_And_Serialize " + str(e))
+     
+    def UnPack_StardardEnvelope_And_Deserialize(self,ser_obj):
+        try:
+            myobj:SocketMessageEnvelope = pickle.loads(ser_obj)
+            return myobj
+        
+        except Exception as e:
+            self.TraceLog(self.LogPrefix + " Error in UnPack_StardardEnvelope_And_Deserialize " + str(e))
+            return None
         
 if (__name__== "__main__"):
     
     
-    x = SocketObject("10","1","3",4).json()
+    x = SocketContent_STANDARD("10","1","109283293","4","").json()
     
     print(type(x))
     print(x)
     
-    FinalObj = SocketObject(**SocketDecoder.get(x))
+    FinalObj = SocketContent_STANDARD(**SocketDecoder.get(x))
     
     print(type(FinalObj))
     
-    
-    
-    y = SensorObject("10","1","3",4,3).json()
-    print(y)
-    print(type(y))
-    
-    FinalObj = SensorObject(**SocketDecoder.get(y))
-    
+
     exit
 
     

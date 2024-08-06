@@ -1,8 +1,6 @@
 import socket
 import threading
 import time
-import pickle
-import uuid
 from typing import cast
 from Robot_Envs import *
 from Lib_Sockets import * 
@@ -18,31 +16,28 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
         super().__init__(ServiceName,ForceServerIP,ForcePort, False)    
 
     
-    def SerializeObj_And_Send(self,Targetclient:socket, Obj:SocketObject):
+    def SendToServer(self,Obj:SocketContent_STANDARD):
         try:
-                print(Obj.json())
-                print(Obj.ClassType)
-                myobj = SocketMessageEnvelope(Obj.ClassType,Obj.json()) 
-                ser_obj = pickle.dumps(myobj,protocol=5) 
-                print(len(ser_obj))
-                self.client.send(ser_obj)
+            SerializedObj = self.Pack_StardardEnvelope_And_Serialize(Obj)
+            self.client.send(SerializedObj)
         except Exception as e:
-            self.TraceLog("Client Error in SerializeObj_And_Send " + str(e))
+            if (str(e).find("something that is not a socket")==0):
+                self.TraceLog("Client Error in SendToServer  " + str(e))
     
-    def Receive_And_DeserializedObj(self,Targetclient:socket):
+    def ReceiveFromServer(self):
         try:
             ser_obj = self.client.recv(self.buffer)
-            print(ser_obj)
-            print(len(ser_obj))
-            myobj:SocketMessageEnvelope = pickle.loads(ser_obj)
+            myobj = self.UnPack_StardardEnvelope_And_Deserialize(ser_obj)
             return myobj
-
+        
         except Exception as e:
-            self.TraceLog("Client Error in Receive_And_DeserializedObj " + str(e))
-            
-      
+            if (str(e).find("connection was forcibly closed")==0):
+                self.TraceLog("Client Error in ReceiveFromServer " + str(e))
+            return None
+         
+
     
-    def OnClient_Receive(self, client:socket, ObjToSend:SocketObject):
+    def OnClient_Receive(self, client:socket, ObjToSend:SocketContent_STANDARD):
         print("OnClient_Receive")
         
     
@@ -62,22 +57,24 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
 
                     # Receive Message From Server
                     # If 'NICK' Send ServiceName
-                    MySocketMessageEnv = self.Receive_And_DeserializedObj(self.client)
+                    MySocketMessageEnv = self.ReceiveFromServer()
                     
                     if (MySocketMessageEnv != None):
                         
-                        if (MySocketMessageEnv.ClassType == SocketObjectClassType.MESSAGE):
+                        if (MySocketMessageEnv.ContentType  == SocketMessageEnvelopeContentType.STANDARD):
                             
-                            MySocketObject = SocketObject(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
+                            MySocketObject = SocketContent_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
                             self.TraceLog("Client receive: " + str(MySocketObject.Message))
                                                     
                             if (MySocketObject.Message == self.SOCKET_LOGIN_MSG):                
-                    
+                                
                                 self.TraceLog("Client send: " + str(self.ServiceName))   
-                                ObjToSend:SocketObject = SocketObject(SocketObjectClassType.MESSAGE,"",str(self.ServiceName),0,)
-                                self.SerializeObj_And_Send(self.client, ObjToSend)         
+                                ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, 
+                                                                                          SubClassType = '', UID = '',Message =str(self.ServiceName),Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+                                self.SendToServer(ObjToSend)         
                             
                             elif (MySocketObject.Message == self.SOCKET_QUIT_MSG): 
+                                print("Quit Message Received")
                                 self.Quit()
                                 
                             else:
@@ -86,25 +83,26 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
                                 self.OnClient_Receive(self.client,MySocketMessageEnv)
                         else:
                                 #Other messages NOT MANAGED
-                                self.TraceLog("OnClient_Receive -> " + MySocketMessageEnv.Message + " Type [" + MySocketMessageEnv.ClassType + "]")
+                                self.TraceLog("OnClient_Receive -> " + MySocketMessageEnv.Message + " Type [" + MySocketMessageEnv.ContentType + "]")
                                 self.OnClient_Receive(self.client,MySocketMessageEnv)   
                     else: 
-                        #NoneType
-                        self.TraceLog("None Type Message")  
+                     
                         self.Disconnect()
-                        print("An error occured! Retry in 15 sec..")
-                        time.sleep(15) #Wait 30 sec and retry        
+                        if (self.IsQuitCalled == False):
+                            print("An error occured! Retry in 15 sec..")
+                            time.sleep(15) #Wait 30 sec and retry 
+                        else:
+                            break       
                 else:
                     #Connection Failed    
                     self.TraceLog("Client disconnected")  
-                #NoneType
-                    self.TraceLog("None Type Message")  
                     self.Disconnect()
-                    print("An error occured! Retry in 15 sec..")
-                    time.sleep(15) #Wait 30 sec and retry  
-                        
-                if(self.IsQuitCalled):
-                    break #Exit While
+                    if (self.IsQuitCalled == False):
+                        print("An error occured! Retry in 15 sec..")
+                        time.sleep(15) #Wait 30 sec and retry  
+                    else:
+                        print("Service Quitted")
+                        break      
                     
             except Exception as e:
                 
@@ -127,13 +125,16 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
           
             #Default
             message = '{}'.format(input(''))
-            print("got message " + message)
-            ObjToSend:SocketObject = SocketObject(SocketObjectClassType.MESSAGE,"",str(self.ServiceName) + message)
-            print("got message in  SocketObject " + ObjToSend.Message)
-            self.SerializeObj_And_Send(self.client, ObjToSend)   
-            print("end SerializeObj_And_Send")
+            
+          
+            ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, 
+                                                                                          SubClassType = '', UID = '',Message =str(self.ServiceName) + message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+            
+            self.SendToServer( ObjToSend)   
+            
                 
             if (message == self.SOCKET_QUIT_MSG):
+                self.Quit()
                 self.TraceLog("write task terminated for " + self.ServiceName)
                 break
         
@@ -144,9 +145,13 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
             while True:
                 time.sleep(5)
                 message = self.ServiceName + " tick: " + str(count)
-                ObjToSend:SocketObject = SocketObject(SocketObjectClassType.MESSAGE,"",message,0)
-                self.SerializeObj_And_Send(self.client, ObjToSend)  
+                ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, 
+                                                                                          SubClassType = '', UID = '',Message =message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+                self.SendToServer(ObjToSend)  
                 count = count + 1
+                if (self.IsQuitCalled):
+                    print("Simul Quit")
+                    break
         except Exception as e:
             self.TraceLog("Error in simul()  " + str(e))
         
