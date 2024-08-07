@@ -25,12 +25,13 @@ class SocketDecoder:
 class SocketMessage_Type_STANDARD_Type:
     MESSAGE = "MESSAGE"    
     SENSOR = "SENSOR"
-    KEYBOARD = "KEYBOARD"
+    INPUT = "INPUT"
 
 
 
 class Socket_Services_Types:
-    SENSORS = "SENSORS"
+    SENSORS = "SENSORS_Client"
+    KEYBOARD = "KEYBOARD_Client"
 
 
 class SocketMessage_Type_STANDARD(object):
@@ -63,9 +64,15 @@ class SocketMessage_Type_STANDARD(object):
 class SocketMessageEnvelopeContentType:
     STANDARD = "STANDARD"
     
+    
+class SocketMessageEnvelopeTargetType:
+    SERVER = "SERVER"
+    BROADCAST = "BROADCAST"
+    
 class SocketMessageEnvelope:
     def  __init__(self,Uid = "",ContentType=SocketMessageEnvelopeContentType.STANDARD,EncodedJson='',
-                  From='',To='',NeedResponse=False,Response='',ShowContentinLog = False,SendTime=0): 
+                  From='',To='',
+                  NeedResponse=False,Response='',ShowContentinLog = False,SendTime=0): 
         self.Uid = uuid.uuid4
         self.ContentType = ContentType
         self.EncodedJson = EncodedJson
@@ -75,7 +82,7 @@ class SocketMessageEnvelope:
         self.From=From
         self.To=To
         self.SendTime = time.time()
-    
+            
     def GetDecodedMessageObject(self):
         if (self.ContentType == SocketMessageEnvelopeContentType.STANDARD):
             return SocketMessage_Type_STANDARD(**SocketDecoder.get(self.EncodedJson))
@@ -198,7 +205,7 @@ class Robot_Socket_BaseClass:
         print("From:", Obj.From)
         print("To:", Obj.To)
            
-    def Pack_StandardEnvelope_And_Serialize(self,Obj:SocketMessage_Type_STANDARD,From='',To=""):
+    def Pack_StandardEnvelope_And_Serialize(self,Obj:SocketMessage_Type_STANDARD,From="",To=""):
         try:
             
             if (self.ShowJsonData):
@@ -211,13 +218,13 @@ class Robot_Socket_BaseClass:
             
             #Alert if Buffer too little
             if (len(ser_obj) > self.buffer):
-                self.TraceLog(self.LogPrefix + " Increment Buffer Size [" + str(self.buffer) + "]. Curr Envelope Size is " + str(len(ser_obj)) )
+                self.TraceLog(self.LogPrefix() + " Increment Buffer Size [" + str(self.buffer) + "]. Curr Envelope Size is " + str(len(ser_obj)) )
               
                 
             return ser_obj
         
         except Exception as e:
-            self.TraceLog(self.LogPrefix + " Error in Pack_StardardEnvelope_And_Serialize " + str(e))
+            self.TraceLog(self.LogPrefix() + " Error in Pack_StardardEnvelope_And_Serialize " + str(e))
      
     def UnPack_StandardEnvelope_And_Deserialize(self,ser_obj):
         try:
@@ -228,22 +235,10 @@ class Robot_Socket_BaseClass:
             return myobj
         
         except Exception as e:
-            self.TraceLog(self.LogPrefix + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e))
+            self.TraceLog(self.LogPrefix() + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e))
             return None
         
 # if (__name__== "__main__"):
     
-    
-#     x = SocketMessage_Type_STANDARD("10","1","109283293","4","").json()
-    
-#     print(type(x))
-#     print(x)
-    
-#     FinalObj = SocketMessage_Type_STANDARD(**SocketDecoder.get(x))
-    
-#     print(type(FinalObj))
-    
-
-#     exit
 
     

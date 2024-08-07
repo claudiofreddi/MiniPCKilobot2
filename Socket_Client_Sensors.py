@@ -8,7 +8,7 @@ class SocketClient_Sensors(Robot_Socket_Client_Service):
     
     
     
-    def __init__(self, ServiceName = "", ForceServerIP = '',ForcePort=''):
+    def __init__(self, ServiceName = Socket_Services_Types.SENSORS, ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort)
         
     def OnClient_Connect(self):

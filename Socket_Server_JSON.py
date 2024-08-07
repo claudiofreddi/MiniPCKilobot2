@@ -49,11 +49,10 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                   
     def GetFromClient(self,TargetClient):
         try:
-            #self.TraceLog(self.LogPrefix() + " wait for message")
-            
+                       
             ser_obj = TargetClient.recv(self.buffer)
             myobj = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            #self.TraceLog(self.LogPrefix() + "  received of MsgType " + myobj.ContentType)
+            self.TraceLog(self.LogPrefix() + " received " + myobj.ContentType + " from " + myobj.From)
             return myobj
          
         except Exception as e:
@@ -90,12 +89,16 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
             self.broadcastObj(ObjToSend)
                      
 
-    def broadcastObj(self,ObjToSend:SocketMessage_Type_STANDARD):
+    def broadcastObj(self,ObjToSend:SocketMessage_Type_STANDARD, ExcludeServiceName = ""):
         c:client_object
         count = 0
         for c in self.client_objects:
-            self.SendToClient (c.client, ObjToSend)
-            count = count + 1
+          
+            if (c.servicename != ExcludeServiceName):
+                self.TraceLog("Broad Cast to: " + c.servicename)
+                self.SendToClient (c.client, ObjToSend)
+                count = count + 1
+                
         return count
             
             
@@ -135,43 +138,50 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
         ## Read Client Info from 
         CurrClientObject = self.GetClientObject(client)
         
-        LocalMsgPrefix = self.LogPrefix() + " [" + CurrClientObject.servicename+ "]"
+        LocalMsgPrefix = self.LogPrefix() + " from [" + CurrClientObject.servicename + "]"
         while True:
             try:
                 ## Receive Message
                 
-                MySocketMessageEnv:SocketMessageEnvelope = self.GetFromClient(client)
+                ReceivedEnvelope:SocketMessageEnvelope = self.GetFromClient(client)
+                self.TraceLog(LocalMsgPrefix + " received  Envelope  From " + ReceivedEnvelope.From + " To: " + ReceivedEnvelope.To)
                 
                 ##SocketObjectClassType.MESSAGE      
-                if (MySocketMessageEnv.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+                if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     
                                             
-                    MySocketObject = SocketMessage_Type_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                    self.TraceLog(LocalMsgPrefix + " received  Message " + MySocketObject.Message)
+                    ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    self.TraceLog(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
+                                   + "  Class: " + ReceivedMessage.ClassType
+                                   + "  SubClass: " + ReceivedMessage.SubClassType)
                     
                     ## SEZIONE MESSAGGI
-                    if (MySocketObject.ClassType== SocketMessage_Type_STANDARD_Type.MESSAGE):
+                    if (ReceivedMessage.ClassType== SocketMessage_Type_STANDARD_Type.MESSAGE):
                                             
-                        if (MySocketObject.Message == self.SOCKET_QUIT_MSG):
-                            self.TraceLog(LocalMsgPrefix + " Message Got: " + MySocketObject.Message + " from Unknown")
+                        if (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
+                     
                             self.QuitClient(client)
                             break
                     
                     ##SocketObjectClassType.SENSOR      
-                    if (MySocketObject.ClassType== SocketMessage_Type_STANDARD_Type.SENSOR):
-                        
-                        self.TraceLog(LocalMsgPrefix + "  Sub Class Type: " + MySocketObject.SubClassType + " Value: " + str(MySocketObject.Value))
-                        self.SensorUpdate(MySocketObject)
+                    if (ReceivedMessage.ClassType== SocketMessage_Type_STANDARD_Type.SENSOR):
                         
                         
+                        self.SensorUpdate(ReceivedMessage)
                         
+                    if (ReceivedMessage.ClassType== SocketMessage_Type_STANDARD_Type.INPUT):
+                        
+                        
+                        if (ReceivedEnvelope.To == SocketMessageEnvelopeTargetType.BROADCAST):   
+                            self.broadcastObj(ReceivedMessage, ReceivedEnvelope.From)
+                            
                 else:    
                     
                     #Try as MESSAGE and resent to sender
-                    MySocketObject = SocketMessage_Type_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                    self.TraceLog(LocalMsgPrefix + " Message Got: " + MySocketObject.Message + " [" + MySocketObject.ClassType + "." + MySocketObject.SubClassType + "] from " + str(CurrClientObject.servicename))               
+                    ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    self.TraceLog(LocalMsgPrefix + " Message Unnkown: " + ReceivedMessage.Message + " [" + ReceivedMessage.ClassType + "." + ReceivedMessage.SubClassType + "] from " + str(CurrClientObject.servicename))               
                     # confirm message
-                    ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessage_Type_STANDARD_Type.MESSAGE,"",MySocketObject.Message,0,"Message not recognized")
+                    ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessage_Type_STANDARD_Type.MESSAGE,"",ReceivedMessage.Message,0,"Message not recognized")
                     self.SendToClient(client,ObjToSend)
                     
             
@@ -198,17 +208,17 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                 self.SendToClient(client,ObjToSend,From=str(address))
                 
                 # Request And Store servicename
-                MySocketMessageEnv = self.GetFromClient(client)
+                ReceivedEnvelope = self.GetFromClient(client)
                 
-                if (MySocketMessageEnv != None):
+                if (ReceivedEnvelope != None):
                     
-                    if (MySocketMessageEnv.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+                    if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                         
-                        MySocketObject = SocketMessage_Type_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
+                        ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
                         
-                        if (MySocketObject.ClassType ==SocketMessage_Type_STANDARD_Type.MESSAGE):
+                        if (ReceivedMessage.ClassType ==SocketMessage_Type_STANDARD_Type.MESSAGE):
                             
-                            servicename = MySocketObject.Message
+                            servicename = ReceivedMessage.Message
                             self.TraceLog(" New Service Name is {}".format(servicename))
                                                                 
                             myclient_object = client_object(client,servicename,address)
@@ -249,6 +259,9 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
         
 if (__name__== "__main__"):
     
-    MyRobot_Socket_Server_Brain = Robot_Socket_Server_Brain()
+    MyClients = []
     
-    MyRobot_Socket_Server_Brain.Run_Threads(False)
+    MyServer = Robot_Socket_Server_Brain()
+    MyServer.Run_Threads(False)
+    
+   

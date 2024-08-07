@@ -18,9 +18,10 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
         super().__init__(ServiceName,ForceServerIP,ForcePort, False)    
 
     
-    def SendToServer(self,Obj:SocketMessage_Type_STANDARD):
+    def SendToServer(self,Obj:SocketMessage_Type_STANDARD, 
+                        Target=SocketMessageEnvelopeTargetType.SERVER):
         try:
-            SerializedObj = self.Pack_StandardEnvelope_And_Serialize(Obj,To="Server")
+            SerializedObj = self.Pack_StandardEnvelope_And_Serialize(Obj=Obj,To=Target,From=self.ServiceName)
             self.client.send(SerializedObj)
             
         except Exception as e:
@@ -30,6 +31,7 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
         try:
             ser_obj = self.client.recv(self.buffer)
             myobj = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
+            
             return myobj
         
         except Exception as e:
@@ -52,7 +54,7 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
     # Listening to Server and Sending ServiceName
     def Client_Listening_Task(self):
         self.IsConnected = False
-
+        LocalMsgPrefix = self.LogPrefix() + " from [Server]"
         while True:
             try:
                 if (self.IsQuitCalled):
@@ -70,18 +72,21 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
                     # If 'NICK' Send ServiceName
                     
                     ReceivedEnvelope = self.ReceiveFromServer()
+                    self.TraceLog(LocalMsgPrefix + " received  Envelope  From " + ReceivedEnvelope.From + " To: " + ReceivedEnvelope.To)
                     
                     IsMessageAlreayManaged = False
                     
                     if (ReceivedEnvelope != None):
                         
-                        #ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                        ReceivedMessage = ReceivedEnvelope.GetDecodedMessageObject()
                         
+                        ReceivedMessage = ReceivedEnvelope.GetDecodedMessageObject()
+                        self.TraceLog(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
+                                   + "  Class: " + ReceivedMessage.ClassType
+                                   + "  SubClass: " + ReceivedMessage.SubClassType)
                                                   
                         if (ReceivedMessage.Message == self.SOCKET_LOGIN_MSG):                
                             
-                            self.TraceLog("Client send: " + str(self.ServiceName))   
+                            self.TraceLog("Client send Login Name: " + str(self.ServiceName))   
                             ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.MESSAGE, 
                                                                                         SubClassType = '', UID = '',Message =str(self.ServiceName),Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
                             
@@ -183,7 +188,7 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
         except Exception as e:
             self.TraceLog("Error in simul()  " + str(e))
         
-    def Run_Threads(self,SimulOn):
+    def Run_Threads(self,SimulOn = False):
         # Starting Threads For Listening And Writing
         receive_thread = threading.Thread(target=self.Client_Listening_Task)
         receive_thread.start()
