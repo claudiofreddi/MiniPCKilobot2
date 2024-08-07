@@ -1,10 +1,7 @@
 from Socket_Client_JSON import * 
 
-class Sensors_SubClass_Types:
-    BATTERY = "BATTERY"
-    COMPASS = "COMPASS"
 
-class SocketClient_Sensors(Robot_Socket_Client_Service):
+class SocketClient_Keyboard(Robot_Socket_Client_Service):
     
     
     

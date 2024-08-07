@@ -8,144 +8,172 @@ from Socket_Json import *
 
 class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
     
-    SimulOn = False
-    
+
     EnableStdInText = True
+    OnClient_Core_Task_RETVAL_OK = 0
+    OnClient_Core_Task_RETVAL_QUIT= 1
+    OnClient_Core_Task_RETVAL_ERROR = -1
 
     def __init__(self, ServiceName = "", ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort, False)    
 
     
-    def SendToServer(self,Obj:SocketContent_STANDARD):
+    def SendToServer(self,Obj:SocketMessage_Type_STANDARD):
         try:
-            SerializedObj = self.Pack_StardardEnvelope_And_Serialize(Obj)
+            SerializedObj = self.Pack_StandardEnvelope_And_Serialize(Obj,To="Server")
             self.client.send(SerializedObj)
+            
         except Exception as e:
-            if (str(e).find("something that is not a socket")==0):
-                self.TraceLog("Client Error in SendToServer  " + str(e))
+            self.TraceLog("Client Error in SendToServer  " + str(e))
     
     def ReceiveFromServer(self):
         try:
             ser_obj = self.client.recv(self.buffer)
-            myobj = self.UnPack_StardardEnvelope_And_Deserialize(ser_obj)
+            myobj = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
             return myobj
         
         except Exception as e:
-            if (str(e).find("connection was forcibly closed")==0):
-                self.TraceLog("Client Error in ReceiveFromServer " + str(e))
+            self.TraceLog("Client Error in ReceiveFromServer " + str(e))
             return None
          
-
+    def OnClient_Connect(self):
+        print("OnClient_Connect")
     
-    def OnClient_Receive(self, client:socket, ObjToSend:SocketContent_STANDARD):
-        print("OnClient_Receive")
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
+        obj:SocketMessage_Type_STANDARD = ReceivedEnvelope.GetDecodedMessageObject()
+        #print("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
         
-    
+    def OnClient_Disconnect(self):
+        print("OnClient_Disconnect")
+        
+    def OnClient_Quit(self):
+        print("OnClient_Quit")
         
     # Listening to Server and Sending ServiceName
-    def receive(self):
+    def Client_Listening_Task(self):
         self.IsConnected = False
 
         while True:
             try:
+                if (self.IsQuitCalled):
+                    break
+                
                 #Retry conncetion if needed
                 if (not self.IsConnected):
                     self.Connect()
-                
+                    self.OnClient_Connect()
+                    
                 #If OK talk
                 if (self.IsConnected):
 
                     # Receive Message From Server
                     # If 'NICK' Send ServiceName
-                    MySocketMessageEnv = self.ReceiveFromServer()
                     
-                    if (MySocketMessageEnv != None):
+                    ReceivedEnvelope = self.ReceiveFromServer()
+                    
+                    IsMessageAlreayManaged = False
+                    
+                    if (ReceivedEnvelope != None):
                         
-                        if (MySocketMessageEnv.ContentType  == SocketMessageEnvelopeContentType.STANDARD):
+                        #ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                        ReceivedMessage = ReceivedEnvelope.GetDecodedMessageObject()
+                        
+                                                  
+                        if (ReceivedMessage.Message == self.SOCKET_LOGIN_MSG):                
                             
-                            MySocketObject = SocketContent_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                            self.TraceLog("Client receive: " + str(MySocketObject.Message))
-                                                    
-                            if (MySocketObject.Message == self.SOCKET_LOGIN_MSG):                
-                                
-                                self.TraceLog("Client send: " + str(self.ServiceName))   
-                                ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, 
-                                                                                          SubClassType = '', UID = '',Message =str(self.ServiceName),Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
-                                self.SendToServer(ObjToSend)         
+                            self.TraceLog("Client send: " + str(self.ServiceName))   
+                            ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.MESSAGE, 
+                                                                                        SubClassType = '', UID = '',Message =str(self.ServiceName),Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
                             
-                            elif (MySocketObject.Message == self.SOCKET_QUIT_MSG): 
-                                print("Quit Message Received")
-                                self.Quit()
-                                
-                            else:
-                                #Other SocketObjectClassType.MESSAGE NOT MANAGED
-                                #Pass Throught Child
-                                self.OnClient_Receive(self.client,MySocketMessageEnv)
-                        else:
-                                #Other messages NOT MANAGED
-                                self.TraceLog("OnClient_Receive -> " + MySocketMessageEnv.Message + " Type [" + MySocketMessageEnv.ContentType + "]")
-                                self.OnClient_Receive(self.client,MySocketMessageEnv)   
+                            self.SendToServer(ObjToSend)    
+                            
+                            IsMessageAlreayManaged = True   
+                        
+                        elif (ReceivedMessage.Message == self.SOCKET_QUIT_MSG): 
+                            print("Quit Message Received")
+                            self.OnClient_Quit()
+                            self.Quit()
+                            IsMessageAlreayManaged = True
+
+                        #Send To Inherited Objcts
+                        self.OnClient_Receive(ReceivedEnvelope,IsMessageAlreayManaged)   
+                        
                     else: 
-                     
+                        self.OnClient_Disconnect()
                         self.Disconnect()
                         if (self.IsQuitCalled == False):
-                            print("An error occured! Retry in 15 sec..")
-                            time.sleep(15) #Wait 30 sec and retry 
+                            print("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..")
+                            time.sleep(self.RETRY_TIME) #Wait 30 sec and retry 
                         else:
                             break       
                 else:
                     #Connection Failed    
-                    self.TraceLog("Client disconnected")  
+                 
+                    self.OnClient_Disconnect()
                     self.Disconnect()
                     if (self.IsQuitCalled == False):
-                        print("An error occured! Retry in 15 sec..")
-                        time.sleep(15) #Wait 30 sec and retry  
+                        print("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..")
+                        time.sleep(self.RETRY_TIME) #Wait 30 sec and retry  
                     else:
                         print("Service Quitted")
                         break      
                     
             except Exception as e:
                 
-                self.TraceLog("Error in receive()  " + str(e))
-                
+                self.TraceLog("Error in Client_Listening_Task()  " + str(e))
+                                
+                self.TraceLog("Client disconnected")  
                 self.Disconnect()
                
                 if (self.IsQuitCalled == False):
-                    print("An error occured! Retry in 15 sec..")
-                    time.sleep(15) #Wait 30 sec and retry
+                    print("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..")
+                    time.sleep(self.RETRY_TIME) #Wait 30 sec and retry
                 else:
                     break
     
-
-                                
-    # Sending Messages To Server
-    def write(self):
-        while True:
-            
-          
-            #Default
-            message = '{}'.format(input(''))
-            
-          
-            ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, 
-                                                                                          SubClassType = '', UID = '',Message =str(self.ServiceName) + message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
-            
-            self.SendToServer( ObjToSend)   
-            
-                
-            if (message == self.SOCKET_QUIT_MSG):
-                self.Quit()
-                self.TraceLog("write task terminated for " + self.ServiceName)
-                break
+    
+    def OnClient_Core_Task_Cycle(self, QuitCalled):
+        try:
         
-    def simul(self):
+            #Default
+            self.TraceLog(self.LogPrefix() + "Waiting for input...")
+            message = '{}'.format(input(''))
+            ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.MESSAGE, 
+                                                                                            SubClassType = '', UID = '',Message =message)
+            self.SendToServer( ObjToSend)   
+        
+            if (message == self.SOCKET_QUIT_MSG):
+                self.OnClient_Quit()
+                self.Quit()
+                self.TraceLog("OnClient_Core_Task_Cycle terminated for " + self.ServiceName)
+                return self.OnClient_Core_Task_RETVAL_QUIT
+
+            return self.OnClient_Core_Task_RETVAL_OK
+        
+        except Exception as e:
+            self.TraceLog(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
+            return self.OnClient_Core_Task_RETVAL_ERROR
+    
+    def Client_Core_Task(self):
+        try:
+            while True:
+                retval = self.OnClient_Core_Task_Cycle(self.IsQuitCalled) 
+                if (self.IsQuitCalled or  retval == self.OnClient_Core_Task_RETVAL_QUIT):
+                    self.Disconnect()
+                    self.Quit()
+        except Exception as e:
+            self.TraceLog(self.LogPrefix() + "Error in OnClient_Core_Task()  " + str(e))
+            return self.OnClient_Core_Task_RETVAL_ERROR
+  
+      
+    def ClientSimulateSend(self):
         try:
             count = 0
             self.TraceLog("Simul Enabled")
             while True:
                 time.sleep(5)
-                message = self.ServiceName + " tick: " + str(count)
-                ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, 
+                message = self.ServiceName + " tick: " + str(count) + " SIMULATED !"
+                ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.MESSAGE, 
                                                                                           SubClassType = '', UID = '',Message =message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
                 self.SendToServer(ObjToSend)  
                 count = count + 1
@@ -155,20 +183,20 @@ class Robot_Socket_Client_Service(Robot_Socket_BaseClass):
         except Exception as e:
             self.TraceLog("Error in simul()  " + str(e))
         
-    def Run(self):
+    def Run_Threads(self,SimulOn):
         # Starting Threads For Listening And Writing
-        receive_thread = threading.Thread(target=self.receive)
+        receive_thread = threading.Thread(target=self.Client_Listening_Task)
         receive_thread.start()
         
         if (self.EnableStdInText):
             self.TraceLog("Write Thread Enabled")
-            write_thread = threading.Thread(target=self.write)
+            write_thread = threading.Thread(target=self.Client_Core_Task)
             write_thread.start()
         else:
             self.TraceLog("Write Thread Disabled")
         
-        if (self.SimulOn):
-            simul_thread = threading.Thread(target=self.simul)
+        if (SimulOn):
+            simul_thread = threading.Thread(target=self.ClientSimulateSend)
             simul_thread.start()
         
   
@@ -177,6 +205,5 @@ if (__name__== "__main__"):
     
     for i in range(1):
         MyRobot_Socket_Client_Service =  Robot_Socket_Client_Service("Servizio " + str(i))
-        MyRobot_Socket_Client_Service.SimulOn = True
-        MyRobot_Socket_Client_Service.Run()      
+        MyRobot_Socket_Client_Service.Run_Threads(False)      
  

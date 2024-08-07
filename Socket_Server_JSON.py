@@ -5,7 +5,18 @@ from Lib_Utils_MyQ import *
 from Robot_Envs import * 
 from Socket_Json import * 
 
-
+class client_object:
+    client:socket = None
+    servicename:str = ''
+    address = ('',0)
+    
+    def __init__(self):
+        pass
+    
+    def __init__(self,Client:socket, ServiceName:str, Address):
+        self.client = Client
+        self.servicename = ServiceName
+        self.address = Address    
         
 
 class Robot_Socket_Server_Brain(Robot_Socket_BaseClass): 
@@ -23,22 +34,30 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
         self.Connect()    
 
 
-    def SendToClient(self,TargetClient:socket, Obj:SocketContent_STANDARD): 
+    def SendToClient(self,TargetClient, Obj:SocketMessage_Type_STANDARD,From=''): 
         try:
-            SerializedObj = self.Pack_StardardEnvelope_And_Serialize(Obj)
+            c:client_object = self.GetClientObject(TargetClient)
+            To2 = c.servicename if (c != None) else ''
+            
+            SerializedObj = self.Pack_StandardEnvelope_And_Serialize(Obj,From = From,To=To2)
+            
             TargetClient.send(SerializedObj)
         except Exception as e:
-            self.TraceLog("Server Error in SendToClient  " + str(e))
+            
+            print("Server Error in SendToClient " + str(e))
+            
                   
-    def GetFromClient(self,TargetClient:socket):
+    def GetFromClient(self,TargetClient):
         try:
+            #self.TraceLog(self.LogPrefix() + " wait for message")
+            
             ser_obj = TargetClient.recv(self.buffer)
-            myobj = self.UnPack_StardardEnvelope_And_Deserialize(ser_obj)
+            myobj = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
+            #self.TraceLog(self.LogPrefix() + "  received of MsgType " + myobj.ContentType)
             return myobj
-        
+         
         except Exception as e:
-            if (str(e).find("connection was forcibly closed")==0):
-                self.TraceLog("Server Error in GetFromClient " + str(e))
+            self.TraceLog("Server Error in GetFromClient " + str(e))
             return None    
     
     
@@ -48,7 +67,7 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
         self.TraceLog("Active servicenames")
         c:client_object
         for c in self.client_objects:
-            print(c.servicename)   
+            self.TraceLog(c.servicename)   
 
 
     def GetClientObject(self,client:socket)->client_object:
@@ -57,91 +76,114 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
         for c in self.client_objects:
             if (c.client == client):
                 return c
+        return None
 
-    def Quit(self, client): 
-        c:client_object = self.GetClientObject(client)
+    def QuitClient(self, TargetClient:socket, Broadcast = True): 
+        c:client_object = self.GetClientObject(TargetClient)
         ServiceName = c.servicename
         self.client_objects.remove(c)
-        client.close()
+        TargetClient.close()
         msg = '{} left!'.format(ServiceName)
         self.TraceLog(msg)
-        ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(ClassType=SocketContent_STANDARD_Type.MESSAGE, SubClassType = '', UID = '',Message =msg,Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
-        self.broadcastObj(ObjToSend)
+        ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.MESSAGE, SubClassType = '', UID = '',Message =msg,Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+        if (Broadcast):
+            self.broadcastObj(ObjToSend)
                      
 
-    def broadcastObj(self,ObjToSend:SocketContent_STANDARD):
+    def broadcastObj(self,ObjToSend:SocketMessage_Type_STANDARD):
         c:client_object
+        count = 0
         for c in self.client_objects:
             self.SendToClient (c.client, ObjToSend)
+            count = count + 1
+        return count
             
-    def SensorUpdate(self,MySensorObject:SensorObject):
-        print("Received Type SENSOR:" + MySensorObject.Key)
+            
+    def SensorUpdate(self,ReceivedSensorObject:SocketMessage_Type_STANDARD):
+        self.TraceLog("Received Type SENSOR:" + ReceivedSensorObject.SubClassType)
         found = False
-        x:SensorObject
-        for x in self.MyListOfSensors:
-            if (x.key == MySensorObject.key):
-                found = True
-                x.Copy(MySensorObject)
-                print(MySensorObject.Key + " copied")
-                break
-        if (not found):
-            self.MyListOfSensors.put(MySensorObject)
-            print(MySensorObject.Key + " added")
+        if (ReceivedSensorObject.ClassType == SocketMessage_Type_STANDARD_Type.SENSOR ):
+            pSensor:SocketMessage_Type_STANDARD
+            for pSensor in self.MyListOfSensors:
+                print(pSensor.SubClassType + " - curr val: " + str(pSensor.Value))
+                if (pSensor.SubClassType == ReceivedSensorObject.SubClassType):
+                    found = True
+                    pSensor.Copy(ReceivedSensorObject)
+                    print(pSensor.SubClassType + " - New val: " + str(pSensor.Value))
+                    self.TraceLog(ReceivedSensorObject.SubClassType + " copied")
+                    break
+            if (not found):
+                self.MyListOfSensors.append(ReceivedSensorObject)
+                self.TraceLog(ReceivedSensorObject.SubClassType + " added")
+                
+                
+                
+    def GetSensor(self,SubClassType):
+        pSensor:SocketMessage_Type_STANDARD
+        for pSensor in self.MyListOfSensors:
+            if (pSensor.SubClassType == SubClassType):
+                    return True, pSensor
+        return False, None   
+    
+        
+
  
     # Handling Messages From Clients
     def handle(self,client:socket):
+        
+        
         ## Read Client Info from 
         CurrClientObject = self.GetClientObject(client)
+        
+        LocalMsgPrefix = self.LogPrefix() + " [" + CurrClientObject.servicename+ "]"
         while True:
             try:
                 ## Receive Message
-                print("Server Handle ["+ CurrClientObject.servicename + "]  wait for message")
+                
                 MySocketMessageEnv:SocketMessageEnvelope = self.GetFromClient(client)
-                print("Server Handle ["+ CurrClientObject.servicename + "] received of MsgType " + MySocketMessageEnv.ContentType)
                 
                 ##SocketObjectClassType.MESSAGE      
                 if (MySocketMessageEnv.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     
                                             
-                    MySocketObject = SocketContent_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                    print("Server Handle ["+ CurrClientObject.servicename + "] received  Message " + MySocketObject.Message)
+                    MySocketObject = SocketMessage_Type_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
+                    self.TraceLog(LocalMsgPrefix + " received  Message " + MySocketObject.Message)
                     
                     ## SEZIONE MESSAGGI
-                    if (MySocketObject.ClassType== SocketContent_STANDARD_Type.MESSAGE):
+                    if (MySocketObject.ClassType== SocketMessage_Type_STANDARD_Type.MESSAGE):
                                             
                         if (MySocketObject.Message == self.SOCKET_QUIT_MSG):
-                            self.TraceLog("Server Handle ["+ CurrClientObject.servicename + "]  Message Got: " + MySocketObject.Message + " from Unknown")
-                            self.Quit(client)
+                            self.TraceLog(LocalMsgPrefix + " Message Got: " + MySocketObject.Message + " from Unknown")
+                            self.QuitClient(client)
                             break
                     
-                        ##SocketObjectClassType.SENSOR      
-                        if (MySocketObject.ClassType== SocketContent_STANDARD_Type.SENSOR):
-                            
-                            MySensorObject = SensorObject(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                            self.TraceLog("Server Handle ["+ CurrClientObject.servicename + "]  Type " + MySensorObject.SubClassType + " Value " + str(MySensorObject.Value))
-                            ##self.SensorUpdate(MySensorObject)
-                            print("self.SensorUpdate(MySensorObject)")
+                    ##SocketObjectClassType.SENSOR      
+                    if (MySocketObject.ClassType== SocketMessage_Type_STANDARD_Type.SENSOR):
+                        
+                        self.TraceLog(LocalMsgPrefix + "  Sub Class Type: " + MySocketObject.SubClassType + " Value: " + str(MySocketObject.Value))
+                        self.SensorUpdate(MySocketObject)
                         
                         
-                    else:    
                         
-                        #Try as MESSAGE and resent to sender
-                        MySocketObject = SocketContent_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                        self.TraceLog("Server Handle ["+ CurrClientObject.servicename + "] Message Got: " + MySocketObject.Message + " [" + MySocketObject.Key + "]  from " + str(CurrClientObject.servicename))               
-                        # confirm message
-                        ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(SocketContent_STANDARD_Type.MESSAGE,"",MySocketObject.Message,0,"Message not recognized")
-                        self.SendToClient(client,ObjToSend)
+                else:    
+                    
+                    #Try as MESSAGE and resent to sender
+                    MySocketObject = SocketMessage_Type_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
+                    self.TraceLog(LocalMsgPrefix + " Message Got: " + MySocketObject.Message + " [" + MySocketObject.ClassType + "." + MySocketObject.SubClassType + "] from " + str(CurrClientObject.servicename))               
+                    # confirm message
+                    ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessage_Type_STANDARD_Type.MESSAGE,"",MySocketObject.Message,0,"Message not recognized")
+                    self.SendToClient(client,ObjToSend)
                     
             
                 
             except Exception as e:
-                self.TraceLog("Server Handle ["+ CurrClientObject.servicename + "] Error in handle() "  + str(e))
-                
-                self.Quit(client)
+                self.TraceLog(LocalMsgPrefix + " Error in handle() "  + str(e))
+          
+                self.QuitClient(client)
                 break
            
     # Receiving / Listening Function
-    def receive(self):
+    def WaitingForNewClient(self):
         
         self.TraceLog("Waiting for Clients...")
         
@@ -152,54 +194,61 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                 # Accept Connection
                 client, address = self.ServerConnection.accept()
                 self.TraceLog("Connected with {}".format(str(address)))
-                ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(SocketContent_STANDARD_Type.MESSAGE,"","",self.SOCKET_LOGIN_MSG)
-                self.SendToClient(client,ObjToSend)
+                ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessage_Type_STANDARD_Type.MESSAGE,"","",self.SOCKET_LOGIN_MSG)
+                self.SendToClient(client,ObjToSend,From=str(address))
                 
                 # Request And Store servicename
-            
-                MySocketMessageEnv:SocketMessageEnvelope = self.GetFromClient(client)
-                if (MySocketMessageEnv.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+                MySocketMessageEnv = self.GetFromClient(client)
+                
+                if (MySocketMessageEnv != None):
                     
-                    MySocketObject = SocketContent_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
-                    
-                    if (MySocketObject.ClassType ==SocketContent_STANDARD_Type.MESSAGE):
+                    if (MySocketMessageEnv.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                         
-                        servicename = MySocketObject.Message
-                        self.TraceLog("Server Message Got: " + servicename)
-                                    
-                        myclient_object = client_object(client,servicename,address)
-                        self.client_objects.append(myclient_object)
+                        MySocketObject = SocketMessage_Type_STANDARD(**SocketDecoder.get(MySocketMessageEnv.EncodedJson))
                         
-                        self.TraceLog("servicename is {}".format(servicename))
+                        if (MySocketObject.ClassType ==SocketMessage_Type_STANDARD_Type.MESSAGE):
+                            
+                            servicename = MySocketObject.Message
+                            self.TraceLog(" New Service Name is {}".format(servicename))
+                                                                
+                            myclient_object = client_object(client,servicename,address)
+                            self.client_objects.append(myclient_object)
+                            #self.TraceLog(self.LogPrefix() + " New Client Added")                      
 
-                        # Start Handling Thread For Client
-                        thread = threading.Thread(target=self.handle, args=(client,))
-                        thread.start()
+                            # Start Handling Thread For Client
+                            thread = threading.Thread(target=self.handle, args=(client,))
+                            thread.start()
             
         except Exception as e:
-            self.TraceLog("Server Error in receive() "  + str(e))
+            self.TraceLog(self.LogPrefix() + " Error in WaitingForNewClient() "  + str(e))
         
             
-    def simul(self):
-        count = 0
-        self.TraceLog("Simul Enabled")
+    def Server_BroadCast_Simulation(self):
+        tick = 0
+        self.TraceLog(self.LogPrefix() +  " Server_BroadCast_Simulation Enabled")
         while True:
-            time.sleep(20)
-            message = "Server Broad cast tick: " + str(count)
-            ObjToSend:SocketContent_STANDARD = SocketContent_STANDARD(SocketMessageEnvelopeContentType.STANDARD,"","",message)
-            self.broadcastObj(ObjToSend)
+            time.sleep(3)
             
-            count = count + 1
+            message = self.LogPrefix() +  "SIMULATED Broadcast tick: " + str(tick)            
+            ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessageEnvelopeContentType.STANDARD,"Test","",message)
+            count = self.broadcastObj(ObjToSend)
+            if (count>0):
+                print(message)
+            
+            
+            tick = tick + 1
         
-    def Run(self,SimulOn = False):
-        self.receive()
+    def Run_Threads(self,SimulOn = False):
+        simul_thread = threading.Thread(target=self.WaitingForNewClient)
+        simul_thread.start()
+        #self.WaitingForNewClient()
         
         if (SimulOn):
-            simul_thread = threading.Thread(target=self.simul)
+            simul_thread = threading.Thread(target=self.Server_BroadCast_Simulation)
             simul_thread.start()
         
 if (__name__== "__main__"):
     
     MyRobot_Socket_Server_Brain = Robot_Socket_Server_Brain()
     
-    MyRobot_Socket_Server_Brain.Run(True)
+    MyRobot_Socket_Server_Brain.Run_Threads(False)
