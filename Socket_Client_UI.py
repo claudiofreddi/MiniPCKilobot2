@@ -38,7 +38,8 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             
             if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
             
-                    ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    ##ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
                     self.LastRead = datetime.now()
                     self.IsTimeout = False
                     if (ReceivedMessage.ClassType == Socket_Default_Message_ClassType.SENSOR):

@@ -3,7 +3,7 @@ import threading
 import time
 from Lib_Utils_MyQ import * 
 from Robot_Envs import * 
-from Socket_ClientServer_BaseClass import * 
+from Socket_ClientServer_Common import * 
 
 class client_object:
     client:socket = None
@@ -152,16 +152,16 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 ## Receive Message
                 
                 ReceivedEnvelope:SocketMessageEnvelope = self.GetFromClient(client)
-                self.LogConsole(LocalMsgPrefix + " received  Envelope  From " + ReceivedEnvelope.From + " To: " + ReceivedEnvelope.To)
+                self.LogConsole(LocalMsgPrefix + " " + ReceivedEnvelope.GetEnvelopeDescription())
                 
                 ##SocketObjectClassType.MESSAGE      
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     
                                             
-                    ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    self.LogConsole(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
-                                   + "  Class: " + ReceivedMessage.ClassType
-                                   + "  SubClass: " + ReceivedMessage.SubClassType)
+                    #
+                    # ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
+                    self.LogConsole(LocalMsgPrefix + " received  " + ReceivedMessage.GetMessageDescription())
                     
                     ## SEZIONE MESSAGGI
                     if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
@@ -191,7 +191,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 else:    
                     
                     #Try as MESSAGE and resent to sender
-                    ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    ##ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
                     self.LogConsole(LocalMsgPrefix + " Message Unnkown: " + ReceivedMessage.Message + " [" + ReceivedMessage.ClassType + "." + ReceivedMessage.SubClassType + "] from " + str(CurrClientObject.servicename))               
                     # confirm message
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"",ReceivedMessage.Message,0,"Message not recognized")
@@ -227,7 +228,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     
                     if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                         
-                        ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                        ##ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                        ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
                         
                         if (ReceivedMessage.ClassType ==Socket_Default_Message_ClassType.MESSAGE):
                             

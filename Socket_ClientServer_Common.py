@@ -17,6 +17,10 @@ class SocketEncoder(JSONEncoder):
 class SocketDecoder:
     def get(CodedJson):
         return  json.loads(CodedJson)
+    
+class SuperDecoder:
+    def GetReceivedMessage(ReceivedEnvelope:SocketMessageEnvelope):
+        return Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))    
 
 ### ***************************************************************************
 ### LOG DEF
@@ -41,6 +45,7 @@ class Socket_Default_Message_ClassType:
     INPUT = "INPUT"
 
 class Socket_Default_Message_SubClassType:
+    MESSAGE = "MESSAGE"  
     KEYBOARD = "KEYBOARD"    
     BATTERY = "BATTERY"
     COMPASS = "COMPASS"
@@ -50,6 +55,7 @@ class Socket_Services_List:
     SENSORS = "SENSORS_Client"
     KEYBOARD = "KEYBOARD_Client"
     USERINTERFACE = "UI_Client"
+    REMOTE = "REMOTE_Client"
 
 
 class Socket_Default_Message(Common_LogConsoleClass):
@@ -80,6 +86,14 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.RefreshInterval = Source.RefreshInterval
         self.LastRefresh = Source.LastRefresh
         
+    def GetMessageDescription(self):
+        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + "  Class: " + self.ClassType + "  SubClass: " + self.SubClassType
+        if (self.Error != ""):
+            Txt = Txt + self.Error 
+        if (self.IsAlert == True):
+            Txt = Txt + self.IsAlert
+        return Txt
+        
 class SocketMessageEnvelopeContentType:
     STANDARD = "STANDARD"
     
@@ -102,11 +116,8 @@ class SocketMessageEnvelope:
         self.To=To
         self.SendTime = time.time()
             
-    def GetDecodedMessageObject(self):
-        if (self.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-            return Socket_Default_Message(**SocketDecoder.get(self.EncodedJson))
-
-
+    def GetEnvelopeDescription(self) -> str:
+        return "Envelope [" + self.ContentType + "] From " + self.From + " To: " + self.To 
 
 class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
      # Connection Data

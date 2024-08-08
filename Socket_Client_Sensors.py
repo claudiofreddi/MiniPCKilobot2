@@ -32,37 +32,38 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
-            retData = self.MyArduino_Connection.ReadSerial()
-            #self.LogConsole("RETDATA: " + retData)
-            if (retData != ""):
-                #Compass
-                bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSOR_COMPASS)
-                if (bFound):
-                    LocalSubClassType  = Socket_Default_Message_SubClassType.COMPASS
-                    LocalSensorValue = int(val)
-                    LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.COMPASS)
-                
-                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
-                                                                    SubClassType = LocalSubClassType, 
-                                                                    Message = LocalMessage, Value = LocalSensorValue)
+            if (self.MyArduino_Connection.IsStarted):
+                retData = self.MyArduino_Connection.ReadSerial()
+                #self.LogConsole("RETDATA: " + retData)
+                if (retData != ""):
+                    #Compass
+                    bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSOR_COMPASS)
+                    if (bFound):
+                        LocalSubClassType  = Socket_Default_Message_SubClassType.COMPASS
+                        LocalSensorValue = int(val)
+                        LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.COMPASS)
                     
-                    self.SendToServer(ObjToSend) 
-    
-               #Battery
-                bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSORS_BATTERY)
-                if (bFound):
-                    LocalSubClassType  = Socket_Default_Message_SubClassType.BATTERY
-                    LocalSensorValue = int(val)
-                    LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.BATTERY)
-                
-                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
-                                                                    SubClassType = LocalSubClassType, 
-                                                                    Message = LocalMessage, Value = LocalSensorValue)                
+                        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
+                                                                        SubClassType = LocalSubClassType, 
+                                                                        Message = LocalMessage, Value = LocalSensorValue)
+                        
+                        self.SendToServer(ObjToSend) 
+        
+                #Battery
+                    bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSORS_BATTERY)
+                    if (bFound):
+                        LocalSubClassType  = Socket_Default_Message_SubClassType.BATTERY
+                        LocalSensorValue = int(val)
+                        LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.BATTERY)
+                    
+                        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
+                                                                        SubClassType = LocalSubClassType, 
+                                                                        Message = LocalMessage, Value = LocalSensorValue)                
                 
                
-                    self.SendToServer(ObjToSend) 
-              
-                return self.OnClient_Core_Task_RETVAL_OK
+                        self.SendToServer(ObjToSend) 
+                
+            return self.OnClient_Core_Task_RETVAL_OK
 
         except Exception as e:
             self.LogConsole(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))

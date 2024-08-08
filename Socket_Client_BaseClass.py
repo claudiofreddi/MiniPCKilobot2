@@ -4,7 +4,7 @@ import time
 from typing import cast
 from Robot_Envs import *
 from Lib_Sockets import * 
-from Socket_ClientServer_BaseClass import * 
+from Socket_ClientServer_Common import * 
 
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     
@@ -73,14 +73,14 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     # If 'NICK' Send ServiceName
                     
                     ReceivedEnvelope = self.ReceiveFromServer()
-                    self.LogConsole(LocalMsgPrefix + " received  Envelope  From " + ReceivedEnvelope.From + " To: " + ReceivedEnvelope.To)
+                    self.LogConsole(LocalMsgPrefix + " received  " + ReceivedEnvelope.GetEnvelopeDescription())
                     
-                    IsMessageAlreayManaged = False
-                    
+                    IsMessageAlreayManaged = False                   
                     if (ReceivedEnvelope != None):
                         
-                        
-                        ReceivedMessage = ReceivedEnvelope.GetDecodedMessageObject()
+                        #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
+                        #ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                        ReceivedMessage:Socket_Default_Message = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
                         self.LogConsole(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
                                    + "  Class: " + ReceivedMessage.ClassType
                                    + "  SubClass: " + ReceivedMessage.SubClassType)
@@ -89,7 +89,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             
                             self.LogConsole("Client send Login Name: " + str(self.ServiceName))   
                             ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                                        SubClassType = '', UID = '',Message =str(self.ServiceName),Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+                                                                                        SubClassType = '', UID = ''
+                                                                                        ,Message =str(self.ServiceName),Value="",RefreshInterval=5
+                                                                                        ,LastRefresh = 0, IsAlert=False, Error ="")
                             
                             self.SendToServer(ObjToSend)    
                             
