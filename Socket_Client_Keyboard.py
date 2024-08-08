@@ -91,6 +91,6 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         
 if (__name__== "__main__"):
     
-    MySocketClient_Keyboard = SocketClient_Keyboard(Socket_Services_List.KEYBOARD)
+    MySocketClient_Keyboard = SocketClient_Keyboard()
     
     MySocketClient_Keyboard.Run_Threads()

@@ -8,21 +8,6 @@ import pickle
 import time
 
 ### ***************************************************************************
-### Ecoder e Decoder (JSON <-> Class)
-### ***************************************************************************
-class SocketEncoder(JSONEncoder):
-    def default(self, o):
-        return o.__dict__  
-
-class SocketDecoder:
-    def get(CodedJson):
-        return  json.loads(CodedJson)
-    
-class SuperDecoder:
-    def GetReceivedMessage(ReceivedEnvelope:SocketMessageEnvelope):
-        return Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))    
-
-### ***************************************************************************
 ### LOG DEF
 ### ***************************************************************************
 
@@ -36,6 +21,32 @@ class Common_LogConsoleClass(object):
     EnableConsoleLog = True
     EnableConsoleLogLevel = ConsoleLogLevel.Test
     
+    def LogConsole(self,Text,LogLevel = ConsoleLogLevel.Test):
+        if (self.EnableConsoleLog):
+            if (LogLevel >= self.EnableConsoleLogLevel):
+                print(Text)
+    
+### ***************************************************************************
+### Ecoder e Decoder (JSON <-> Class)
+### ***************************************************************************
+class SocketEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__  
+
+class SocketDecoder:
+    def get(CodedJson):
+        return  json.loads(CodedJson)
+    
+class SuperDecoder(Common_LogConsoleClass):
+    
+    def GetReceivedMessage(self, ReceivedEnvelope:SocketMessageEnvelope)->Socket_Default_Message:
+        
+        # self.LogConsole(ReceivedEnvelope.GetEnvelopeDescription())
+        Obj:Socket_Default_Message = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))    
+        #self.LogConsole(Obj.GetMessageDescription())
+        return Obj
+
+  
 ### ***************************************************************************
 ### Message FORMAT
 ### ***************************************************************************
@@ -121,7 +132,7 @@ class SocketMessageEnvelope:
 
 class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
      # Connection Data
-    ServerIP = SOCKET_SERVER_IP
+    ServerIP = ''
     ServerPort = SOCKET_SERVER_PORT
     buffer = SOCKET_BUFFER
     ServiceName:str = ""
@@ -137,6 +148,26 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     SOCKET_LOGIN_MSG = "AskForServiceName"
     RETRY_TIME = 3
     
+    def ServerIPToUse(self)-> str:
+        if (SOCKET_USE_LOCALHOST == 1):
+            self.LogConsole("Using Localhost  IP: "+ SOCKET_SERVER_LOCALHOST_IP,ConsoleLogLevel.Always)
+            return SOCKET_SERVER_LOCALHOST_IP, True
+        else:
+            if (SOCKET_SERVER_IP_REMOTE !="" ):
+                self.LogConsole("Using Forced IP: "+ SOCKET_SERVER_IP_REMOTE,ConsoleLogLevel.Always)
+                return SOCKET_SERVER_IP_REMOTE, True
+            else:
+                if (SOCKET_THIS_IS_SERVER_MACHINE == 1):
+                    #GetThis Machine IP
+                    ThisMachineIP = socket.gethostbyname(socket.gethostname())
+                    self.LogConsole("Using Local Machine IP: "+ ThisMachineIP,ConsoleLogLevel.Always)
+                    return ThisMachineIP, True
+                else:
+                    Err = "This May be a Remote Client. Please configure SOCKET_SERVER_IP_REMOTE"
+                    self.LogConsole(Err,ConsoleLogLevel.Always)
+                    return Err, False
+
+    
     def __init__(self,ServiceName = '', ForceServerIP = '',ForcePort='', IsServer=False):
             
             self.IsServer = IsServer
@@ -144,6 +175,13 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
             # Starting Server
             if (ForceServerIP!= ''):
                 self.ServerIP = ForceServerIP
+            else:
+                IPToUse , isValid =self. ServerIPToUse()
+                if (isValid):
+                    self.ServerIP = IPToUse
+                else:
+                    self.LogConsole("Can't find IP. Quitting",ConsoleLogLevel.Always)
+                    self.Quit()
                 
             if (ForcePort!= ''):
                 self.ServerPort = ForcePort  
@@ -215,10 +253,6 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
  
 
     
-    def LogConsole(self,Text,LogLevel = ConsoleLogLevel.Test):
-        if (self.EnableConsoleLog):
-            if (LogLevel >= self.EnableConsoleLogLevel):
-                print(Text)
     
     def LogPrefix(self)->str:
         return " [" + self.ServiceName + "] "

@@ -22,3 +22,13 @@ PATH_OBJ_CLASS_configPath = 'c:/Dati/MiniPCKilobot/TrainedObjData/normalized_inp
 PATH_OBJ_CLASS_weightsPath = 'c:/Dati/MiniPCKilobot/TrainedObjData/frozen_inference_graph.pb'
 PATH_OBJ_CLASS_classFile = 'c:/Dati/MiniPCKilobot/TrainedObjData/coco_names.txt'
 
+SOCKET_THIS_IS_SERVER_MACHINE = 1 #Set 1 it the server is running here, 0 if here is running only remote: in this case set SOCKET_SERVER_IP_FORCED
+SOCKET_USE_LOCALHOST = 0 #Set 1 if all services are running in local machines, set 0 if a PCin LAN is acting as a server
+SOCKET_SERVER_LOCALHOST_IP = '127.0.0.1'
+SOCKET_SERVER_IP_REMOTE = ''
+SOCKET_SERVER_PORT = 55555
+SOCKET_BUFFER = 1024*2
+
+ARDUINO_A_COM_PORT = "COM5"
+ARDUINO_B_COM_PORT = "COM3"
+LIDAR_COM_PORT = "COM10"

@@ -1,2 +1,2 @@
-s = "abcde"
-print(s.rfind('b'))
+import socket
+print(socket.gethostbyname(socket.gethostname()))

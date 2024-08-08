@@ -18,12 +18,10 @@ class SocketClient_Remote(Socket_Client_BaseClass):
         try:
             if (IsMessageAlreayManaged == False):
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                    self.LogConsole(ReceivedEnvelope.GetEnvelopeDescription())
-                    ##ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
-                    self.LogConsole(ReceivedMessage.GetMessageDescription())
-
-                            
+               
+                    ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    #ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
+                                             
                             
                             
         except Exception as e:

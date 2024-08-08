@@ -79,8 +79,8 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     if (ReceivedEnvelope != None):
                         
                         #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
-                        #ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                        ReceivedMessage:Socket_Default_Message = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
+                        ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                        #ReceivedMessage:Socket_Default_Message = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
                         self.LogConsole(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
                                    + "  Class: " + ReceivedMessage.ClassType
                                    + "  SubClass: " + ReceivedMessage.SubClassType)

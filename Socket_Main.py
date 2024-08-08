@@ -27,13 +27,14 @@ Obj.Run_Threads()
 MyClients.append(Obj)
 
 Obj = SocketClient_Sensors()
+Obj.EnableConsoleLog = False
 Obj.Run_Threads()
 MyClients.append(Obj)
 
 
-# Obj = SocketClient_Remote()
-# Obj.Run_Threads()
-# MyClients.append(Obj)
+Obj = SocketClient_Remote()
+Obj.Run_Threads()
+MyClients.append(Obj)
 
 if (DisableLog):
     pClient:Socket_Client_BaseClass
