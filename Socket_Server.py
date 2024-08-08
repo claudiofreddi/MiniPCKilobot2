@@ -3,7 +3,7 @@ import threading
 import time
 from Lib_Utils_MyQ import * 
 from Robot_Envs import * 
-from Socket_Json import * 
+from Socket_ClientServer_BaseClass import * 
 
 class client_object:
     client:socket = None
@@ -19,7 +19,7 @@ class client_object:
         self.address = Address    
         
 
-class Robot_Socket_Server_Brain(Robot_Socket_BaseClass): 
+class Socket_Server(Socket_ClientServer_BaseClass): 
 
 
     client_objects = []
@@ -28,13 +28,13 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
     # SensorMessage List 
     MyListOfSensors = []
     
-    def __init__(self,ServiceName = 'Server', ForceServerIP = '',ForcePort=''):
+    def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort, True)
            
         self.Connect()    
 
 
-    def SendToClient(self,TargetClient, Obj:SocketMessage_Type_STANDARD,From=''): 
+    def SendToClient(self,TargetClient, Obj:Socket_Default_Message,From=''): 
         try:
             c:client_object = self.GetClientObject(TargetClient)
             To2 = c.servicename if (c != None) else ''
@@ -44,7 +44,7 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
             TargetClient.send(SerializedObj)
         except Exception as e:
             
-            print("Server Error in SendToClient " + str(e))
+            self.LogConsole("Server Error in SendToClient " + str(e))
             
                   
     def GetFromClient(self,TargetClient):
@@ -52,21 +52,21 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                        
             ser_obj = TargetClient.recv(self.buffer)
             myobj = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            self.TraceLog(self.LogPrefix() + " received " + myobj.ContentType + " from " + myobj.From)
+            self.LogConsole(self.LogPrefix() + " received " + myobj.ContentType + " from " + myobj.From)
             return myobj
          
         except Exception as e:
-            self.TraceLog("Server Error in GetFromClient " + str(e))
+            self.LogConsole("Server Error in GetFromClient " + str(e))
             return None    
     
     
        
     # List all servicenames
     def ListActiveservicenames(self):
-        self.TraceLog("Active servicenames")
+        self.LogConsole("Active servicenames")
         c:client_object
         for c in self.client_objects:
-            self.TraceLog(c.servicename)   
+            self.LogConsole(c.servicename)   
 
 
     def GetClientObject(self,client:socket)->client_object:
@@ -77,52 +77,60 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                 return c
         return None
 
+    def GetClientObjectByServiceName(self,ServiceNameToFind)->client_object:
+        
+        c:client_object
+        for c in self.client_objects:
+            if (c.servicename == ServiceNameToFind):
+                return c
+        return None
+    
     def QuitClient(self, TargetClient:socket, Broadcast = True): 
         c:client_object = self.GetClientObject(TargetClient)
         ServiceName = c.servicename
         self.client_objects.remove(c)
         TargetClient.close()
         msg = '{} left!'.format(ServiceName)
-        self.TraceLog(msg)
-        ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.MESSAGE, SubClassType = '', UID = '',Message =msg,Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+        self.LogConsole(msg)
+        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, SubClassType = '', UID = '',Message =msg,Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
         if (Broadcast):
             self.broadcastObj(ObjToSend)
                      
 
-    def broadcastObj(self,ObjToSend:SocketMessage_Type_STANDARD, ExcludeServiceName = ""):
+    def broadcastObj(self,ObjToSend:Socket_Default_Message, ExcludeServiceName = ""):
         c:client_object
         count = 0
         for c in self.client_objects:
           
             if (c.servicename != ExcludeServiceName):
-                self.TraceLog("Broad Cast to: " + c.servicename)
+                self.LogConsole("Broad Cast to: " + c.servicename)
                 self.SendToClient (c.client, ObjToSend)
                 count = count + 1
                 
         return count
             
             
-    def SensorUpdate(self,ReceivedSensorObject:SocketMessage_Type_STANDARD):
-        self.TraceLog("Received Type SENSOR:" + ReceivedSensorObject.SubClassType)
+    def SensorUpdate(self,ReceivedSensorObject:Socket_Default_Message):
+        self.LogConsole("Received Type SENSOR:" + ReceivedSensorObject.SubClassType)
         found = False
-        if (ReceivedSensorObject.ClassType == SocketMessage_Type_STANDARD_Type.SENSOR ):
-            pSensor:SocketMessage_Type_STANDARD
+        if (ReceivedSensorObject.ClassType == Socket_Default_Message_ClassType.SENSOR ):
+            pSensor:Socket_Default_Message
             for pSensor in self.MyListOfSensors:
-                print(pSensor.SubClassType + " - curr val: " + str(pSensor.Value))
+                self.LogConsole(pSensor.SubClassType + " - curr val: " + str(pSensor.Value))
                 if (pSensor.SubClassType == ReceivedSensorObject.SubClassType):
                     found = True
                     pSensor.Copy(ReceivedSensorObject)
-                    print(pSensor.SubClassType + " - New val: " + str(pSensor.Value))
-                    self.TraceLog(ReceivedSensorObject.SubClassType + " copied")
+                    self.LogConsole(pSensor.SubClassType + " - New val: " + str(pSensor.Value))
+                    self.LogConsole(ReceivedSensorObject.SubClassType + " copied")
                     break
             if (not found):
                 self.MyListOfSensors.append(ReceivedSensorObject)
-                self.TraceLog(ReceivedSensorObject.SubClassType + " added")
+                self.LogConsole(ReceivedSensorObject.SubClassType + " added")
                 
                 
                 
     def GetSensor(self,SubClassType):
-        pSensor:SocketMessage_Type_STANDARD
+        pSensor:Socket_Default_Message
         for pSensor in self.MyListOfSensors:
             if (pSensor.SubClassType == SubClassType):
                     return True, pSensor
@@ -144,19 +152,19 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                 ## Receive Message
                 
                 ReceivedEnvelope:SocketMessageEnvelope = self.GetFromClient(client)
-                self.TraceLog(LocalMsgPrefix + " received  Envelope  From " + ReceivedEnvelope.From + " To: " + ReceivedEnvelope.To)
+                self.LogConsole(LocalMsgPrefix + " received  Envelope  From " + ReceivedEnvelope.From + " To: " + ReceivedEnvelope.To)
                 
                 ##SocketObjectClassType.MESSAGE      
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     
                                             
-                    ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    self.TraceLog(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
+                    ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    self.LogConsole(LocalMsgPrefix + " received  Message " + ReceivedMessage.Message + " Value: " + str(ReceivedMessage.Value)
                                    + "  Class: " + ReceivedMessage.ClassType
                                    + "  SubClass: " + ReceivedMessage.SubClassType)
                     
                     ## SEZIONE MESSAGGI
-                    if (ReceivedMessage.ClassType== SocketMessage_Type_STANDARD_Type.MESSAGE):
+                    if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
                                             
                         if (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
                      
@@ -164,30 +172,35 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                             break
                     
                     ##SocketObjectClassType.SENSOR      
-                    if (ReceivedMessage.ClassType== SocketMessage_Type_STANDARD_Type.SENSOR):
+                    if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.SENSOR):
                         
                         
                         self.SensorUpdate(ReceivedMessage)
                         
-                    if (ReceivedMessage.ClassType== SocketMessage_Type_STANDARD_Type.INPUT):
+                    if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.INPUT):
                         
                         
                         if (ReceivedEnvelope.To == SocketMessageEnvelopeTargetType.BROADCAST):   
                             self.broadcastObj(ReceivedMessage, ReceivedEnvelope.From)
+                    
+                    
+                    c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.USERINTERFACE)
+                    if (c != None):
+                        self.SendToClient(c.client,ReceivedMessage)
                             
                 else:    
                     
                     #Try as MESSAGE and resent to sender
-                    ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    self.TraceLog(LocalMsgPrefix + " Message Unnkown: " + ReceivedMessage.Message + " [" + ReceivedMessage.ClassType + "." + ReceivedMessage.SubClassType + "] from " + str(CurrClientObject.servicename))               
+                    ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                    self.LogConsole(LocalMsgPrefix + " Message Unnkown: " + ReceivedMessage.Message + " [" + ReceivedMessage.ClassType + "." + ReceivedMessage.SubClassType + "] from " + str(CurrClientObject.servicename))               
                     # confirm message
-                    ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessage_Type_STANDARD_Type.MESSAGE,"",ReceivedMessage.Message,0,"Message not recognized")
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"",ReceivedMessage.Message,0,"Message not recognized")
                     self.SendToClient(client,ObjToSend)
                     
             
                 
             except Exception as e:
-                self.TraceLog(LocalMsgPrefix + " Error in handle() "  + str(e))
+                self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e))
           
                 self.QuitClient(client)
                 break
@@ -195,7 +208,7 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
     # Receiving / Listening Function
     def WaitingForNewClient(self):
         
-        self.TraceLog("Waiting for Clients...")
+        self.LogConsole("Waiting for Clients...")
         
         
         try:
@@ -203,8 +216,8 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
             while True:
                 # Accept Connection
                 client, address = self.ServerConnection.accept()
-                self.TraceLog("Connected with {}".format(str(address)))
-                ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessage_Type_STANDARD_Type.MESSAGE,"","",self.SOCKET_LOGIN_MSG)
+                self.LogConsole("Connected with {}".format(str(address)))
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"","",self.SOCKET_LOGIN_MSG)
                 self.SendToClient(client,ObjToSend,From=str(address))
                 
                 # Request And Store servicename
@@ -214,36 +227,36 @@ class Robot_Socket_Server_Brain(Robot_Socket_BaseClass):
                     
                     if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                         
-                        ReceivedMessage = SocketMessage_Type_STANDARD(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                        ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
                         
-                        if (ReceivedMessage.ClassType ==SocketMessage_Type_STANDARD_Type.MESSAGE):
+                        if (ReceivedMessage.ClassType ==Socket_Default_Message_ClassType.MESSAGE):
                             
                             servicename = ReceivedMessage.Message
-                            self.TraceLog(" New Service Name is {}".format(servicename))
+                            self.LogConsole(" New Service Name is {}".format(servicename))
                                                                 
                             myclient_object = client_object(client,servicename,address)
                             self.client_objects.append(myclient_object)
-                            #self.TraceLog(self.LogPrefix() + " New Client Added")                      
+                            #self.LogConsole(self.LogPrefix() + " New Client Added")                      
 
                             # Start Handling Thread For Client
                             thread = threading.Thread(target=self.handle, args=(client,))
                             thread.start()
             
         except Exception as e:
-            self.TraceLog(self.LogPrefix() + " Error in WaitingForNewClient() "  + str(e))
+            self.LogConsole(self.LogPrefix() + " Error in WaitingForNewClient() "  + str(e))
         
             
     def Server_BroadCast_Simulation(self):
         tick = 0
-        self.TraceLog(self.LogPrefix() +  " Server_BroadCast_Simulation Enabled")
+        self.LogConsole(self.LogPrefix() +  " Server_BroadCast_Simulation Enabled")
         while True:
             time.sleep(3)
             
             message = self.LogPrefix() +  "SIMULATED Broadcast tick: " + str(tick)            
-            ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(SocketMessageEnvelopeContentType.STANDARD,"Test","",message)
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(SocketMessageEnvelopeContentType.STANDARD,"Test","",message)
             count = self.broadcastObj(ObjToSend)
             if (count>0):
-                print(message)
+                self.LogConsole(message)
             
             
             tick = tick + 1
@@ -261,7 +274,7 @@ if (__name__== "__main__"):
     
     MyClients = []
     
-    MyServer = Robot_Socket_Server_Brain()
+    MyServer = Socket_Server()
     MyServer.Run_Threads(False)
     
    

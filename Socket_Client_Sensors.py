@@ -1,60 +1,89 @@
-from Socket_Client_JSON import * 
+from Socket_Client_BaseClass import * 
+from Lib_ArduinoConnection import *
+from Robot_Envs import * 
 
-class Sensors_SubClass_Types:
-    BATTERY = "BATTERY"
-    COMPASS = "COMPASS"
-
-class SocketClient_Sensors(Robot_Socket_Client_Service):
+class Robot_Arduino_Sensor_Params:
+     SENSOR_COMPASS = "SENSORS_COMPASS"
+     SENSORS_BATTERY = "SENSORS_BATTERY"
+     
+class SocketClient_Sensors(Socket_Client_BaseClass):
+    
+    MyArduino_Connection = Arduino_Connection()
     
     
-    
-    def __init__(self, ServiceName = Socket_Services_Types.SENSORS, ForceServerIP = '',ForcePort=''):
+    def __init__(self, ServiceName = Socket_Services_List.SENSORS, ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort)
-        
+        self.MyArduino_Connection.OpenConnection(ARDUINO_B_COM_PORT)
+            
     def OnClient_Connect(self):
-        self.NumOfCycles = 0
-        print("OnClient_Connect")
+        
+        self.LogConsole("OnClient_Connect")
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
-        #obj:SocketMessage_Type_STANDARD = ReceivedEnvelope.GetDecodedMessageObject()
-        #print("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
+        #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
+        #self.LogConsole("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
         pass
         
     def OnClient_Disconnect(self):
-        print("OnClient_Disconnect")
+        self.LogConsole("OnClient_Disconnect")
         
     def OnClient_Quit(self):
-        print("OnClient_Quit") 
+        self.LogConsole("OnClient_Quit") 
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
-            
-            time.sleep(3)
-            
-            message = 'Numero di Cicli attuali {}'.format(self.NumOfCycles)
-            SubClass = Sensors_SubClass_Types.BATTERY
-            SensorValue = self.NumOfCycles 
-            
-            
-            ObjToSend:SocketMessage_Type_STANDARD = SocketMessage_Type_STANDARD(ClassType=SocketMessage_Type_STANDARD_Type.SENSOR, 
-                                                                                SubClassType = SubClass, Message = message, Value = SensorValue)
-            
-            self.TraceLog(self.LogPrefix() + " " + SubClass  + " Sending Value: " + str(SensorValue))
-            self.SendToServer(ObjToSend)  
-            self.NumOfCycles = self.NumOfCycles + 1
-        
-        
+            retData = self.MyArduino_Connection.ReadSerial()
+            #self.LogConsole("RETDATA: " + retData)
+            if (retData != ""):
+                #Compass
+                bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSOR_COMPASS)
+                if (bFound):
+                    LocalSubClassType  = Socket_Default_Message_SubClassType.COMPASS
+                    LocalSensorValue = int(val)
+                    LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.COMPASS)
+                
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
+                                                                    SubClassType = LocalSubClassType, 
+                                                                    Message = LocalMessage, Value = LocalSensorValue)
+                    
+                    self.SendToServer(ObjToSend) 
     
-            return self.OnClient_Core_Task_RETVAL_OK
-            #self.OnClient_Core_Task_RETVAL_QUIT
-            
+               #Battery
+                bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSORS_BATTERY)
+                if (bFound):
+                    LocalSubClassType  = Socket_Default_Message_SubClassType.BATTERY
+                    LocalSensorValue = int(val)
+                    LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.BATTERY)
+                
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
+                                                                    SubClassType = LocalSubClassType, 
+                                                                    Message = LocalMessage, Value = LocalSensorValue)                
+                
+               
+                    self.SendToServer(ObjToSend) 
+              
+                return self.OnClient_Core_Task_RETVAL_OK
+
         except Exception as e:
-            self.TraceLog(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
+            self.LogConsole(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
             return self.OnClient_Core_Task_RETVAL_ERROR
+    
+    
+    #########################################################################
+    #SPECIFIC FOR ARDUINO
+    #########################################################################
+    def _ParseParamValue(self,retData,ParamName):
+        if (retData[:len(ParamName)] == ParamName):
+            return True, retData[len(ParamName)+1:]
+        else:
+            return False, ''
+     
         
+           
+   
         
 if (__name__== "__main__"):
     
-    MySocketClient_Sensors = SocketClient_Sensors(Socket_Services_Types.SENSORS)
+    MySocketClient_Sensors = SocketClient_Sensors(Socket_Services_List.SENSORS)
     
     MySocketClient_Sensors.Run_Threads(True)
