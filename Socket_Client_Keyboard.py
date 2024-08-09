@@ -19,11 +19,11 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             on_press=self.on_press,
             on_release=self.on_release)
         self.listener.start()
-        self.LogConsole("Listener Started")
+        self.LogConsole("Keyboard Listener Started",ConsoleLogLevel.System)
         
     def OnClient_Connect(self):
         self.NumOfCycles = 0
-        self.LogConsole("OnClient_Connect")
+        self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
         #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
@@ -31,10 +31,10 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         pass
         
     def OnClient_Disconnect(self):
-        self.LogConsole("OnClient_Disconnect")
+        self.LogConsole("OnClient_Disconnect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Quit(self):
-        self.LogConsole("OnClient_Quit") 
+        self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
@@ -46,7 +46,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             
             
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
+            self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
             return self.OnClient_Core_Task_RETVAL_ERROR
     
     def on_press(self,key):
@@ -55,9 +55,9 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             if (self.IsValidChar):
                 if (self._LastCmd !=  str(key)):
                     self._LastCmd = str(key)
-                    self.LogConsole(str(key))
+                    self.LogConsole(str(key),ConsoleLogLevel.System)
                     self._presstime = datetime.datetime.now()
-                    #self.LogConsole('alphanumeric key {0} pressed'.format(key))
+                    #self.LogConsole('alphanumeric key {0} pressed'.format(key),,ConsoleLogLevel.Test)
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
                                                                     SubClassType = Socket_Default_Message_SubClassType.KEYBOARD, 
                                                                     Message = self._LastCmd,Value=0)
@@ -67,7 +67,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                     
                    
         except AttributeError:
-            self.LogConsole('special key {0} pressed'.format(key))
+            self.LogConsole('special key {0} pressed'.format(key),ConsoleLogLevel.System)
 
     def on_release(self,key):
         
@@ -75,7 +75,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             #self.LogConsole('{0} released'.format(key))
                          
             time_pressed = int((datetime.datetime.now() - self._presstime).total_seconds() * 1000)
-            self.LogConsole(str(key) + " " + str(time_pressed) + " ms ")
+            self.LogConsole(str(key) + " " + str(time_pressed) + " ms ",ConsoleLogLevel.System)
             
             ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
                                                                                 SubClassType = Socket_Default_Message_SubClassType.KEYBOARD,

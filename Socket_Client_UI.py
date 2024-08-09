@@ -25,7 +25,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
         self.CreateUI()
         
     def OnClient_Connect(self):
-        self.LogConsole("OnClient_Connect")
+        self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
         
@@ -33,14 +33,10 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             return
         try:
             
-            #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
-            #self.LogConsole("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
-            
             if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-            
-                    ##ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    #ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
-                    ReceivedMessage =  Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
+                   
+                    ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+                    
                     self.LastRead = datetime.now()
                     self.IsTimeout = False
                     if (ReceivedMessage.ClassType == Socket_Default_Message_ClassType.SENSOR):
@@ -62,13 +58,13 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             # self.root.update()
             
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
+            self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
             
     def OnClient_Disconnect(self):
-        self.LogConsole("OnClient_Disconnect")
+        self.LogConsole("OnClient_Disconnect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Quit(self):
-        self.LogConsole("OnClient_Quit") 
+        self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
@@ -92,7 +88,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             
             
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
+            self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
             return self.OnClient_Core_Task_RETVAL_ERROR
     
   
@@ -134,7 +130,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             self.AddLabel_Pair(self.container,LabelIndex.ArduinoActionReady,"Arduino Action Ready:","",CURR_ROW,0)
         
         except Exception as error:
-            self.LogConsole("Error in CreateUI" + str(error))     
+            self.LogConsole("Error in CreateUI" + str(error),ConsoleLogLevel.Error)     
 
     def OpenWindow(self):
         self.IsWindowOn = True

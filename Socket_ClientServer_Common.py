@@ -12,20 +12,61 @@ import time
 ### ***************************************************************************
 
 class  ConsoleLogLevel:
+    
     Test = 0
-    System = 1
-    Control = 2
-    Always = 2
+    CurrentTest = 1
+    
+    System = 2
+    Control = 3
+    Always = 4
+    Override_Call = 6
+    Socket_Flow = 5 
+    Show = 7
+    
+    Error = 90
 
 class Common_LogConsoleClass(object):
     EnableConsoleLog = True
-    EnableConsoleLogLevel = ConsoleLogLevel.Test
+    EnableAll = False
+    EnableConsoleLogLevels = [
+                              ConsoleLogLevel.Error   #keep always on
+                              #,ConsoleLogLevel.Test
+                              ,ConsoleLogLevel.CurrentTest #keep on temporary
+                              ,ConsoleLogLevel.System
+                              ,ConsoleLogLevel.Control
+                              ,ConsoleLogLevel.Always
+                              #,ConsoleLogLevel.Override_Call
+                              #,ConsoleLogLevel.Socket_Flow
+                              ,ConsoleLogLevel.Show    #keep on
+                              
+                              ]
     
-    def LogConsole(self,Text,LogLevel = ConsoleLogLevel.Test):
+
+    
+    def LogConsole(self,Text,*LogLevels):
+        
         if (self.EnableConsoleLog):
-            if (LogLevel >= self.EnableConsoleLogLevel):
-                print(Text)
-    
+            
+            if (self.EnableAll):
+                print(Text) 
+                
+            else:
+                if (len(LogLevels) == 0):
+                    #Test is Default
+                    LogLevel = ConsoleLogLevel.Test
+                  
+                    for v in self.EnableConsoleLogLevels:
+                        if (v == LogLevel):
+                            print(Text)
+                            break
+                            
+                else:
+                    for LogLevel in LogLevels:
+                        for v in self.EnableConsoleLogLevels:
+                            if (v == LogLevel):
+                                print(Text)
+                                break
+        
 ### ***************************************************************************
 ### Ecoder e Decoder (JSON <-> Class)
 ### ***************************************************************************
@@ -36,15 +77,6 @@ class SocketEncoder(JSONEncoder):
 class SocketDecoder:
     def get(CodedJson):
         return  json.loads(CodedJson)
-    
-class SuperDecoder(Common_LogConsoleClass):
-    
-    def GetReceivedMessage(self, ReceivedEnvelope:SocketMessageEnvelope)->Socket_Default_Message:
-        
-        # self.LogConsole(ReceivedEnvelope.GetEnvelopeDescription())
-        Obj:Socket_Default_Message = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))    
-        #self.LogConsole(Obj.GetMessageDescription())
-        return Obj
 
   
 ### ***************************************************************************
@@ -67,6 +99,7 @@ class Socket_Services_List:
     KEYBOARD = "KEYBOARD_Client"
     USERINTERFACE = "UI_Client"
     REMOTE = "REMOTE_Client"
+    SAMPLE = "Client_Sample"
 
 
 class Socket_Default_Message(Common_LogConsoleClass):
@@ -104,6 +137,9 @@ class Socket_Default_Message(Common_LogConsoleClass):
         if (self.IsAlert == True):
             Txt = Txt + self.IsAlert
         return Txt
+    
+    def _ShowStdMessageJsonForma(self):
+        self.LogConsole(self.json(),ConsoleLogLevel.Control)
         
 class SocketMessageEnvelopeContentType:
     STANDARD = "STANDARD"
@@ -127,6 +163,12 @@ class SocketMessageEnvelope:
         self.To=To
         self.SendTime = time.time()
             
+    def GetReceivedMessage(self)->Socket_Default_Message:
+                  
+        ReceivedMsg:Socket_Default_Message = Socket_Default_Message(**SocketDecoder.get(self.EncodedJson))    
+        
+        return ReceivedMsg
+
     def GetEnvelopeDescription(self) -> str:
         return "Envelope [" + self.ContentType + "] From " + self.From + " To: " + self.To 
 
@@ -140,9 +182,8 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     ServerConnection:socket = None
     client:socket
     IsConnected = False
-    ShowNormalTrace = True
     IsQuitCalled = False
-    ShowJsonData = False
+    
     
     SOCKET_QUIT_MSG = "Quit"
     SOCKET_LOGIN_MSG = "AskForServiceName"
@@ -196,9 +237,9 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
                     self.ServiceName = str(uuid.uuid4())
             
             if (self.IsServer):
-                self.LogConsole(self.ServiceName + " started on " + self.ServerIP + ":" + str(self.ServerIP) + " buffer:" +  str(self.buffer)) 
+                self.LogConsole(self.ServiceName + " started on " + self.ServerIP + ":" + str(self.ServerIP) + " buffer:" +  str(self.buffer),ConsoleLogLevel.Socket_Flow) 
             else:
-                self.LogConsole("init Service: " + str(self.ServiceName))         
+                self.LogConsole("init Service: " + str(self.ServiceName),ConsoleLogLevel.Socket_Flow)         
             
     
     def Connect(self)->bool:
@@ -216,7 +257,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
         
         except Exception as e:
             if (str(e).find("target machine actively refused it")==0):
-                self.LogConsole("Error in Connect()  " + str(e))
+                self.LogConsole("Error in Connect()  " + str(e),ConsoleLogLevel.Error)
             self.IsConnected = False
             return False
     
@@ -228,12 +269,12 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
         else:
             self.client.close()     
                
-        self.LogConsole(self.LogPrefix() + "  Disconnected")   
+        self.LogConsole(self.ThisServiceName() + "  Disconnected",ConsoleLogLevel.Socket_Flow)   
     
     def Quit(self):
         
         try:
-            self.LogConsole(self.LogPrefix() + "  Quitted") 
+            self.LogConsole(self.ThisServiceName() + "  Quitted",ConsoleLogLevel.Socket_Flow) 
             self.Disconnect()
             if (self.IsServer):
                 self.ServerConnection.close()
@@ -248,56 +289,53 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
          
             
         except Exception as e:
-            self.LogConsole("Error in Quit()  " + str(e))
+            self.LogConsole("Error in Quit()  " + str(e),ConsoleLogLevel.Socket_Flow)
                                     
  
 
     
     
-    def LogPrefix(self)->str:
+    def ThisServiceName(self)->str:
         return " [" + self.ServiceName + "] "
         
     
-    def _ShowStdMessageContent(self,Obj:Socket_Default_Message):
-        self.LogConsole(Obj.ClassType)
-        self.LogConsole(Obj.json())
+
     
-    def _ShowEnvelope_Content(self,Obj:SocketMessageEnvelope):
-        self.LogConsole(Obj.ContentType)
-        self.LogConsole("From:", Obj.From)
-        self.LogConsole("To:", Obj.To)
-           
-    def Pack_StandardEnvelope_And_Serialize(self,Obj:Socket_Default_Message,From="",To=""):
+    
+    def Prepare_StandardEnvelope(self,MsgToSend:Socket_Default_Message,From="",To=""):
         try:
             
-            if (self.ShowJsonData):
-                 self._ShowStdMessageContent(Obj)
-              
-            myobj =  SocketMessageEnvelope("",SocketMessageEnvelopeContentType.STANDARD,Obj.json(),From=From if (From!='') else self.ServiceName,To=To) 
-            if (myobj.ShowContentinLog or self.ShowJsonData):
-                self._ShowEnvelope_Content(myobj)
-            ser_obj = pickle.dumps(myobj,protocol=5) 
+            MyEnvelope =  SocketMessageEnvelope("",SocketMessageEnvelopeContentType.STANDARD,MsgToSend.json(),From=From if (From!='') else self.ServiceName,To=To) 
+            
+            return MyEnvelope
+
+        except Exception as e:
+            self.LogConsole(self.ThisServiceName() + " Error in Pack_StardardEnvelope_And_Serialize " + str(e),ConsoleLogLevel.Error)
+
+           
+    def Pack_Envelope_And_Serialize(self,MyEnv:SocketMessageEnvelope):
+        try:
+            
+            ser_obj = pickle.dumps(MyEnv,protocol=5) 
             
             #Alert if Buffer too little
             if (len(ser_obj) > self.buffer):
-                self.LogConsole(self.LogPrefix() + " Increment Buffer Size [" + str(self.buffer) + "]. Curr Envelope Size is " + str(len(ser_obj)) )
+                self.LogConsole(self.ThisServiceName() + " Increment Buffer Size [" + str(self.buffer) + "]. Curr Envelope Size is " + str(len(ser_obj)),ConsoleLogLevel.Error )
               
                 
             return ser_obj
         
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + " Error in Pack_StardardEnvelope_And_Serialize " + str(e))
+            self.LogConsole(self.ThisServiceName() + " Error in Pack_StardardEnvelope_And_Serialize " + str(e),ConsoleLogLevel.Error)
      
     def UnPack_StandardEnvelope_And_Deserialize(self,ser_obj):
         try:
             myobj:SocketMessageEnvelope = pickle.loads(ser_obj)
-            #self._ShowContent(myobj)
-            if (myobj.ShowContentinLog or self.ShowJsonData):
-                self._ShowEnvelope_Content(myobj)
+            
             return myobj
         
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e))
+            self.LogConsole(self.ThisServiceName() + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e),ConsoleLogLevel.Error)
             return None
         
 # if (__name__== "__main__"):

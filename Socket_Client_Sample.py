@@ -1,11 +1,11 @@
 from Socket_Client_BaseClass import * 
 from Socket_Timer import * 
 
-class SocketClient_Remote(Socket_Client_BaseClass):
+class SocketClient_Sample(Socket_Client_BaseClass):
 
     MyTimer:Timer=Timer()
     
-    def __init__(self, ServiceName = Socket_Services_List.REMOTE, ForceServerIP = '',ForcePort=''):
+    def __init__(self, ServiceName = Socket_Services_List.SAMPLE, ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort)
 
         

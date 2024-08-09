@@ -34,39 +34,47 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.Connect()    
 
 
-    def SendToClient(self,TargetClient, Obj:Socket_Default_Message,From=''): 
+    def SendToClient(self,TargetClient, MyMsg:Socket_Default_Message,From=''): 
         try:
             c:client_object = self.GetClientObject(TargetClient)
-            To2 = c.servicename if (c != None) else ''
+            ToServiceName = c.servicename if (c != None) else ''
             
-            SerializedObj = self.Pack_StandardEnvelope_And_Serialize(Obj,From = From,To=To2)
-            
+            MyEnvelope:SocketMessageEnvelope = self.Prepare_StandardEnvelope(MsgToSend=MyMsg,To=ToServiceName,From=self.ServiceName)
+            SerializedObj = self.Pack_Envelope_And_Serialize(MyEnvelope)
+                        
             TargetClient.send(SerializedObj)
+            
+            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow)
+            
         except Exception as e:
             
-            self.LogConsole("Server Error in SendToClient " + str(e))
+            self.LogConsole("Server Error in SendToClient " + str(e),ConsoleLogLevel.Error)
             
                   
     def GetFromClient(self,TargetClient):
         try:
-                       
+            c:client_object = self.GetClientObject(TargetClient)
+            FromServiceName = c.servicename if (c != None) else ''
+            
             ser_obj = TargetClient.recv(self.buffer)
-            myobj = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            self.LogConsole(self.LogPrefix() + " received " + myobj.ContentType + " from " + myobj.From)
-            return myobj
+            MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
+            self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+            
+            return MyEnvelope
          
         except Exception as e:
-            self.LogConsole("Server Error in GetFromClient " + str(e))
+            self.LogConsole("Server Error in GetFromClient " + str(e),ConsoleLogLevel.Error)
             return None    
     
     
        
     # List all servicenames
     def ListActiveservicenames(self):
-        self.LogConsole("Active servicenames")
+        self.LogConsole("Active servicenames",ConsoleLogLevel.Test)
         c:client_object
         for c in self.client_objects:
-            self.LogConsole(c.servicename)   
+            self.LogConsole(c.servicename,ConsoleLogLevel.Show)   
 
 
     def GetClientObject(self,client:socket)->client_object:
@@ -85,13 +93,22 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 return c
         return None
     
+    
+    def CheckIfServiceNameExists(self,ServiceNameToFind)->bool:
+        
+        c:client_object
+        for c in self.client_objects:
+            if (c.servicename == ServiceNameToFind):
+                return True
+        return False
+    
     def QuitClient(self, TargetClient:socket, Broadcast = True): 
         c:client_object = self.GetClientObject(TargetClient)
         ServiceName = c.servicename
         self.client_objects.remove(c)
         TargetClient.close()
         msg = '{} left!'.format(ServiceName)
-        self.LogConsole(msg)
+        self.LogConsole(msg,ConsoleLogLevel.Socket_Flow)
         ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, SubClassType = '', UID = '',Message =msg,Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
         if (Broadcast):
             self.broadcastObj(ObjToSend)
@@ -103,7 +120,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         for c in self.client_objects:
           
             if (c.servicename != ExcludeServiceName):
-                self.LogConsole("Broad Cast to: " + c.servicename)
+                self.LogConsole("Server Broadcast to: " + c.servicename,ConsoleLogLevel.Socket_Flow)
                 self.SendToClient (c.client, ObjToSend)
                 count = count + 1
                 
@@ -111,21 +128,22 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             
     def SensorUpdate(self,ReceivedSensorObject:Socket_Default_Message):
-        self.LogConsole("Received Type SENSOR:" + ReceivedSensorObject.SubClassType)
+        Log = False
+        if (Log): self.LogConsole("Received Type SENSOR:" + ReceivedSensorObject.SubClassType,ConsoleLogLevel.Socket_Flow)
         found = False
         if (ReceivedSensorObject.ClassType == Socket_Default_Message_ClassType.SENSOR ):
             pSensor:Socket_Default_Message
             for pSensor in self.MyListOfSensors:
-                self.LogConsole(pSensor.SubClassType + " - curr val: " + str(pSensor.Value))
+                if (Log): self.LogConsole(pSensor.SubClassType + " - curr val: " + str(pSensor.Value),ConsoleLogLevel.Socket_Flow)
                 if (pSensor.SubClassType == ReceivedSensorObject.SubClassType):
                     found = True
                     pSensor.Copy(ReceivedSensorObject)
-                    self.LogConsole(pSensor.SubClassType + " - New val: " + str(pSensor.Value))
-                    self.LogConsole(ReceivedSensorObject.SubClassType + " copied")
+                    if (Log): self.LogConsole(pSensor.SubClassType + " - New val: " + str(pSensor.Value),ConsoleLogLevel.Socket_Flow)
+                    if (Log): self.LogConsole(ReceivedSensorObject.SubClassType + " copied",ConsoleLogLevel.Socket_Flow)
                     break
             if (not found):
                 self.MyListOfSensors.append(ReceivedSensorObject)
-                self.LogConsole(ReceivedSensorObject.SubClassType + " added")
+                if (Log): self.LogConsole(ReceivedSensorObject.SubClassType + " added",ConsoleLogLevel.Socket_Flow)
                 
                 
                 
@@ -146,21 +164,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         ## Read Client Info from 
         CurrClientObject = self.GetClientObject(client)
         
-        LocalMsgPrefix = self.LogPrefix() + " from [" + CurrClientObject.servicename + "]"
+        LocalMsgPrefix = self.ThisServiceName() + " from [" + CurrClientObject.servicename + "]"
         while True:
             try:
                 ## Receive Message
                 
                 ReceivedEnvelope:SocketMessageEnvelope = self.GetFromClient(client)
-                               
+                  
+                           
                 ##SocketObjectClassType.MESSAGE      
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                    
-                                            
-                    
-                    ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    #ReceivedMessage:Socket_Default_Message = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
-                    self.LogConsole(LocalMsgPrefix + " received  " + ReceivedMessage.GetMessageDescription())
+                                       
+                    ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+                    self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow )                
                     
                     ## SEZIONE MESSAGGI
                     if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
@@ -190,9 +206,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 else:    
                     
                     #Try as MESSAGE and resent to sender
-                    ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                    #ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
-                    self.LogConsole(LocalMsgPrefix + " Message Unnkown: " + ReceivedMessage.Message + " [" + ReceivedMessage.ClassType + "." + ReceivedMessage.SubClassType + "] from " + str(CurrClientObject.servicename))               
+                    
+                    ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                     # confirm message
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"",ReceivedMessage.Message,0,"Message not recognized")
                     self.SendToClient(client,ObjToSend)
@@ -200,7 +215,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
                 
             except Exception as e:
-                self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e))
+                self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e),ConsoleLogLevel.Error)
           
                 self.QuitClient(client)
                 break
@@ -208,7 +223,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     # Receiving / Listening Function
     def WaitingForNewClient(self):
         
-        self.LogConsole("Waiting for Clients...")
+        self.LogConsole("Waiting for Clients...",ConsoleLogLevel.Socket_Flow)
         
         
         try:
@@ -216,48 +231,59 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             while True:
                 # Accept Connection
                 client, address = self.ServerConnection.accept()
-                self.LogConsole("Connected with {}".format(str(address)))
+                self.LogConsole("Connected with {}".format(str(address)),ConsoleLogLevel.Socket_Flow)
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"","",self.SOCKET_LOGIN_MSG)
                 self.SendToClient(client,ObjToSend,From=str(address))
                 
                 # Request And Store servicename
                 ReceivedEnvelope = self.GetFromClient(client)
+                self.LogConsole("Server GetFromClient " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                 
                 if (ReceivedEnvelope != None):
                     
                     if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                         
-                        ReceivedMessage = Socket_Default_Message(**SocketDecoder.get(ReceivedEnvelope.EncodedJson))
-                        #ReceivedMessage = SuperDecoder.GetReceivedMessage(ReceivedEnvelope)
+                        
+                        ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                         
                         if (ReceivedMessage.ClassType ==Socket_Default_Message_ClassType.MESSAGE):
                             
                             servicename = ReceivedMessage.Message
-                            self.LogConsole(" New Service Name is {}".format(servicename))
-                                                                
-                            myclient_object = client_object(client,servicename,address)
-                            self.client_objects.append(myclient_object)
-                            #self.LogConsole(self.LogPrefix() + " New Client Added")                      
+                            self.LogConsole(" New Service Name is {}".format(servicename),ConsoleLogLevel.Socket_Flow,ConsoleLogLevel.Show)
+                            
+                            if (not self.CheckIfServiceNameExists(servicename)):
+                                                    
+                                myclient_object = client_object(client,servicename,address)
+                                self.client_objects.append(myclient_object)
+                                                
 
-                            # Start Handling Thread For Client
-                            thread = threading.Thread(target=self.handle, args=(client,))
-                            thread.start()
-            
+                                # Start Handling Thread For Client
+                                thread = threading.Thread(target=self.handle, args=(client,))
+                                thread.start()
+                            else:
+                                client.close()
+                                self.LogConsole(" Service Name {} Already Exists. Connection Refused".format(servicename),ConsoleLogLevel.Socket_Flow,ConsoleLogLevel.Show)
+                                
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + " Error in WaitingForNewClient() "  + str(e))
+            self.LogConsole(self.ThisServiceName() + " Error in WaitingForNewClient() "  + str(e),ConsoleLogLevel.Error)
         
             
     def Server_BroadCast_Simulation(self):
         tick = 0
-        self.LogConsole(self.LogPrefix() +  " Server_BroadCast_Simulation Enabled")
+        self.LogConsole(self.ThisServiceName() +  " Server_BroadCast_Simulation Enabled",ConsoleLogLevel.Socket_Flow)
         while True:
             time.sleep(3)
             
-            message = self.LogPrefix() +  "SIMULATED Broadcast tick: " + str(tick)            
+            message = self.ThisServiceName() +  "SIMULATED Broadcast tick: " + str(tick)            
             ObjToSend:Socket_Default_Message = Socket_Default_Message(SocketMessageEnvelopeContentType.STANDARD,"Test","",message)
+            
+            # s = self.GetClientObjectByServiceName(Socket_Services_List.REMOTE)
+            # if (s != None):
+            #     self.SendToClient(s,ObjToSend)
+
             count = self.broadcastObj(ObjToSend)
-            if (count>0):
-                self.LogConsole(message)
+            if (count>0):                
+                self.LogConsole(message,ConsoleLogLevel.Socket_Flow)
             
             
             tick = tick + 1

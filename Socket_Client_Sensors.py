@@ -17,7 +17,7 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
             
     def OnClient_Connect(self):
         
-        self.LogConsole("OnClient_Connect")
+        self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
         #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
@@ -25,16 +25,16 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
         pass
         
     def OnClient_Disconnect(self):
-        self.LogConsole("OnClient_Disconnect")
+        self.LogConsole("OnClient_Disconnect",ConsoleLogLevel.Override_Call)
         
     def OnClient_Quit(self):
-        self.LogConsole("OnClient_Quit") 
+        self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
             if (self.MyArduino_Connection.IsStarted):
                 retData = self.MyArduino_Connection.ReadSerial()
-                #self.LogConsole("RETDATA: " + retData)
+                
                 if (retData != ""):
                     #Compass
                     bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSOR_COMPASS)
@@ -66,7 +66,7 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
             return self.OnClient_Core_Task_RETVAL_OK
 
         except Exception as e:
-            self.LogConsole(self.LogPrefix() + "Error in OnClient_Core_Task_Cycle()  " + str(e))
+            self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
             return self.OnClient_Core_Task_RETVAL_ERROR
     
     

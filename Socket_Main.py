@@ -3,6 +3,7 @@ from Socket_Client_Keyboard import *
 from Socket_Client_Sensors import * 
 from Socket_Client_UI import * 
 from Socket_Client_Remote import * 
+from Socket_Client_Sample import * 
 import time
 
 
@@ -15,6 +16,7 @@ DisableLog = False
 
 
 MyServer = Socket_Server()
+MyServer.EnableConsoleLog = True
 MyServer.Run_Threads()
 
 if (EnableUI):
@@ -27,12 +29,16 @@ Obj.Run_Threads()
 MyClients.append(Obj)
 
 Obj = SocketClient_Sensors()
-Obj.EnableConsoleLog = False
+Obj.EnableConsoleLog = True
 Obj.Run_Threads()
 MyClients.append(Obj)
 
 
 Obj = SocketClient_Remote()
+Obj.Run_Threads()
+MyClients.append(Obj)
+
+Obj = SocketClient_Sample()
 Obj.Run_Threads()
 MyClients.append(Obj)
 
