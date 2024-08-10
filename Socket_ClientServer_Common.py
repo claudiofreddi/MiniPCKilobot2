@@ -6,66 +6,10 @@ from Robot_Envs import *
 import uuid
 import pickle
 import time
+from  Socket_Send_Receive import *
+from Socket_ConsoleLog import * 
 
-### ***************************************************************************
-### LOG DEF
-### ***************************************************************************
 
-class  ConsoleLogLevel:
-    
-    Test = 0
-    CurrentTest = 1
-    
-    System = 2
-    Control = 3
-    Always = 4
-    Override_Call = 6
-    Socket_Flow = 5 
-    Show = 7
-    
-    Error = 90
-
-class Common_LogConsoleClass(object):
-    EnableConsoleLog = True
-    EnableAll = False
-    EnableConsoleLogLevels = [
-                              ConsoleLogLevel.Error   #keep always on
-                              #,ConsoleLogLevel.Test
-                              ,ConsoleLogLevel.CurrentTest #keep on temporary
-                              ,ConsoleLogLevel.System
-                              ,ConsoleLogLevel.Control
-                              ,ConsoleLogLevel.Always
-                              #,ConsoleLogLevel.Override_Call
-                              #,ConsoleLogLevel.Socket_Flow
-                              ,ConsoleLogLevel.Show    #keep on
-                              
-                              ]
-    
-
-    
-    def LogConsole(self,Text,*LogLevels):
-        
-        if (self.EnableConsoleLog):
-            
-            if (self.EnableAll):
-                print(Text) 
-                
-            else:
-                if (len(LogLevels) == 0):
-                    #Test is Default
-                    LogLevel = ConsoleLogLevel.Test
-                  
-                    for v in self.EnableConsoleLogLevels:
-                        if (v == LogLevel):
-                            print(Text)
-                            break
-                            
-                else:
-                    for LogLevel in LogLevels:
-                        for v in self.EnableConsoleLogLevels:
-                            if (v == LogLevel):
-                                print(Text)
-                                break
         
 ### ***************************************************************************
 ### Ecoder e Decoder (JSON <-> Class)
@@ -86,12 +30,13 @@ class Socket_Default_Message_ClassType:
     MESSAGE = "MESSAGE"    
     SENSOR = "SENSOR"
     INPUT = "INPUT"
-
+    
 class Socket_Default_Message_SubClassType:
     MESSAGE = "MESSAGE"  
     KEYBOARD = "KEYBOARD"    
     BATTERY = "BATTERY"
     COMPASS = "COMPASS"
+    IMAGE = "IMAGE"
 
 class Socket_Services_List:
     SERVER = "Server"
@@ -100,11 +45,12 @@ class Socket_Services_List:
     USERINTERFACE = "UI_Client"
     REMOTE = "REMOTE_Client"
     SAMPLE = "Client_Sample"
+    WEBCAM = "WEBCAM"
 
 
 class Socket_Default_Message(Common_LogConsoleClass):
     def __init__(self,ClassType=Socket_Default_Message_ClassType.MESSAGE, SubClassType = '', UID = '',Message ="",
-                 Value=0,RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error =""):
+                 Value=0,RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData=''):
         self.ClassType = ClassType
         self.SubClassType = SubClassType  #Compass, Battery, .. user defined
         self.Message = Message
@@ -115,6 +61,7 @@ class Socket_Default_Message(Common_LogConsoleClass):
             self.UID =  str(uuid.uuid4())
         self.RefreshInterval = RefreshInterval
         self.LastRefresh = LastRefresh
+        self.ByteData = ByteData
        
 
     def json(self):
@@ -188,6 +135,9 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     SOCKET_QUIT_MSG = "Quit"
     SOCKET_LOGIN_MSG = "AskForServiceName"
     RETRY_TIME = 3
+    
+    MySocket_SendReceive = Socket_SendReceive()
+    UseMySocket_SendReceive = True
     
     def ServerIPToUse(self)-> str:
         if (SOCKET_USE_LOCALHOST == 1):
@@ -316,12 +266,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     def Pack_Envelope_And_Serialize(self,MyEnv:SocketMessageEnvelope):
         try:
             
-            ser_obj = pickle.dumps(MyEnv,protocol=5) 
-            
-            #Alert if Buffer too little
-            if (len(ser_obj) > self.buffer):
-                self.LogConsole(self.ThisServiceName() + " Increment Buffer Size [" + str(self.buffer) + "]. Curr Envelope Size is " + str(len(ser_obj)),ConsoleLogLevel.Error )
-              
+            ser_obj = pickle.dumps(MyEnv) 
                 
             return ser_obj
         

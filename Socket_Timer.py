@@ -46,17 +46,20 @@ class Timer:
         self._start_time = None
         print(f"{ self._Name}: Elapsed time: {elapsed_time:0.4f} seconds")
         return elapsed_time
+ 
+ 
+if (__name__== "__main__"):
     
-MyTimer =Timer ()
-MyTimer.start(5,"pippo")
-while True:
-    if MyTimer.IsTimeout():
-        break
+    MyTimer =Timer ()
+    MyTimer.start(5,"pippo")
+    while True:
+        if MyTimer.IsTimeout():
+            break
 
-MyTimer.Reset(2)
-    
-while True:
-    if MyTimer.IsTimeout():
-        break
+    MyTimer.Reset(2)
         
-MyTimer.stop()
+    while True:
+        if MyTimer.IsTimeout():
+            break
+            
+    MyTimer.stop()

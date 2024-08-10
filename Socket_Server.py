@@ -4,6 +4,7 @@ import time
 from Lib_Utils_MyQ import * 
 from Robot_Envs import * 
 from Socket_ClientServer_Common import * 
+import cv2
 
 class client_object:
     client:socket = None
@@ -23,7 +24,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
 
 
     client_objects = []
-    
+    SHOW_FRAME = True
         
     # SensorMessage List 
     MyListOfSensors = []
@@ -34,15 +35,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.Connect()    
 
 
-    def SendToClient(self,TargetClient, MyMsg:Socket_Default_Message,From=''): 
+    def SendToClient(self,TargetClient, MyMsg:Socket_Default_Message,From='',AdditionaByteData=b''): 
         try:
             c:client_object = self.GetClientObject(TargetClient)
             ToServiceName = c.servicename if (c != None) else ''
             
             MyEnvelope:SocketMessageEnvelope = self.Prepare_StandardEnvelope(MsgToSend=MyMsg,To=ToServiceName,From=self.ServiceName)
             SerializedObj = self.Pack_Envelope_And_Serialize(MyEnvelope)
-                        
-            TargetClient.send(SerializedObj)
+            
+            
+            if (self.UseMySocket_SendReceive):
+                self.MySocket_SendReceive.send_msg(TargetClient,SerializedObj,AdditionaByteData)
+            else:
+                TargetClient.sendall(SerializedObj)
             
             self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
             self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow)
@@ -57,11 +62,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             c:client_object = self.GetClientObject(TargetClient)
             FromServiceName = c.servicename if (c != None) else ''
             
-            ser_obj = TargetClient.recv(self.buffer)
+            
+            if (self.UseMySocket_SendReceive):
+                ser_obj,AdditionaByteData = self.MySocket_SendReceive.recv_msg(TargetClient)
+            else:
+                ser_obj = TargetClient.recv(self.buffer)
+                
             MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
             self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
             
-            return MyEnvelope
+            if (self.UseMySocket_SendReceive):
+                return MyEnvelope,AdditionaByteData 
+            else:
+                return MyEnvelope,None
          
         except Exception as e:
             self.LogConsole("Server Error in GetFromClient " + str(e),ConsoleLogLevel.Error)
@@ -168,8 +181,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         while True:
             try:
                 ## Receive Message
-                
-                ReceivedEnvelope:SocketMessageEnvelope = self.GetFromClient(client)
+                ReceivedEnvelope:SocketMessageEnvelope
+                ReceivedEnvelope, AdditionaByteData = self.GetFromClient(client)
                   
                            
                 ##SocketObjectClassType.MESSAGE      
@@ -194,6 +207,15 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                         
                     if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.INPUT):
                         
+                        if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
+                            self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
+                            if (len(AdditionaByteData)>0):
+                                if (self.SHOW_FRAME):
+                                    frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
+                                    frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
+                                    cv2.imshow('server',frame)
+                                    cv2.waitKey(1)
+                            
                         
                         if (ReceivedEnvelope.To == SocketMessageEnvelopeTargetType.BROADCAST):   
                             self.broadcastObj(ReceivedMessage, ReceivedEnvelope.From)
@@ -236,8 +258,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 self.SendToClient(client,ObjToSend,From=str(address))
                 
                 # Request And Store servicename
-                ReceivedEnvelope = self.GetFromClient(client)
-                self.LogConsole("Server GetFromClient " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                ReceivedEnvelope:SocketMessageEnvelope
+                ReceivedEnvelope, AdditionaByteData = self.GetFromClient(client)
+                
+                #self.LogConsole("Server GetFromClient " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                 
                 if (ReceivedEnvelope != None):
                     

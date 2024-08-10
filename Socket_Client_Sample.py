@@ -12,7 +12,7 @@ class SocketClient_Sample(Socket_Client_BaseClass):
     def OnClient_Connect(self):
         
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
-        MyTimer.start(5,self.ServiceName)
+        self.MyTimer.start(5,self.ServiceName)
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
         
@@ -35,18 +35,18 @@ class SocketClient_Sample(Socket_Client_BaseClass):
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
             
-            if (MyTimer.IsTimeout()):
+            if (self.MyTimer.IsTimeout()):
             
                 #Sample To remove
                 
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
                                                                         SubClassType = Socket_Default_Message_SubClassType.MESSAGE, 
-                                                                        Message = "Test", Value = MyTimer.GetElapsed())                
+                                                                        Message = "Test", Value = self.MyTimer.GetElapsed())                
                     
                 
                 self.SendToServer(ObjToSend) 
                 self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
-                MyTimer.Reset()
+                self.MyTimer.Reset()
             
             
             

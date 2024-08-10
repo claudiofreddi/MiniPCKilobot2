@@ -4,6 +4,7 @@ from Socket_Client_Sensors import *
 from Socket_Client_UI import * 
 from Socket_Client_Remote import * 
 from Socket_Client_Sample import * 
+from Socket_Client_WebCam import * 
 import time
 
 
@@ -41,6 +42,12 @@ MyClients.append(Obj)
 Obj = SocketClient_Sample()
 Obj.Run_Threads()
 MyClients.append(Obj)
+
+
+# Obj = SocketClient_Webcam()
+# Obj.Run_Threads()
+# MyClients.append(Obj)
+
 
 if (DisableLog):
     pClient:Socket_Client_BaseClass

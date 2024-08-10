@@ -5,10 +5,11 @@ from typing import cast
 from Robot_Envs import *
 from Lib_Sockets import * 
 from Socket_ClientServer_Common import * 
+import struct
 
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     
-
+    UseStruct = True
     
     OnClient_Core_Task_RETVAL_OK = 0
     OnClient_Core_Task_RETVAL_QUIT= 1
@@ -19,23 +20,46 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
 
     
     def SendToServer(self,MyMsg:Socket_Default_Message, 
-                        Target=SocketMessageEnvelopeTargetType.SERVER):
+                        Target=SocketMessageEnvelopeTargetType.SERVER,AdditionaByteData=b''):
+        
         try:
+            
             MyEnvelope:SocketMessageEnvelope = self.Prepare_StandardEnvelope(MsgToSend=MyMsg,To=Target,From=self.ServiceName)
+            
             self.LogConsole("Client ["+ self.ServiceName + "] SendToServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+            
             self.LogConsole("Client ["+ self.ServiceName + "] SendToServer: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow)
+            
             SerializedObj = self.Pack_Envelope_And_Serialize(MyEnvelope)
-            self.client.send(SerializedObj)
+            
+            
+            if (self.UseMySocket_SendReceive):
+                
+                self.MySocket_SendReceive.send_msg(self.client,SerializedObj,AdditionaByteData)
+                
+            else:
+                self.client.sendall(SerializedObj)
             
         except Exception as e:
-            self.LogConsole("Client Error in SendToServer  " + str(e))
+            self.LogConsole("Client Error in SendToServer  " + str(e) + " " + str(i))
     
     def ReceiveFromServer(self):
         try:
-            ser_obj = self.client.recv(self.buffer)
-            MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
-            return MyEnvelope
+            MyEnvelope:SocketMessageEnvelope  = None
+            if (self.UseMySocket_SendReceive):
+                ser_obj,AdditionaByteData = self.MySocket_SendReceive.recv_msg(self.client)
+            else:
+                ser_obj = self.client.recv(self.buffer)
+            
+            if (len(ser_obj)>0):
+                MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
+                if (MyEnvelope != None):
+                    self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                
+            if (self.UseMySocket_SendReceive):
+                return MyEnvelope,AdditionaByteData 
+            else:
+                return MyEnvelope, None
         
         except Exception as e:
             self.LogConsole("Client Error in ReceiveFromServer " + str(e),ConsoleLogLevel.Error)
@@ -58,7 +82,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     # Listening to Server and Sending ServiceName
     def Client_Listening_Task(self):
         self.IsConnected = False
-        LocalMsgPrefix = self.ThisServiceName() + " from [Server]"
+        
         while True:
             try:
                 if (self.IsQuitCalled):
@@ -75,8 +99,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     # Receive Message From Server
                     # If 'NICK' Send ServiceName
                     
-                    ReceivedEnvelope = self.ReceiveFromServer()
-                    self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                    ReceivedEnvelope, AdditionaByteData = self.ReceiveFromServer()
+                    if (ReceivedEnvelope != None):
+                        self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                     
                     IsMessageAlreayManaged = False                   
                     if (ReceivedEnvelope != None):
