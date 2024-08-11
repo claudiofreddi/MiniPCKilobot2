@@ -4,7 +4,7 @@ import time
 from typing import cast
 from Robot_Envs import *
 from Lib_Sockets import * 
-from Socket_ClientServer_Common import * 
+from Socket_ClientServer_BaseClass import * 
 import struct
 
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
@@ -69,8 +69,6 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
-        #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
-        #self.LogConsole("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
         pass
         
     def OnClient_Disconnect(self):
@@ -113,7 +111,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             
                             self.LogConsole("Client send Login Name: " + str(self.ServiceName))   
                             ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                                        SubClassType = '', UID = ''
+                                                                                        SubClassType = ''
+                                                                                        ,Topic = Socket_Default_Message_Topics.MESSAGE
+                                                                                        ,UID = ''
                                                                                         ,Message =str(self.ServiceName),Value="",RefreshInterval=5
                                                                                         ,LastRefresh = 0, IsAlert=False, Error ="")
                             
@@ -170,8 +170,10 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             #Default
             self.LogConsole(self.ThisServiceName() + "Waiting for input...",ConsoleLogLevel.Test)
             message = '{}'.format(input(''))
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                                            SubClassType = '', UID = '',Message =message)
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
+                                                                        ,SubClassType = ''
+                                                                        ,Topic = Socket_Default_Message_Topics.MESSAGE
+                                                                        , UID = '',Message =message)
             self.SendToServer( ObjToSend)   
         
             if (message == self.SOCKET_QUIT_MSG):
@@ -207,8 +209,10 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             while True:
                 time.sleep(5)
                 message = self.ServiceName + " tick: " + str(count) + " SIMULATED !"
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                                          SubClassType = '', UID = '',Message =message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
+                                                                                          ,SubClassType = ''
+                                                                                          ,Topic = Socket_Default_Message_Topics.MESSAGE
+                                                                                          , UID = '',Message =message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
                 self.SendToServer(ObjToSend)  
                 count = count + 1
                 if (self.IsQuitCalled):

@@ -60,9 +60,11 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                     #self.LogConsole('alphanumeric key {0} pressed'.format(key),,ConsoleLogLevel.Test)
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
                                                                     SubClassType = Socket_Default_Message_SubClassType.KEYBOARD, 
+                                                                    Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
                                                                     Message = self._LastCmd,Value=0)
         
                     self.SendToServer(ObjToSend,SocketMessageEnvelopeTargetType.BROADCAST) 
+                
                 
                     
                    
@@ -79,6 +81,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             
             ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
                                                                                 SubClassType = Socket_Default_Message_SubClassType.KEYBOARD,
+                                                                                Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
                                                                                 Message = self._LastCmd,Value=time_pressed)
                     
             self.SendToServer(ObjToSend) 

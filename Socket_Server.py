@@ -3,13 +3,17 @@ import threading
 import time
 from Lib_Utils_MyQ import * 
 from Robot_Envs import * 
-from Socket_ClientServer_Common import * 
+from Socket_ClientServer_BaseClass import * 
+from Socket_Messages import * 
+
 import cv2
 
 class client_object:
     client:socket = None
     servicename:str = ''
     address = ('',0)
+    Topics = []
+    TopicSubscriptions = []
     
     def __init__(self):
         pass
@@ -18,7 +22,60 @@ class client_object:
         self.client = Client
         self.servicename = ServiceName
         self.address = Address    
+    
+    def RegisterTopic(self,NewTopic):
         
+        if (NewTopic == Socket_Default_Message_Topics.NONE
+            or 
+            NewTopic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
+            or
+            NewTopic == Socket_Default_Message_Topics.TOPIC_UNSUBSCRIBE
+            or
+            NewTopic == Socket_Default_Message_Topics.MESSAGE
+            ):
+            return False
+        try:
+            i = self.Topics.index(NewTopic)
+        except Exception as e:
+            self.Topics.append(NewTopic)  
+            return True
+        
+        return False        
+        
+    def SubscribeTopic(self,SubscribeTopic):
+        
+        if (SubscribeTopic == Socket_Default_Message_Topics.NONE
+            or 
+            SubscribeTopic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
+            or
+            SubscribeTopic == Socket_Default_Message_Topics.TOPIC_UNSUBSCRIBE
+            or
+            SubscribeTopic == Socket_Default_Message_Topics.MESSAGE
+            ):
+            return False
+        
+        try:
+            i = self.TopicSubscriptions.index(SubscribeTopic)
+            
+                           
+        except Exception as e:
+            self.TopicSubscriptions.append(SubscribeTopic)  
+            return True
+        
+        return False          
+
+    def UnSubscribeTopic(self,UnSubscribeTopic):
+      
+        try:
+            i = self.TopicSubscriptions.index(UnSubscribeTopic)
+            self.TopicSubscriptions.remove(UnSubscribeTopic)
+            
+            return True           
+            
+        except Exception as e:
+           pass 
+       
+        return False 
 
 class Socket_Server(Socket_ClientServer_BaseClass): 
 
@@ -122,7 +179,16 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         TargetClient.close()
         msg = '{} left!'.format(ServiceName)
         self.LogConsole(msg,ConsoleLogLevel.Socket_Flow)
-        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, SubClassType = '', UID = '',Message =msg,Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
+                                                                  SubClassType = '', 
+                                                                  Topic = Socket_Default_Message_Topics.MESSAGE,
+                                                                  UID = '',
+                                                                  Message =msg,
+                                                                  Value=0,
+                                                                  RefreshInterval=5,
+                                                                  LastRefresh = 0,
+                                                                  IsAlert=False, 
+                                                                  Error ="")
         if (Broadcast):
             self.broadcastObj(ObjToSend)
                      
@@ -184,12 +250,18 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 ReceivedEnvelope:SocketMessageEnvelope
                 ReceivedEnvelope, AdditionaByteData = self.GetFromClient(client)
                   
-                           
+                
+                        
                 ##SocketObjectClassType.MESSAGE      
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                                        
                     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                     self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow )                
+                    
+                    
+                    if (CurrClientObject.RegisterTopic(ReceivedMessage.Topic)):
+                        self.LogConsole("Server Added Topic [" + ReceivedMessage.Topic + "]",ConsoleLogLevel.CurrentTest)
+                    
                     
                     ## SEZIONE MESSAGGI
                     if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
@@ -231,7 +303,12 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     
                     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                     # confirm message
-                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"",ReceivedMessage.Message,0,"Message not recognized")
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
+                                                                              SubClassType="",
+                                                                              Topic = Socket_Default_Message_Topics.MESSAGE,
+                                                                              Message=ReceivedMessage.Message,
+                                                                              Value=0,
+                                                                              Error="Message not recognized")
                     self.SendToClient(client,ObjToSend)
                     
             
@@ -254,7 +331,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 # Accept Connection
                 client, address = self.ServerConnection.accept()
                 self.LogConsole("Connected with {}".format(str(address)),ConsoleLogLevel.Socket_Flow)
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(Socket_Default_Message_ClassType.MESSAGE,"","",self.SOCKET_LOGIN_MSG)
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
+                                                                          SubClassType="",
+                                                                          Topic = Socket_Default_Message_Topics.MESSAGE,
+                                                                          Message=self.SOCKET_LOGIN_MSG)
                 self.SendToClient(client,ObjToSend,From=str(address))
                 
                 # Request And Store servicename
@@ -299,7 +379,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             time.sleep(3)
             
             message = self.ThisServiceName() +  "SIMULATED Broadcast tick: " + str(tick)            
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(SocketMessageEnvelopeContentType.STANDARD,"Test","",message)
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
+                                                                      SubClassType="",
+                                                                      Topic = Socket_Default_Message_Topics.MESSAGE,
+                                                                      Message=message)
             
             # s = self.GetClientObjectByServiceName(Socket_Services_List.REMOTE)
             # if (s != None):

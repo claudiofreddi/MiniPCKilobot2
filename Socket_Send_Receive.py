@@ -4,14 +4,14 @@ from Socket_ConsoleLog import *
 
 class Socket_SendReceive(Common_LogConsoleClass):
 
-    def send_msg(self,sock, msg1, msg2=b''):
+    def send_msg(self,sock:socket, msg1, msg2=b''):
         try:
             msg = struct.pack('>LL', len(msg1), len(msg2)) + msg1 + msg2
             sock.sendall(msg)
         except Exception as e:
             self.LogConsole("Socket_SendReceive Error in send_msg  " + str(e))
 
-    def recv_msg(self,sock):
+    def recv_msg(self,sock:socket):
         try:
             # Read message length and unpack it into an integer
             raw_msglen1 = self.recvall(sock, struct.calcsize(">L"))
@@ -34,7 +34,7 @@ class Socket_SendReceive(Common_LogConsoleClass):
         except Exception as e:
             self.LogConsole("Socket_SendReceive Error in recv_msg  " + str(e))
 
-    def recvall(self,sock, n):
+    def recvall(self,sock:socket, n):
         try:
             # Helper function to recv n bytes or return None if EOF is hit
             data = bytearray()

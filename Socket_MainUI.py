@@ -6,9 +6,9 @@ from Socket_Client_Remote import *
 from Socket_Client_WebCam import *
 import time
 
-RunUI = False
+RunUI = True
 RunRemote = False
-RunWebcam = True
+RunWebcam = False
 
 if (RunRemote):
     Obj = SocketClient_Remote()

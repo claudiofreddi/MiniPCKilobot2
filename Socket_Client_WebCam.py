@@ -81,7 +81,9 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                         
                             ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
                                                                                     SubClassType = Socket_Default_Message_SubClassType.IMAGE, 
-                                                                                    Message = "Test", Value = self.img_counter)                
+                                                                                    Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
+                                                                                    Message = "Test", 
+                                                                                    Value = self.img_counter)                
 
 
                             self.SendToServer(ObjToSend,AdditionaByteData=AdditionaByteData) 

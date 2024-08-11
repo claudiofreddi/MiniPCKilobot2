@@ -39,25 +39,26 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
                     #Compass
                     bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSOR_COMPASS)
                     if (bFound):
-                        LocalSubClassType  = Socket_Default_Message_SubClassType.COMPASS
                         LocalSensorValue = int(val)
                         LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.COMPASS)
                     
                         ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
-                                                                        SubClassType = LocalSubClassType, 
+                                                                        SubClassType = Socket_Default_Message_SubClassType.COMPASS, 
+                                                                        Topic = Socket_Default_Message_Topics.SENSOR_COMPASS,
                                                                         Message = LocalMessage, Value = LocalSensorValue)
                         
                         self.SendToServer(ObjToSend) 
         
-                #Battery
+                    #Battery
                     bFound, val = self._ParseParamValue(retData,Robot_Arduino_Sensor_Params.SENSORS_BATTERY)
                     if (bFound):
-                        LocalSubClassType  = Socket_Default_Message_SubClassType.BATTERY
+                      
                         LocalSensorValue = int(val)
                         LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.BATTERY)
                     
                         ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
-                                                                        SubClassType = LocalSubClassType, 
+                                                                        SubClassType = Socket_Default_Message_SubClassType.BATTERY, 
+                                                                        Topic = Socket_Default_Message_Topics.SENSOR_BATTERY,
                                                                         Message = LocalMessage, Value = LocalSensorValue)                
                 
                

@@ -40,7 +40,8 @@ class SocketClient_Sample(Socket_Client_BaseClass):
                 #Sample To remove
                 
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                        SubClassType = Socket_Default_Message_SubClassType.MESSAGE, 
+                                                                        SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
+                                                                        Topic = Socket_Default_Message_Topics.MESSAGE, 
                                                                         Message = "Test", Value = self.MyTimer.GetElapsed())                
                     
                 
