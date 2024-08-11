@@ -6,7 +6,7 @@ from Lib_Utils_MyQ import *
 from Robot_Envs import * 
 from Socket_ClientServer_BaseClass import * 
 from Socket_Messages import * 
-
+from PIL import Image
 import cv2
 
 class client_object:
@@ -90,9 +90,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
 
 
     def SendToClient(self,TargetClient, MyMsg:Socket_Default_Message,From='',AdditionaByteData=b''): 
+        c:client_object
         try:
-            c:client_object = self.GetClientObject(TargetClient)
-            ToServiceName = c.servicename if (c != None) else ''
+            c , retval = self.GetClientObject(TargetClient)
+            ToServiceName = c.servicename if (retval) else ''
             
             MyEnvelope:SocketMessageEnvelope = self.Prepare_StandardEnvelope(MsgToSend=MyMsg,To=ToServiceName,From=self.ServiceName)
             SerializedObj = self.Pack_Envelope_And_Serialize(MyEnvelope)
@@ -111,27 +112,27 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
                   
     def GetFromClient(self,TargetClient:socket):
+        c:client_object
         try:
-            c:client_object = self.GetClientObject(TargetClient)
-            FromServiceName = c.servicename if (c != None) else ''
-            
-            ser_obj,AdditionaByteData = self.MySocket_SendReceive.recv_msg(TargetClient)
+                          
+            c, retval = self.GetClientObject(TargetClient)
+          
+            FromServiceName = c.servicename if (retval) else ''
+
+
+            ser_obj,AdditionaByteData,retval = self.MySocket_SendReceive.recv_msg(TargetClient)
                 
             MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
             self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
             
-            return MyEnvelope,AdditionaByteData 
+            return MyEnvelope,AdditionaByteData ,True 
 
-         
         except Exception as e:
-            c.ErrCount += 1
-            if (c.ErrCount >= 5 ):
-                c.ErrCount = 0
+            if (TargetClient):
                 self.QuitClient(TargetClient,True)
-             
-            else:
-                self.LogConsole("Server Error in GetFromClient " + str(e),ConsoleLogLevel.Error)
-            return None, b''   
+            
+            self.LogConsole("Server Error in GetFromClient " + str(e),ConsoleLogLevel.Error)
+            return None, b'',False   
     
     
        
@@ -143,14 +144,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             self.LogConsole(c.servicename,ConsoleLogLevel.Show)   
 
 
-    def GetClientObject(self,client:socket)->client_object:
-        
-        c:client_object
-        for c in self.client_objects:
-            if (c.client == client):
-                return c
-        return None
-
+    def GetClientObject(self,client):
+        found = False
+        try:
+            c:client_object
+            for c in self.client_objects:
+                if (c.client == client):
+                    found = True
+                    return c,found
+            return None,found
+        except Exception as e:
+            self.LogConsole("Server Error in GetClientObject() " + str(e),ConsoleLogLevel.Error)  
+            return None,found
+            
     def GetClientObjectByServiceName(self,ServiceNameToFind)->client_object:
         
         c:client_object
@@ -169,25 +175,27 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         return False
     
     def QuitClient(self, TargetClient:socket, Broadcast = True):
+        c:client_object
         try: 
-            c:client_object = self.GetClientObject(TargetClient)
-            ServiceName = c.servicename
-            self.client_objects.remove(c)
-            TargetClient.close()
-            msg = '{} left!'.format(ServiceName)
-            self.LogConsole(msg,ConsoleLogLevel.Socket_Flow)
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                    SubClassType = '', 
-                                                                    Topic = Socket_Default_Message_Topics.MESSAGE,
-                                                                    UID = '',
-                                                                    Message =msg,
-                                                                    Value=0,
-                                                                    RefreshInterval=5,
-                                                                    LastRefresh = 0,
-                                                                    IsAlert=False, 
-                                                                    Error ="")
-            if (Broadcast):
-                self.broadcastObj(ObjToSend)
+            c, retval = self.GetClientObject(TargetClient)
+            if (retval):
+                ServiceName = c.servicename
+                self.client_objects.remove(c)
+                TargetClient.close()
+                msg = '{} left!'.format(ServiceName)
+                self.LogConsole(msg,ConsoleLogLevel.Socket_Flow)
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
+                                                                        SubClassType = '', 
+                                                                        Topic = Socket_Default_Message_Topics.MESSAGE,
+                                                                        UID = '',
+                                                                        Message =msg,
+                                                                        Value=0,
+                                                                        RefreshInterval=5,
+                                                                        LastRefresh = 0,
+                                                                        IsAlert=False, 
+                                                                        Error ="")
+                if (Broadcast):
+                    self.broadcastObj(ObjToSend)
         
         except Exception as e:
             
@@ -243,108 +251,112 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     # Handling Messages From Clients
     def handle(self,client:socket):
         
-        
+        CurrClientObject:client_object
         ## Read Client Info from 
-        CurrClientObject = self.GetClientObject(client)
+        CurrClientObject,retval = self.GetClientObject(client)
         
-        LocalMsgPrefix = self.ThisServiceName() + " from [" + CurrClientObject.servicename + "]"
-        while True:
-            try:
-                ## Receive Message
-                ReceivedEnvelope:SocketMessageEnvelope
-                ReceivedMessage:Socket_Default_Message
-                
-                ReceivedEnvelope, AdditionaByteData = self.GetFromClient(client)
-                
-                if (ReceivedEnvelope != None):
-                              
-                    ########################################################################################                        
-                    ##Gestione Messaggi Conosciuti dal server   
-                    ########################################################################################   
-                    if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                                        
-                        ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
-                        self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow )                
-                                    
-                        
-                        ## SEZIONE MESSAGGI SPECIALI
-                        if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
-                                                
-                            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_ADD):
-                                if (CurrClientObject.RegisterTopic(ReceivedMessage.Message)):
-                                    self.LogConsole("[" + CurrClientObject.servicename +  "]  Added Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
-                            
-                            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE):
-                                if (CurrClientObject.SubscribeTopic(ReceivedMessage.Message)):
-                                    self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
-                                    
-                            if (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
-                                self.LogConsole("[" + CurrClientObject.servicename +  "] Quitted ",ConsoleLogLevel.System)
-                                self.QuitClient(client)
-                                break
-                        
-                        ##SocketObjectClassType.SENSOR : value update      
-                        if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.SENSOR):
-                                        
-                            self.SensorUpdate(ReceivedMessage)
-                            
-                        if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.INPUT):
-                            
-                            if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
-                                self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
-                                if (len(AdditionaByteData)>0):
-                                    if (self.SHOW_FRAME):
-                                        frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
-                                        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
-                                        cv2.imshow('server',frame)
-                                        cv2.waitKey(1)
-                                
-                        ########################################################################################                        
-                        ##FINE Gestione Messaggi Conosciuti dal server   
-                        ########################################################################################   
-                        
-                        ########################################################################################                        
-                        ##Gestione Inoltro Messaggi  
-                        ########################################################################################                                        
-                        if (ReceivedEnvelope.To == SocketMessageEnvelopeTargetType.BROADCAST):   
-                            #Broadcast requested by client
-                            self.broadcastObj(ReceivedMessage, ReceivedEnvelope.From)
-                        else:
-                            #By Topic
-                            c:client_object
-                            if (not Socket_Default_Message_Topics().IsTopicReserved(ReceivedMessage.Topic)):
-                                for c in self.client_objects:
-                                    #if (c.servicename != CurrClientObject.servicename):
-                                    if (c.IsSubscribedToThisTopic(ReceivedMessage.Topic)):
-                                        self.SendToClient(TargetClient=c.client,MyMsg=ReceivedMessage,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
-                    
-                        # c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.USERINTERFACE)
-                        # if (c != None):
-                        #     self.SendToClient(c.client,ReceivedMessage)
-                                
-                    else:    
-                        
-                        #Try as MESSAGE and resent to sender
-                        
-                        ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-                        # confirm message
-                        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
-                                                                                SubClassType="",
-                                                                                Topic = Socket_Default_Message_Topics.MESSAGE,
-                                                                                Message=ReceivedMessage.Message,
-                                                                                Value=0,
-                                                                                Error="Message not recognized")
-                        self.SendToClient(client,ObjToSend)
-                        
-            
-                
-            except Exception as e:
-                self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e),ConsoleLogLevel.Error)
+        if (retval):
+            LocalMsgPrefix = self.ThisServiceName() + " from [" + CurrClientObject.servicename + "]"
+            self.LogConsole(LocalMsgPrefix + " handle() started",ConsoleLogLevel.System)
+            while True:
                 try:
-                    self.QuitClient(client)
-                except:
-                    continue
-                break
+                    ## Receive Message
+                    ReceivedEnvelope:SocketMessageEnvelope
+                    ReceivedMessage:Socket_Default_Message
+                    
+                    ReceivedEnvelope, AdditionaByteData, retval = self.GetFromClient(client)
+                    
+                    if (not retval): 
+                        self.LogConsole(LocalMsgPrefix + " handle() Evelope Not Correct. Assume Break Connection. Quit.",ConsoleLogLevel.System)
+                        break
+                    else:
+                        if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+                                            
+                            ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
+                            self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow )                
+                                        
+                            ########################################################################################                        
+                            ##Gestione Inoltro Messaggi  
+                            ########################################################################################                                        
+                            if (ReceivedEnvelope.To == SocketMessageEnvelopeTargetType.BROADCAST):   
+                                #Broadcast requested by client
+                                self.broadcastObj(ReceivedMessage, ReceivedEnvelope.From)
+                            else:
+                                #By Topic
+                                c:client_object
+                                if (not Socket_Default_Message_Topics().IsTopicReserved(ReceivedMessage.Topic)):
+                                    for c in self.client_objects:
+                                        #if (c.servicename != CurrClientObject.servicename):
+                                        if (c.IsSubscribedToThisTopic(ReceivedMessage.Topic)):
+                                            self.SendToClient(TargetClient=c.client,MyMsg=ReceivedMessage,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
+                                
+                            ########################################################################################                        
+                            ##Gestione Messaggi Conosciuti dal server   
+                            ########################################################################################  
+                             
+                            ## SEZIONE MESSAGGI SPECIALI
+                            if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
+                                                    
+                                if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_ADD):
+                                    if (CurrClientObject.RegisterTopic(ReceivedMessage.Message)):
+                                        self.LogConsole("[" + CurrClientObject.servicename +  "]  Added Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
+                                
+                                if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE):
+                                    if (CurrClientObject.SubscribeTopic(ReceivedMessage.Message)):
+                                        self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
+                                        
+                                if (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
+                                    self.LogConsole("[" + CurrClientObject.servicename +  "] Quitted ",ConsoleLogLevel.System)
+                                    self.QuitClient(client)
+                                    break
+                            
+                            ##SocketObjectClassType.SENSOR : value update      
+                            if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.SENSOR):
+                                            
+                                self.SensorUpdate(ReceivedMessage)
+                                
+                            if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.INPUT):
+                                
+                                if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
+                                    self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
+                                    if (len(AdditionaByteData)>0):
+                                        if (self.SHOW_FRAME):
+                                            frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
+                                            frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
+                                            cv2.imshow('server',frame)
+                                            cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
+            
+                            cv2.waitKey(1)
+                                    
+                            ########################################################################################                        
+                            ##FINE Gestione Messaggi Conosciuti dal server   
+                            ########################################################################################   
+                            
+                     
+                        # else:    
+                            
+                        #     #Try as MESSAGE and resent to sender
+                            
+                        #     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+                        #     # confirm message
+                        #     ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
+                        #                                                             SubClassType="",
+                        #                                                             Topic = Socket_Default_Message_Topics.MESSAGE,
+                        #                                                             Message=ReceivedMessage.Message,
+                        #                                                             Value=0,
+                        #                                                             Error="Message not recognized")
+                        #     self.SendToClient(client,ObjToSend)
+                            
+                    
+                except Exception as e:
+                    self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e),ConsoleLogLevel.Error)
+                    try:
+                        self.QuitClient(client)
+                    except:
+                        self.LogConsole(LocalMsgPrefix + " handle() Error. Assume Break Connection. Quit.",ConsoleLogLevel.System)
+                        break
+                    self.LogConsole(LocalMsgPrefix + " handle() Error. Assume Break Connection. Quit.",ConsoleLogLevel.System)
+                    break
            
     # Receiving / Listening Function
     def WaitingForNewClient(self):
@@ -356,23 +368,26 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             while True:
                 # Accept Connection
-                i = 0
-                client, address = self.ServerConnection.accept()
-                i +=1 
+                try:
+                    client, address = self.ServerConnection.accept()
+                except Exception as e:
+                    self.LogConsole(self.ThisServiceName() + " Error in ServerConnection.accept(): may be a server is already running "  + str(e)+ " " + str(i),ConsoleLogLevel.Error)     
+                
+            
                 self.LogConsole("Connected with {}".format(str(address)),ConsoleLogLevel.Socket_Flow)
-                i +=1
+                
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
                                                                           SubClassType="",
                                                                           Topic = Socket_Default_Message_Topics.MESSAGE,
                                                                           Message=self.SOCKET_LOGIN_MSG)
-                i +=1
+             
                 self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=str(address))
-                i +=1
+              
                 
                 # Request And Store servicename
                 ReceivedEnvelope:SocketMessageEnvelope
-                ReceivedEnvelope, AdditionaByteData = self.GetFromClient(client)
-                i +=1
+                ReceivedEnvelope, AdditionaByteData, retval = self.GetFromClient(client)
+             
                 
                 #self.LogConsole("Server GetFromClient " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                 

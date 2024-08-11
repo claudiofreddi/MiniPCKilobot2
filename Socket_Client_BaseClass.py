@@ -36,19 +36,19 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
 
             
         except Exception as e:
-            self.LogConsole("Client Error in SendToServer  " + str(e) + " " + str(i))
+            self.LogConsole("Client Error in SendToServer  " + str(e))
     
     def ReceiveFromServer(self):
         try:
             MyEnvelope:SocketMessageEnvelope  = None
             
-            ser_obj,AdditionaByteData = self.MySocket_SendReceive.recv_msg(self.client)
+            ser_obj,AdditionaByteData,retval = self.MySocket_SendReceive.recv_msg(self.client)
             
             
             if (len(ser_obj)>0):
                 MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-                if (MyEnvelope != None):
-                    self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                
+                self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                 
             return MyEnvelope,AdditionaByteData 
 

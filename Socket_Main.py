@@ -13,32 +13,33 @@ import time
 
 MyConfig = Socket_GLobal_Config()
 
-AvailableClients = [
-                
-                SocketClient_Keyboard(),
-                SocketClient_Sensors(),
-                SocketClient_Speaker(),
-                SocketClient_Remote(),
-                SocketClient_Sample(),
-                #SocketClient_Webcam(),
-                Socket_Client_UI()  ## keep last
-            ]
-
-MyRunningClients = []
-
 if (MyConfig.IsToRun(Socket_Services_List.SERVER)):
     MyServer = Socket_Server()
     MyServer.Run_Threads()
-
-    time.sleep(2)
     
-for Obj in AvailableClients:
-    if (MyConfig.IsToRun(Obj.ServiceName)):
-        print("Starting " + Obj.ServiceName)
-        Obj.Run_Threads()
-        MyRunningClients.append(Obj)
-        if (Obj.ServiceName == Socket_Services_List.USERINTERFACE):
-            Obj.OpenWindow()
+Obj =SocketClient_Keyboard()    
+Obj.Run_Threads()  
+
+Obj = SocketClient_Sensors()    
+Obj.Run_Threads()  
+
+# Obj = SocketClient_Remote()    
+# Obj.Run_Threads()  
+
+# Obj = SocketClient_Sample()    
+# Obj.Run_Threads() 
+    
+Obj = SocketClient_Speaker()    
+Obj.Run_Threads() 
+
+# Obj = SocketClient_Webcam()    
+# Obj.Run_Threads() 
+
+Obj = Socket_Client_UI()    
+Obj.Run_Threads() 
+Obj.OpenWindow()
+
+
 
 
 

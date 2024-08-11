@@ -51,7 +51,7 @@ SSR = Socket_SendReceive()
 while True:
     
     
-    msg1, msg2 = SSR.recv_msg(conn)
+    msg1, msg2 ,retval = SSR.recv_msg(conn)
     if (len(msg1)>0): 
         frame= pickle.loads(msg1, fix_imports=True, encoding="bytes")
         frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)         

@@ -1,11 +1,13 @@
 from Socket_Client_BaseClass import * 
 from Socket_Timer import * 
 from Lib_SpeakToMe import *
+import queue
 
 class SocketClient_Speaker(Socket_Client_BaseClass):
 
     MyTimer:Timer=Timer()
     SpeakerOn = True
+    MessageQ = queue.Queue()
     
     def __init__(self, ServiceName = Socket_Services_List.SPEAKER, ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort)
@@ -33,7 +35,10 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
                         
                         if (ReceivedMessage.Topic == Socket_Default_Message_Topics.OUTPUT_SPEAKER):
                             if (self.SpeakerOn):
-                                self.MySpeak.Speak(ReceivedMessage.Message)
+                                if (ReceivedMessage.Value == 0): ## queue
+                                    self.MessageQ.put(ReceivedMessage.Message)  
+                                else:  ## speak immediatly
+                                    self.MySpeak.Speak(ReceivedMessage.Message)
                     
                             
                             
@@ -49,6 +54,10 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
+            
+            if (not self.MessageQ.empty()):
+                M = self.MessageQ.get()
+                self.MySpeak.Speak(M)
             
             # if (self.MyTimer.IsTimeout()):
             
