@@ -14,7 +14,13 @@ class SocketClient_Sample(Socket_Client_BaseClass):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
         self.MyTimer.start(5,self.ServiceName)
     
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
+    def On_ClientAfterLogin(self):
+        #self.RegisterTopics(Socket_Default_Message_Topics.NONE)
+        #self.SubscribeTopics(Socket_Default_Message_Topics.NONE)
+        pass
+        
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
+        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
         
         try:
             if (IsMessageAlreayManaged == False):

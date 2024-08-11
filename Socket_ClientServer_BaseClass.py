@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import socket
+from  socket import * 
 
 from Robot_Envs import * 
 import uuid
 import pickle
 
-from  Socket_Send_Receive import *
+from Socket_Send_Receive import *
 from Socket_ConsoleLog import * 
 from Socket_Messages import * 
 
@@ -18,6 +18,7 @@ class Socket_Services_List:
     REMOTE = "REMOTE_Client"
     SAMPLE = "Client_Sample"
     WEBCAM = "WEBCAM" 
+    SPEAKER = "SPEAKER"
         
 
 
@@ -29,7 +30,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     buffer = SOCKET_BUFFER
     ServiceName:str = ""
     IsServer:bool = False
-    ServerConnection:socket = None
+    ServerConnection:socket
     client:socket
     IsConnected = False
     IsQuitCalled = False
@@ -40,24 +41,23 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     RETRY_TIME = 3
     
     MySocket_SendReceive = Socket_SendReceive()
-    UseMySocket_SendReceive = True
     
     def ServerIPToUse(self)-> str:
         if (SOCKET_USE_LOCALHOST == 1):
-            self.LogConsole("Using Localhost  IP: "+ SOCKET_SERVER_LOCALHOST_IP,ConsoleLogLevel.Always)
+            self.LogConsole(self.ServiceName + " Using Localhost  IP: "+ SOCKET_SERVER_LOCALHOST_IP,ConsoleLogLevel.Always)
             return SOCKET_SERVER_LOCALHOST_IP, True
         else:
             if (SOCKET_SERVER_IP_REMOTE !="" ):
-                self.LogConsole("Using Forced IP: "+ SOCKET_SERVER_IP_REMOTE,ConsoleLogLevel.Always)
+                self.LogConsole(self.ServiceName + " Using Forced IP: "+ SOCKET_SERVER_IP_REMOTE,ConsoleLogLevel.Always)
                 return SOCKET_SERVER_IP_REMOTE, True
             else:
                 if (SOCKET_THIS_IS_SERVER_MACHINE == 1):
                     #GetThis Machine IP
                     ThisMachineIP = socket.gethostbyname(socket.gethostname())
-                    self.LogConsole("Using Local Machine IP: "+ ThisMachineIP,ConsoleLogLevel.Always)
+                    self.LogConsole(self.ServiceName + " Using Local Machine IP: "+ ThisMachineIP,ConsoleLogLevel.Always)
                     return ThisMachineIP, True
                 else:
-                    Err = "This May be a Remote Client. Please configure SOCKET_SERVER_IP_REMOTE"
+                    Err = self.ServiceName + " This May be a Remote Client. Please configure SOCKET_SERVER_IP_REMOTE"
                     self.LogConsole(Err,ConsoleLogLevel.Always)
                     return Err, False
 
@@ -66,11 +66,14 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
             
             self.IsServer = IsServer
             
+            if (ServiceName != ''):
+                self.ServiceName = ServiceName
+            
             # Starting Server
             if (ForceServerIP!= ''):
                 self.ServerIP = ForceServerIP
             else:
-                IPToUse , isValid =self. ServerIPToUse()
+                IPToUse , isValid =self.ServerIPToUse()
                 if (isValid):
                     self.ServerIP = IPToUse
                 else:
@@ -80,9 +83,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
             if (ForcePort!= ''):
                 self.ServerPort = ForcePort  
                 
-            if (ServiceName != ''):
-                self.ServiceName = ServiceName
-            else:
+            if (ServiceName == ''):
                 if (self.IsServer):
                     self.ServiceName = self.ServerIP
                 else:

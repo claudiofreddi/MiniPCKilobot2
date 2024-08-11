@@ -19,8 +19,13 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
         
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
-        #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
+    def On_ClientAfterLogin(self):
+        
+        self.RegisterTopics(Socket_Default_Message_Topics.SENSOR_COMPASS)
+        self.RegisterTopics(Socket_Default_Message_Topics.SENSOR_BATTERY)
+        
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
+        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
         #self.LogConsole("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
         pass
         

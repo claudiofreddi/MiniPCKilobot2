@@ -31,14 +31,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             self.LogConsole("Client ["+ self.ServiceName + "] SendToServer: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow)
             
             SerializedObj = self.Pack_Envelope_And_Serialize(MyEnvelope)
-            
-            
-            if (self.UseMySocket_SendReceive):
-                
-                self.MySocket_SendReceive.send_msg(self.client,SerializedObj,AdditionaByteData)
-                
-            else:
-                self.client.sendall(SerializedObj)
+           
+            self.MySocket_SendReceive.send_msg(self.client,SerializedObj,AdditionaByteData)
+
             
         except Exception as e:
             self.LogConsole("Client Error in SendToServer  " + str(e) + " " + str(i))
@@ -46,29 +41,30 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     def ReceiveFromServer(self):
         try:
             MyEnvelope:SocketMessageEnvelope  = None
-            if (self.UseMySocket_SendReceive):
-                ser_obj,AdditionaByteData = self.MySocket_SendReceive.recv_msg(self.client)
-            else:
-                ser_obj = self.client.recv(self.buffer)
+            
+            ser_obj,AdditionaByteData = self.MySocket_SendReceive.recv_msg(self.client)
+            
             
             if (len(ser_obj)>0):
                 MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
                 if (MyEnvelope != None):
                     self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                 
-            if (self.UseMySocket_SendReceive):
-                return MyEnvelope,AdditionaByteData 
-            else:
-                return MyEnvelope, None
+            return MyEnvelope,AdditionaByteData 
+
         
         except Exception as e:
             self.LogConsole("Client Error in ReceiveFromServer " + str(e),ConsoleLogLevel.Error)
-            return None
+            return None, b''
          
     def OnClient_Connect(self):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
+        
+    def On_ClientAfterLogin(self):
+        self.LogConsole("On_ClientAfterLogin()",ConsoleLogLevel.Override_Call)
     
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
+        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
         pass
         
     def OnClient_Disconnect(self):
@@ -119,6 +115,8 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             
                             self.SendToServer(ObjToSend)    
                             
+                            self.On_ClientAfterLogin()
+                            
                             IsMessageAlreayManaged = True   
                         
                         elif (ReceivedMessage.Message == self.SOCKET_QUIT_MSG): 
@@ -128,7 +126,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             IsMessageAlreayManaged = True
 
                         #Send To Inherited Objcts
-                        self.OnClient_Receive(ReceivedEnvelope,IsMessageAlreayManaged)   
+                        self.OnClient_Receive(ReceivedEnvelope=ReceivedEnvelope,AdditionaByteData=AdditionaByteData,IsMessageAlreayManaged=IsMessageAlreayManaged)   
                         
                     else: 
                         self.OnClient_Disconnect()
@@ -164,6 +162,34 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     break
     
     
+    
+    def RegisterTopics(self, *ClientTopics):
+        for t in ClientTopics:
+            try:
+                
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
+                                                                        ,SubClassType = ''
+                                                                        ,Topic = Socket_Default_Message_Topics.TOPIC_ADD
+                                                                        , UID = '',Message = t)
+                self.SendToServer( ObjToSend)   
+            
+            except Exception as e:
+                self.LogConsole(self.ThisServiceName() + "Error in RegisterTopics()  " + str(e),ConsoleLogLevel.Error)
+                
+    def SubscribeTopics(self, *TopicsToSubscribe):
+        for t in TopicsToSubscribe:
+            try:
+                
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
+                                                                        ,SubClassType = ''
+                                                                        ,Topic = Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
+                                                                        , UID = '',Message = t)
+                self.SendToServer( ObjToSend)   
+            
+            except Exception as e:
+                self.LogConsole(self.ThisServiceName() + "Error in RegisterTopics()  " + str(e),ConsoleLogLevel.Error)
+                
+
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
         

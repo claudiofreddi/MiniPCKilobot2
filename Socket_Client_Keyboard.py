@@ -21,13 +21,14 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         self.listener.start()
         self.LogConsole("Keyboard Listener Started",ConsoleLogLevel.System)
         
-    def OnClient_Connect(self):
-        self.NumOfCycles = 0
-        self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
+    def On_ClientAfterLogin(self):
+        
+        self.RegisterTopics(Socket_Default_Message_Topics.INPUT_KEYBOARD)
+        
     
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
-        #obj:Socket_Default_Message = ReceivedEnvelope.GetDecodedMessageObject()
-        #self.LogConsole("OnClient_Receive: " + obj.Message + " [" + self.ServiceName + "]")
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
+        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+        
         pass
         
     def OnClient_Disconnect(self):
@@ -63,8 +64,17 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                                                                     Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
                                                                     Message = self._LastCmd,Value=0)
         
-                    self.SendToServer(ObjToSend,SocketMessageEnvelopeTargetType.BROADCAST) 
-                
+                    self.SendToServer(ObjToSend)
+                    #self.SendToServer(ObjToSend,SocketMessageEnvelopeTargetType.BROADCAST) 
+
+                    
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
+                                                                                SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
+                                                                                Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER, 
+                                                                                Message = str(key), Value = 0)                
+
+
+                    self.SendToServer(ObjToSend) 
                 
                     
                    

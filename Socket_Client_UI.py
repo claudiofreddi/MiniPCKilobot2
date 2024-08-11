@@ -26,8 +26,17 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
         
     def OnClient_Connect(self):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
-    
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,IsMessageAlreayManaged=False):
+
+    def On_ClientAfterLogin(self):
+        #self.RegisterTopics(Socket_Default_Message_Topics.NONE)
+        self.SubscribeTopics(Socket_Default_Message_Topics.INPUT_KEYBOARD,
+                             Socket_Default_Message_Topics.SENSOR_BATTERY,
+                             Socket_Default_Message_Topics.SENSOR_COMPASS                                                       
+                             )
+        pass
+            
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
+        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
         
         if (self.IsWindowOn == False):
             return

@@ -18,7 +18,7 @@ class Service_SpeakToMe:
         
     def __init__(self, StartupText = "", SpeakerOn = False):
         self.speaker = win32com.client.Dispatch("SAPI.SpVoice")
-        self._SpeakerOn = SpeakerOn
+        self._Speaker_On = SpeakerOn
         if (StartupText != ""):
             if (self._Speaker_On):
                 self.speaker.Speak(StartupText) 
@@ -35,6 +35,6 @@ class Service_SpeakToMe:
 # CTRL + Z 
 
 if (__name__== "__main__"):
-    MySpeak = Service_SpeakToMe()
+    MySpeak = Service_SpeakToMe(SpeakerOn=True)
     MySpeak.Speak("Messaggio di prova")
 

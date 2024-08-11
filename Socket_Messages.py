@@ -25,13 +25,29 @@ class Socket_Default_Message_SubClassType:
 class Socket_Default_Message_Topics:
     NONE = ""                                  #Not subscrible 
     MESSAGE = "/MESSAGE"                       #Not subscrible 
+    TOPIC_ADD = "/TOPIC/ADD"                    #Not subscrible 
     TOPIC_SUBSCRIBE = "/TOPIC/SUBSCRIBE"        #Not subscrible 
     TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"    #Not subscrible 
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
     SENSOR_BATTERY = "/SENSOR/BATTERY"
     SENSOR_COMPASS = "/SENSOR/COMPASS"
+    OUTPUT_SPEAKER = "/OUTPUT/SPEAKER"
     
+    def IsTopicReserved(self,NewTopic):
+        if (NewTopic == Socket_Default_Message_Topics.NONE
+            or 
+            NewTopic == Socket_Default_Message_Topics.TOPIC_ADD
+            or 
+            NewTopic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
+            or
+            NewTopic == Socket_Default_Message_Topics.TOPIC_UNSUBSCRIBE
+            or
+            NewTopic == Socket_Default_Message_Topics.MESSAGE
+            ):
+            return True
+        
+        return False
     
 ### ***************************************************************************
 ### Ecoder e Decoder (JSON <-> Class)
