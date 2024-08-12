@@ -16,7 +16,7 @@ class  ConsoleLogLevel:
     
     Error = 90
 
-class Common_LogConsoleClass(object):
+class Common_LogConsoleClass(object):   
     EnableConsoleLog = True
     EnableAll = False
     EnableConsoleLogLevels = [

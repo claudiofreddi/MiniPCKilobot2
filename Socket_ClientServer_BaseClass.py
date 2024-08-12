@@ -128,7 +128,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     def Quit(self):
         
         try:
-            #self.LogConsole(self.ThisServiceName() + "  Quitted",ConsoleLogLevel.Socket_Flow) 
+            self.LogConsole(self.ThisServiceName() + "  Quitted",ConsoleLogLevel.Socket_Flow) 
             self.Disconnect()
             if (self.IsServer):
                 self.ServerConnection.close()

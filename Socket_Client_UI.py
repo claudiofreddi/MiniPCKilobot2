@@ -1,6 +1,10 @@
 from Socket_Client_BaseClass import * 
 import tkinter as tk
 import threading
+from socket import *
+from datetime import datetime
+from Socket_Timer import *
+
 
 class LabelIndex:
     Compass = 0
@@ -89,8 +93,8 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             if (self.IsWindowOn and (self.IsTimeout == False)):
                 self.root.title('Kilobot ' + str(datetime.now().time())[:8])
             
-            if (self.IsQuitCalled):
-                self.listener.stop()
+            if (QuitCalled):
+                
                 return self.OnClient_Core_Task_RETVAL_QUIT
             
             return self.OnClient_Core_Task_RETVAL_OK
@@ -98,6 +102,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
+            self.root.quit()
             return self.OnClient_Core_Task_RETVAL_ERROR
     
   

@@ -1,7 +1,6 @@
+data = {}
 
+data['test'] = 1
+data['test'] = 1.1
 
-data = [1,2,3,4,5,6,7,8]
-
-
-print(data[:2])
-print(data[2:2+4])
+print(chr(3+64))

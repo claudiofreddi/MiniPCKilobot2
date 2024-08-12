@@ -83,6 +83,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     # SensorMessage List 
     MyListOfSensors = []
     
+    
+    Show_GetFromClient_Val = 0
+    Show_SendToClient_Val = 0
+    
     def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort=''):
         super().__init__(ServiceName,ForceServerIP,ForcePort, True)
            
@@ -103,8 +107,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             self.MySocket_SendReceive.send_msg(TargetClient,SerializedObj,AdditionaByteData)
             
             
-            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
-            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow)
+            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,self.Show_SendToClient_Val)
+            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,self.Show_SendToClient_Val)
             
         except Exception as e:
             
@@ -123,7 +127,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             ser_obj,AdditionaByteData,retval = self.MySocket_SendReceive.recv_msg(TargetClient)
                 
             MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+            self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,self.Show_GetFromClient_Val)
             
             return MyEnvelope,AdditionaByteData ,True 
 
@@ -273,7 +277,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                                             
                             ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
-                            self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow )                
+                            self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,self.Show_GetFromClient_Val )                
                                         
                             ########################################################################################                        
                             ##Gestione Inoltro Messaggi  
@@ -315,8 +319,24 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                             
                                 self.SensorUpdate(ReceivedMessage)
                                 
+                                                           
                             if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.INPUT):
-                                
+                                if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.KEYBOARD 
+                                    and ReceivedMessage.Value==0):
+                                       
+                                    match(ReceivedMessage.Message):
+                                        
+                                        case "Ctrl+G": #Ctrl + g
+                                            self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
+                                            print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
+                                            
+                                        case "Ctrl+S": #Ctrl + s
+                                            self.Show_SendToClient_Val = ConsoleLogLevel.Show if self.Show_SendToClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
+                                            print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
+                                        case _:
+                                            #print("VAL [" + ReceivedMessage.Message + "]")
+                                            pass
+                                                
                                 if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
                                     self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
                                     if (len(AdditionaByteData)>0):

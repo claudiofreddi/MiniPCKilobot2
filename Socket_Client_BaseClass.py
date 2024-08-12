@@ -1,9 +1,9 @@
-import socket
+from socket import *
 import threading
 import time
 from typing import cast
 from Robot_Envs import *
-from Lib_Sockets import * 
+#from Lib_Sockets import * 
 from Socket_ClientServer_BaseClass import * 
 import struct
 
@@ -219,12 +219,18 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             while True:
                 retval = self.OnClient_Core_Task_Cycle(self.IsQuitCalled) 
                 if (self.IsQuitCalled or  retval == self.OnClient_Core_Task_RETVAL_QUIT):
+                    
                     self.Disconnect()
                     self.Quit()
+                    
+                    break
+                
+                if (retval == self.OnClient_Core_Task_RETVAL_ERROR):
+                    self.LogConsole(self.ThisServiceName() + " Error in Inner - Client_Core_Task () Break " + str(e),ConsoleLogLevel.System)
                     break
                 
         except Exception as e:
-            self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task()  " + str(e),ConsoleLogLevel.Error)
+            self.LogConsole(self.ThisServiceName() + "Error in Inner - OnClient_Core_Task()  " + str(e),ConsoleLogLevel.Error)
             return self.OnClient_Core_Task_RETVAL_ERROR
   
       
