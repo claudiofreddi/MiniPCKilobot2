@@ -5,16 +5,40 @@ import enum
 
 class SocketClient_Keyboard(Socket_Client_BaseClass):
     
-    ACCEPTED_CHARS = "adesw"
-        
+    #Key Management and optimization
+    SPECIAL_KEYS_ON_PRESS =  {'a',          #left
+                              'd',          #right
+                              'e',          #stop
+                              's',          #backward
+                              'w',          #forward
+                              'Ctrl+M',     #Show Message Sent From Server_LastKey_Pressed
+                              'Ctrl+T'      #Topic List
+                              }
+    
+    SPECIAL_KEYS_ON_RELEASE =  {'a','d','e','s','w'} #,'Ctrl+M'}
+    
     _AllowEscape = False
     _StopOnReleaseEvent   = True
+    _AllowAllKeys = True
+    
+    #Key Press management
     _presstime = 0
-    _LastCmd = ""
-    IsValidChar = False
-    SendAllChars = True
-    Ctrl_Pressed = False
-    Alt_Pressed = False
+    _LastKey_Pressed = ""
+    _Ctrl_Pressed = False
+    _Alt_Pressed = False
+       
+    def IsKeyAllowed(self,Key:str):
+        return (self._AllowAllKeys or self.SPECIAL_KEYS_ON_PRESS.__contains__(Key) or self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key))
+        
+    def IsKeyToNotify(self,Key:str,OnRelease:False):
+        if not OnRelease:
+            return self.SPECIAL_KEYS_ON_PRESS.__contains__(Key)
+        else:
+            return self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key)  and not self._StopOnReleaseEvent
+        
+
+    
+
     
        
     def __init__(self, ServiceName = Socket_Services_List.KEYBOARD, ForceServerIP = '',ForcePort=''):
@@ -84,57 +108,46 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         
         
         try:
-            self.IsValidChar = True if ((self.ACCEPTED_CHARS.find(str(key)[1])>=0) and len(str(key)) == 3) or self.ACCEPTED_CHARS == "" else False
-            if (self.IsValidChar or self.SendAllChars):
-                
-                KeyString = ""
-
-                if not self.Ctrl_Pressed and (key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r or key == keyboard.Key.ctrl):
-                    self.Ctrl_Pressed = True
-                    #return
-                
-                if not self.Alt_Pressed and (key == keyboard.Key.alt or key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr):
-                    self.Alt_Pressed = True
-                    #return               
-                
-                if (self.Ctrl_Pressed and not (key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r or key == keyboard.Key.ctrl)):
-                    KeyString = self.GetCtrl_Char(key,"Ctrl")
-                    #self.Ctrl_Pressed = False
-                elif (self.Alt_Pressed and not (key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr)):
-                    KeyString = self.GetCtrl_Char(key,"Alt")
-                    #self.Alt_Pressed = False
-                else:
-                    KeyString = self.GetCtrl_Char(key,"")
-
-                    ###filtrare Key "key..." "\x0"
-                    
-
-
-                
-                
-                if (self._LastCmd !=  KeyString):
-                    self._LastCmd = KeyString
-                
-                    if (KeyString != ""):     
-                        self.LogConsole(KeyString,ConsoleLogLevel.System)
-                        self._presstime = datetime.now()
-                        #self.LogConsole('alphanumeric key {0} pressed'.format(key),,ConsoleLogLevel.Test)
-                        ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
-                                                                        SubClassType = Socket_Default_Message_SubClassType.KEYBOARD, 
-                                                                        Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
-                                                                        Message = self._LastCmd,Value=0)
             
-                        # self.SendToServer(ObjToSend)
-                        # #self.SendToServer(ObjToSend,SocketMessageEnvelopeTargetType.BROADCAST) 
+            KeyString = ""
 
-                        
-                        # ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                        #                                                             SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
-                        #                                                             Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER, 
-                        #                                                             Message = KeyString, Value = 0)                
+            if not self._Ctrl_Pressed and (key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r or key == keyboard.Key.ctrl):
+                self._Ctrl_Pressed = True
+            
+            if not self._Alt_Pressed and (key == keyboard.Key.alt or key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr):
+                self._Alt_Pressed = True
+            
+            
+            if (self._Ctrl_Pressed and not (key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r or key == keyboard.Key.ctrl)):
+                KeyString = self.GetCtrl_Char(key,"Ctrl")
+            elif (self._Alt_Pressed and not (key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr)):
+                KeyString = self.GetCtrl_Char(key,"Alt")
+            else:
+                KeyString = self.GetCtrl_Char(key,"")
+                
+
+                ###filtrare Key "key..." "\x0"
+                    
+            if (    self.IsKeyAllowed(KeyString)
+                and self.IsKeyToNotify(KeyString,OnRelease=False)
+                and self._LastKey_Pressed !=  KeyString):
+   
+                self._LastKey_Pressed = KeyString
+                
+                if (KeyString != ""):     
+                    self.LogConsole(KeyString,ConsoleLogLevel.System)
+                                         
+                    self._presstime = datetime.now()
+                    #self.LogConsole('alphanumeric key {0} pressed'.format(key),,ConsoleLogLevel.Test)
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
+                                                                    SubClassType = Socket_Default_Message_SubClassType.KEYBOARD, 
+                                                                    Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
+                                                                    Message = self._LastKey_Pressed,Value=0)
+        
+          
 
 
-                        self.SendToServer(ObjToSend) 
+                    self.SendToServer(ObjToSend) 
                 
                     
                    
@@ -143,15 +156,19 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
 
     def on_release(self,key):
         
+        if (key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r or key == keyboard.Key.ctrl):
+            self._Ctrl_Pressed = False 
+            
+        if (key == keyboard.Key.alt_l or key == keyboard.Key.alt_r or key == keyboard.Key.alt_gr):
+            self._Alt_Pressed = False
+
+        KeyString = self.GetCtrl_Char(key,"")
         
-        if ((self.IsValidChar or  self.SendAllChars) and self._LastCmd != ""):
-            
-           
-            self.Alt_Pressed = False
-            self.Ctrl_Pressed = False
-            
-            #self.LogConsole('{0} released'.format(key))
-                         
+        if (    self.IsKeyAllowed(KeyString)
+            and self.IsKeyToNotify(KeyString,OnRelease=True)
+            and self._LastKey_Pressed != ""):
+
+  
             time_pressed = int((datetime.now() - self._presstime).total_seconds() * 1000)
             print(str(time_pressed) + " ms")
             self.LogConsole(str(key) + " " + str(time_pressed) + " ms ",ConsoleLogLevel.Test)
@@ -159,11 +176,11 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
                                                                                 SubClassType = Socket_Default_Message_SubClassType.KEYBOARD,
                                                                                 Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
-                                                                                Message = self._LastCmd,Value=time_pressed)
+                                                                                Message = self._LastKey_Pressed,Value=time_pressed)
                     
             self.SendToServer(ObjToSend) 
             
-        self._LastCmd = ""
+        self._LastKey_Pressed = ""
             
         if (self._AllowEscape and key == keyboard.Key.esc) or self.IsQuitCalled:
             # Stop listener

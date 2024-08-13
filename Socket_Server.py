@@ -6,72 +6,12 @@ from Lib_Utils_MyQ import *
 from Robot_Envs import * 
 from Socket_ClientServer_BaseClass import * 
 from Socket_Messages import * 
+from Socket_Client_Object import *
 from PIL import Image
+
 import cv2
 
-class client_object:
-    client:socket = None
-    servicename:str = ''
-    address = ('',0)
-    Topics = []
-    TopicSubscriptions = []
-    ErrCount = 0
-    
-    def __init__(self):
-        pass
-    
-    def __init__(self,Client:socket, ServiceName:str, Address):
-        self.client = Client
-        self.servicename = ServiceName
-        self.address = Address    
-    
-    
-   
-    def RegisterTopic(self,NewTopic):
-              
-        if (Socket_Default_Message_Topics().IsTopicReserved(NewTopic)):
-            return False
-        try:
-            i = self.Topics.index(NewTopic)
-        except Exception as e:
-            self.Topics.append(NewTopic)  
-            return True
-        
-        return False        
-        
-    def SubscribeTopic(self,SubscribeTopic):
-        
-        if (Socket_Default_Message_Topics().IsTopicReserved(SubscribeTopic)):
-            return False
-        
-        try:
-            i = self.TopicSubscriptions.index(SubscribeTopic)
-            
-                           
-        except Exception as e:
-            self.TopicSubscriptions.append(SubscribeTopic)  
-            return True
-        
-        return False          
 
-    def UnSubscribeTopic(self,UnSubscribeTopic):
-      
-        try:
-            i = self.TopicSubscriptions.index(UnSubscribeTopic)
-            self.TopicSubscriptions.remove(UnSubscribeTopic)
-            
-            return True           
-            
-        except Exception as e:
-           pass 
-       
-        return False 
-
-    def IsSubscribedToThisTopic(self, TopicToCheck):
-        for t in self.TopicSubscriptions:
-            if (t == TopicToCheck):
-               return True 
-        return False
         
         
 class Socket_Server(Socket_ClientServer_BaseClass): 
@@ -255,7 +195,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     # Handling Messages From Clients
     def handle(self,client:socket):
         
-        CurrClientObject:client_object
+       
         ## Read Client Info from 
         CurrClientObject,retval = self.GetClientObject(client)
         
@@ -326,13 +266,17 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                        
                                     match(ReceivedMessage.Message):
                                         
-                                        case "Ctrl+G": #Ctrl + g
+                                        case "Ctrl+M": #Ctrl + M (Alle Messages about send and receive)
                                             self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
                                             print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
-                                            
-                                        case "Ctrl+S": #Ctrl + s
-                                            self.Show_SendToClient_Val = ConsoleLogLevel.Show if self.Show_SendToClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
+                                            self.Show_SendToClient_Val = self.Show_GetFromClient_Val 
                                             print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
+
+                                        case "Ctrl+T": #Ctrl + T (Topic)
+                                            for co in self.client_objects:
+                                                co.ShowDetails()
+                                                   
+                                                    
                                         case _:
                                             #print("VAL [" + ReceivedMessage.Message + "]")
                                             pass

@@ -27,7 +27,7 @@ Obj.Run_Threads()
 # Obj.Run_Threads()  
 
 # Obj = SocketClient_Sample()    
-# Obj.Run_Threads() 
+# Obj.Run_Threads() s
     
 Obj = SocketClient_Speaker()    
 Obj.Run_Threads() 
