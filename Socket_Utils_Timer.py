@@ -2,7 +2,7 @@
 
 import time
 
-class Timer:
+class Socket_Timer:
     def __init__(self):
         self._start_time = None
         self._TimeoutSecond = 0
@@ -19,12 +19,13 @@ class Timer:
         self._start_time = time.perf_counter()
 
 
-    def IsTimeout(self):
+    def IsTimeout(self,RestartIfTimeout=False):
         if self._start_time is None:
             return False
         if (self._TimeoutSecond==0):return False
         elapsed_time = self.GetElapsed()
         if (elapsed_time > self._TimeoutSecond):
+            if (RestartIfTimeout): self.Reset()
             return True
 
     def Reset(self,NewTimeoutSecond = 0):
@@ -50,7 +51,7 @@ class Timer:
  
 if (__name__== "__main__"):
     
-    MyTimer =Timer ()
+    MyTimer =Socket_Timer ()
     MyTimer.start(5,"pippo")
     while True:
         if MyTimer.IsTimeout():

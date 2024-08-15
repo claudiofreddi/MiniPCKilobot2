@@ -24,7 +24,7 @@ from Robot_ShowCam import RobotShowCam_Run
 from Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
 from Robot_Lidar import RobotLidar_Run
 from Robot_Brain import RobotBrain_Run
-from Robot_Speaker import RobotSpeaker_Run
+from ZOLD_Robot_Speaker import RobotSpeaker_Run
 from Robot_Keyboard import RobotKeyboard_Run
 from Robot_UI import RobotUI_Run
           

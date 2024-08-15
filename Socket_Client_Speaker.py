@@ -1,26 +1,26 @@
 from Socket_Client_BaseClass import * 
-from Socket_Timer import * 
+from Socket_Utils_Timer import * 
 from Lib_SpeakToMe import *
 import queue
 
 class SocketClient_Speaker(Socket_Client_BaseClass):
 
-    MyTimer:Timer=Timer()
-    SpeakerOn = True
-    MessageQ = queue.Queue()
+
     
-    def __init__(self, ServiceName = Socket_Services_List.SPEAKER, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+    def __init__(self, ServiceName = Socket_Services_List.SPEAKER, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
+        self.SpeakerOn = True
         self.MySpeak = Service_SpeakToMe("",self.SpeakerOn)
         self.MySpeak.Speak("Speaker On")      
-        
+        self.MessageQ = queue.Queue()
+    
     def OnClient_Connect(self):
         
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
-        self.MyTimer.start(5,self.ServiceName)
+        
     
     def On_ClientAfterLogin(self):
-        self.SubscribeTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)
+        self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)
         self.SubscribeTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)
         pass
         
@@ -59,21 +59,7 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
                 M = self.MessageQ.get()
                 self.MySpeak.Speak(M)
             
-            # if (self.MyTimer.IsTimeout()):
-            
-            #     #Sample To remove
-                
-            #     ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-            #                                                             SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
-            #                                                             Topic = Socket_Default_Message_Topics.MESSAGE, 
-            #                                                             Message = "Test", Value = self.MyTimer.GetElapsed())                
-                    
-                
-            #     self.SendToServer(ObjToSend) 
-            #     self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
-            #     self.MyTimer.Reset()
-            
-            
+
             
             # if (self.IsQuitCalled):
             #     return self.OnClient_Core_Task_RETVAL_QUIT

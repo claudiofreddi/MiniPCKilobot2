@@ -21,6 +21,7 @@ class Socket_Default_Message_SubClassType:
     BATTERY = "BATTERY"
     COMPASS = "COMPASS"
     IMAGE = "IMAGE"
+    TELEGRAM  = "TELEGRAM"
 
 class Socket_Default_Message_Topics:
     NONE = ""                                  #Not subscrible 
@@ -30,9 +31,11 @@ class Socket_Default_Message_Topics:
     TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"    #Not subscrible 
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
+    INPUT_TELEGRAM = "/INPUT/TELEGRAM"
     SENSOR_BATTERY = "/SENSOR/BATTERY"
     SENSOR_COMPASS = "/SENSOR/COMPASS"
     OUTPUT_SPEAKER = "/OUTPUT/SPEAKER"
+    OUTPUT_TELEGRAM = "/OUTPUT/TELEGRAM"
     
     def IsTopicReserved(self,NewTopic):
         if (NewTopic == Socket_Default_Message_Topics.NONE

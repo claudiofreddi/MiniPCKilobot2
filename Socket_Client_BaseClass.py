@@ -15,9 +15,10 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     OnClient_Core_Task_RETVAL_QUIT= 1
     OnClient_Core_Task_RETVAL_ERROR = -1
 
-    def __init__(self, ServiceName = "", ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort, False)    
-
+    def __init__(self, ServiceName = "", ForceServerIP = '',ForcePort='',LogOptimized=False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort, False,LogOptimized)    
+        self.DisconnectCount = 0
+        
     
     def SendToServer(self,MyMsg:Socket_Default_Message, 
                         Target=SocketMessageEnvelopeTargetType.SERVER,AdditionaByteData=b''):
@@ -79,6 +80,8 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         
         while True:
             try:
+                self.SleepTime(Multiply=3,CalledBy="Client_Listening_Task",Trace=False)
+                
                 if (self.IsQuitCalled):
                     break
                 
@@ -129,39 +132,37 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                         self.OnClient_Receive(ReceivedEnvelope=ReceivedEnvelope,AdditionaByteData=AdditionaByteData,IsMessageAlreayManaged=IsMessageAlreayManaged)   
                         
                     else: 
-                        self.OnClient_Disconnect()
-                        self.Disconnect()
-                        if (self.IsQuitCalled == False):
-                            self.LogConsole("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..",ConsoleLogLevel.Error)
-                            time.sleep(self.RETRY_TIME) #Wait 30 sec and retry 
-                        else:
-                            break       
+                        if (self.ForceDisconnect()):               
+                            break      
                 else:
                     #Connection Failed    
-                 
-                    self.OnClient_Disconnect()
-                    self.Disconnect()
-                    if (self.IsQuitCalled == False):
-                        self.LogConsole("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..",ConsoleLogLevel.Error)
-                        time.sleep(self.RETRY_TIME) #Wait 30 sec and retry  
-                    else:
-                        self.LogConsole("Service Quitted",ConsoleLogLevel.System)
-                        break      
+                    if (self.ForceDisconnect()):               
+                        break   
                     
             except Exception as e:
                 
                 self.LogConsole("Error in Client_Listening_Task()  " + str(e),ConsoleLogLevel.Error)
-                                
-                self.LogConsole("Client disconnected")  
-                self.Disconnect()
-               
-                if (self.IsQuitCalled == False):
-                    self.LogConsole("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..",ConsoleLogLevel.Error)
-                    time.sleep(self.RETRY_TIME) #Wait 30 sec and retry
-                else:
-                    break
+                
+                if (self.ForceDisconnect()):               
+                     break
+                 
     
-    
+    def ForceDisconnect(self):
+        self.DisconnectCount += 1
+        self.LogConsole(f"Client disconnecting [{self.DisconnectCount}] ...",ConsoleLogLevel.System)  
+        self.OnClient_Disconnect()
+        self.Disconnect()
+        
+        if (self.IsQuitCalled == False):
+            self.LogConsole("An error occured! Retry in " + str(self.RETRY_TIME) + " sec..",ConsoleLogLevel.System)
+            time.sleep(self.RETRY_TIME) #Wait 30 sec and retry
+            return False
+        else:
+            self.LogConsole("Service Quitted",ConsoleLogLevel.System)
+            return True
+
+        
+        
     
     def RegisterTopics(self, *ClientTopics):
         for t in ClientTopics:
@@ -192,21 +193,22 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
+            
+            
+            # #Default
+            # self.LogConsole(self.ThisServiceName() + "Waiting for input...",ConsoleLogLevel.Test)
+            # message = '{}'.format(input(''))
+            # ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
+            #                                                             ,SubClassType = ''
+            #                                                             ,Topic = Socket_Default_Message_Topics.MESSAGE
+            #                                                             , UID = '',Message =message)
+            # self.SendToServer( ObjToSend)   
         
-            #Default
-            self.LogConsole(self.ThisServiceName() + "Waiting for input...",ConsoleLogLevel.Test)
-            message = '{}'.format(input(''))
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
-                                                                        ,SubClassType = ''
-                                                                        ,Topic = Socket_Default_Message_Topics.MESSAGE
-                                                                        , UID = '',Message =message)
-            self.SendToServer( ObjToSend)   
-        
-            if (message == self.SOCKET_QUIT_MSG):
-                self.OnClient_Quit()
-                self.Quit()
-                self.LogConsole("OnClient_Core_Task_Cycle terminated for " + self.ServiceName,ConsoleLogLevel.System)
-                return self.OnClient_Core_Task_RETVAL_QUIT
+            # if (message == self.SOCKET_QUIT_MSG):
+            #     self.OnClient_Quit()
+            #     self.Quit()
+            #     self.LogConsole("OnClient_Core_Task_Cycle terminated for " + self.ServiceName,ConsoleLogLevel.System)
+            #     return self.OnClient_Core_Task_RETVAL_QUIT
 
             return self.OnClient_Core_Task_RETVAL_OK
         
@@ -217,6 +219,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     def Client_Core_Task(self):
         try:
             while True:
+                self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
                 retval = self.OnClient_Core_Task_Cycle(self.IsQuitCalled) 
                 if (self.IsQuitCalled or  retval == self.OnClient_Core_Task_RETVAL_QUIT):
                     

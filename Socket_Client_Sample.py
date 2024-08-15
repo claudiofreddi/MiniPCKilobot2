@@ -1,18 +1,16 @@
 from Socket_Client_BaseClass import * 
-from Socket_Timer import * 
+from Socket_Utils_Timer import * 
 
 class SocketClient_Sample(Socket_Client_BaseClass):
 
-    MyTimer:Timer=Timer()
-    
-    def __init__(self, ServiceName = Socket_Services_List.SAMPLE, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+   
+    def __init__(self, ServiceName = Socket_Services_List.SAMPLE, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
 
         
     def OnClient_Connect(self):
         
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
-        self.MyTimer.start(5,self.ServiceName)
     
     def On_ClientAfterLogin(self):
         #self.RegisterTopics(Socket_Default_Message_Topics.NONE)
@@ -41,22 +39,19 @@ class SocketClient_Sample(Socket_Client_BaseClass):
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
             
-            if (self.MyTimer.IsTimeout()):
+          
+            #Sample To remove
             
-                #Sample To remove
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
+                                                                    SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
+                                                                    Topic = Socket_Default_Message_Topics.MESSAGE, 
+                                                                    Message = "Test", Value = self.MyTimer.GetElapsed())                
                 
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                        SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
-                                                                        Topic = Socket_Default_Message_Topics.MESSAGE, 
-                                                                        Message = "Test", Value = self.MyTimer.GetElapsed())                
+            
+            self.SendToServer(ObjToSend) 
+            self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
+        
                     
-                
-                self.SendToServer(ObjToSend) 
-                self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
-                self.MyTimer.Reset()
-            
-            
-            
             if (self.IsQuitCalled):
                 return self.OnClient_Core_Task_RETVAL_QUIT
         
@@ -71,6 +66,6 @@ class SocketClient_Sample(Socket_Client_BaseClass):
         
 if (__name__== "__main__"):
     
-    MySocketClient = SocketClient_Remote()
+    MySocketClient = SocketClient_Sample()
     
     MySocketClient.Run_Threads()

@@ -7,6 +7,8 @@ from Robot_Envs import *
 from Socket_ClientServer_BaseClass import * 
 from Socket_Messages import * 
 from Socket_Client_Object import *
+from Socket_Utils_TextCommandParser import *
+from Socket_Server_Robot_Commands import *
 from PIL import Image
 
 import cv2
@@ -27,9 +29,9 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     Show_GetFromClient_Val = 0
     Show_SendToClient_Val = 0
     
-    def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort, True)
-           
+    def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort='',LogOptimized=False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort, True,LogOptimized)
+        self.RunOptimized = LogOptimized
         self.Connect()    
 
 
@@ -122,7 +124,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         c:client_object
         try: 
             c, retval = self.GetClientObject(TargetClient)
-            if (retval):
+            if (retval):  
                 ServiceName = c.servicename
                 self.client_objects.remove(c)
                 TargetClient.close()
@@ -280,37 +282,46 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                         case _:
                                             #print("VAL [" + ReceivedMessage.Message + "]")
                                             pass
-                                                
+              
                                 if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
                                     self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
                                     if (len(AdditionaByteData)>0):
                                         if (self.SHOW_FRAME):
                                             frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
                                             frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
-                                            cv2.imshow('server',frame)
-                                            cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
-            
+                                            try:
+                                                cv2.imshow('server',frame)
+                                                cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
+                                            except:
+                                                pass
+                                if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.TELEGRAM):
+                                    self.LogConsole("Receiving Telegram Data " +  ReceivedMessage.Message, ConsoleLogLevel.CurrentTest)
+                                    Prs = Socket_TextCommandParser(ReceivedMessage.Message)
+                                    Cmd = Prs.GetSpecificCommand()
+                                    print(Cmd)
+                                    if (Cmd == RobotListOfAvailableCommands.SPEAK):
+                                        c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.SPEAKER)
+                                        print(c.servicename)
+                                        if (c):
+                                            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT,
+                                                    SubClassType="",
+                                                    Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
+                                                    Message=Prs.GetSpecificCommandParam(1,GetAllTailParams=True),
+                                                    Value=0,
+                                                    Error="")
+                                            print(Prs.GetSpecificCommandParam(1,GetAllTailParams=True))
+                                            #self.SendToClient(c,ObjToSend)
+                                            print("Sending")
+                                            self.SendToClient(TargetClient=c.client,MyMsg=ObjToSend,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
+                                        
+                                     
                             cv2.waitKey(1)
                                     
                             ########################################################################################                        
                             ##FINE Gestione Messaggi Conosciuti dal server   
                             ########################################################################################   
                             
-                     
-                        # else:    
-                            
-                        #     #Try as MESSAGE and resent to sender
-                            
-                        #     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-                        #     # confirm message
-                        #     ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
-                        #                                                             SubClassType="",
-                        #                                                             Topic = Socket_Default_Message_Topics.MESSAGE,
-                        #                                                             Message=ReceivedMessage.Message,
-                        #                                                             Value=0,
-                        #                                                             Error="Message not recognized")
-                        #     self.SendToClient(client,ObjToSend)
-                            
+ 
                     
                 except Exception as e:
                     self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e),ConsoleLogLevel.Error)

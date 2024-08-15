@@ -11,14 +11,16 @@ from Socket_ConsoleLog import *
 from Socket_Messages import * 
 
 class Socket_Services_List:
-    SERVER = "Server"
+    SERVER = "SERVER"
     SENSORS = "SENSORS_Client"
     KEYBOARD = "KEYBOARD_Client"
     USERINTERFACE = "UI_Client"
     REMOTE = "REMOTE_Client"
-    SAMPLE = "Client_Sample"
-    WEBCAM = "WEBCAM" 
-    SPEAKER = "SPEAKER"
+    SAMPLE = "SAMPLE_Client"
+    WEBCAM = "WEBCAM_Client" 
+    SPEAKER = "SPEAKER_Client"
+    ACTUATORS = "ACTUATORS_Client"
+    TELEGRAM = "TELEGRAM_Client"
         
 
 
@@ -38,9 +40,16 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     
     SOCKET_QUIT_MSG = "Quit"
     SOCKET_LOGIN_MSG = "AskForServiceName"
-    RETRY_TIME = 3
+    RETRY_TIME = 8
+    
+    SLEEP_TIME:float = 0.1  #time.sleep(self.SLEEP_TIME)
     
     MySocket_SendReceive = Socket_SendReceive()
+    
+    def SleepTime(self, Multiply:float=1.0,CalledBy="",Trace=False):
+        sec:float= self.SLEEP_TIME*Multiply
+        time.sleep(sec)
+        if (Trace): self.LogConsole("SLEEP_TIME Called By: " + CalledBy,ConsoleLogLevel.SleepTime)
     
     def ServerIPToUse(self)-> str:
         if (SOCKET_USE_LOCALHOST == 1):
@@ -62,7 +71,9 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
                     return Err, False
 
     
-    def __init__(self,ServiceName = '', ForceServerIP = '',ForcePort='', IsServer=False):
+    def __init__(self,ServiceName = '', ForceServerIP = '',ForcePort='', IsServer=False,LogOptimized=False):
+            
+            self.RunOptimized = LogOptimized
             
             self.IsServer = IsServer
             
@@ -106,6 +117,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
                 self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.client.connect((self.ServerIP, self.ServerPort))
             
+            self.LogConsole(self.ServiceName + " Connected!",ConsoleLogLevel.System)
             self.IsConnected = True
             return True        
         
@@ -123,38 +135,31 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
         else:
             self.client.close()     
                
-        self.LogConsole(self.ThisServiceName() + "  Disconnected",ConsoleLogLevel.Socket_Flow)   
+        self.LogConsole(self.ThisServiceName() + "  Disconnected",ConsoleLogLevel.System)   
     
     def Quit(self):
         
         try:
-            self.LogConsole(self.ThisServiceName() + "  Quitted",ConsoleLogLevel.Socket_Flow) 
+            self.LogConsole(self.ThisServiceName() + "  Quitted",ConsoleLogLevel.System) 
             self.Disconnect()
             if (self.IsServer):
                 self.ServerConnection.close()
                 
             else:
                 self.client.close()
-              
-            
-               
+                         
             self.IsConnected = False
             self.IsQuitCalled = True
          
             
         except Exception as e:
+            self.IsQuitCalled = True
             self.LogConsole("Error in Quit()  " + str(e),ConsoleLogLevel.Socket_Flow)
-                                    
- 
-
     
     
     def ThisServiceName(self)->str:
         return " [" + self.ServiceName + "] "
         
-    
-
-    
     
     def Prepare_StandardEnvelope(self,MsgToSend:Socket_Default_Message,From="",To=""):
         try:
@@ -187,7 +192,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
             self.LogConsole(self.ThisServiceName() + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e),ConsoleLogLevel.Error)
             return None
         
-# if (__name__== "__main__"):
+
     
 
     

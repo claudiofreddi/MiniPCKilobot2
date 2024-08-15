@@ -1,6 +1,7 @@
 from Socket_Client_BaseClass import * 
 from Lib_ArduinoConnection import *
 from Robot_Envs import * 
+from Socket_Utils_Timer import * 
 
 class Robot_Arduino_Sensor_Params:
      SENSOR_COMPASS = "SENSORS_COMPASS"
@@ -11,17 +12,17 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
     MyArduino_Connection = Arduino_Connection()
     SensorLastValue = {}
     SensorAbsSensitiveRange = {}
+    MyTimer = Socket_Timer()
     
-    
-    def __init__(self, ServiceName = Socket_Services_List.SENSORS, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+    def __init__(self, ServiceName = Socket_Services_List.SENSORS, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         self.MyArduino_Connection.OpenConnection(ARDUINO_B_COM_PORT)
         self.SensorLastValue[Robot_Arduino_Sensor_Params.SENSOR_COMPASS] = -1
         self.SensorAbsSensitiveRange[Robot_Arduino_Sensor_Params.SENSOR_COMPASS] = 3
         
         self.SensorLastValue[Robot_Arduino_Sensor_Params.SENSORS_BATTERY] = -1
         self.SensorAbsSensitiveRange[Robot_Arduino_Sensor_Params.SENSORS_BATTERY] = 3
-        
+        self.MyTimer.start(30,"Forced Sensor Refresh")
         
     def OnClient_Connect(self):
         
@@ -60,13 +61,15 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
                 retData = self.MyArduino_Connection.ReadSerial()
                 
                 if (retData != ""):
+                    ForceRefresh = self.MyTimer.IsTimeout(RestartIfTimeout=True)
+                    
                     #Compass
                     ThisSensor = Robot_Arduino_Sensor_Params.SENSOR_COMPASS
                     bFound, val = self._ParseParamValue(retData,ThisSensor)
                    
                     if (bFound):
                         #Check send condition
-                        if (self.Sensor_Check_SendCondition(ThisSensor,val)):
+                        if (self.Sensor_Check_SendCondition(ThisSensor,val) or ForceRefresh):
                             self.LogConsole(self.ThisServiceName() + "Send  (" + str(val) + ") "+ ThisSensor,ConsoleLogLevel.Test)
                             LocalSensorValue = int(val)
                             LocalMessage = str(ARDUINO_B_COM_PORT + ": " + ThisSensor)
@@ -88,7 +91,7 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
                     
                     if (bFound):
                         #Check send condition
-                        if (self.Sensor_Check_SendCondition(ThisSensor,val)):
+                        if (self.Sensor_Check_SendCondition(ThisSensor,val) or ForceRefresh):
                             self.LogConsole(self.ThisServiceName() + "Send  (" + str(val) + ") "+ ThisSensor,ConsoleLogLevel.Test)
                             
                             LocalSensorValue = int(val)

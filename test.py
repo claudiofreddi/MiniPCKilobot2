@@ -1,15 +1,20 @@
-data = {}
-
-data['test'] = 1
-data['test'] = 1.1
-
-print(chr(3+64))
+a = 1
+b = 2
 
 
-a = ('a','b','c','Ctrl+A')
+def MyFunc(val:int):
+    if (val==1):
+        print("ciao")
+    else:
+        print("chiara")
+        
+        
+MyFunc(1)
 
-ACCEPTED_CHARS =  {'a','b','c','Ctrl+A'}
-print(ACCEPTED_CHARS.__contains__('Ctrl+B'))
+MyFunc(2)
 
-ACCEPTED_CHARS_RELEASE = "adesw"
+
+    
+
+
 

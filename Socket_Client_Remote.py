@@ -1,12 +1,12 @@
 from Socket_Client_BaseClass import * 
-from Socket_Timer import * 
+from Socket_Utils_Timer import * 
 
 class SocketClient_Remote(Socket_Client_BaseClass):
 
-    MyTimer:Timer=Timer()
+    MyTimer=Socket_Timer()
     
-    def __init__(self, ServiceName = Socket_Services_List.REMOTE, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+    def __init__(self, ServiceName = Socket_Services_List.REMOTE, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
 
         
     def OnClient_Connect(self):

@@ -3,7 +3,7 @@ import tkinter as tk
 import threading
 from socket import *
 from datetime import datetime
-from Socket_Timer import *
+from Socket_Utils_Timer import *
 
 
 class LabelIndex:
@@ -20,13 +20,13 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
     Label2R = []
     IsWindowOn =False
     IsTimeout = False
-    TimeoutVal = 10
-    LastRead = datetime.now()
+    MyTimer = Socket_Timer()
    
-    def __init__(self, ServiceName = Socket_Services_List.USERINTERFACE, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+    def __init__(self, ServiceName = Socket_Services_List.USERINTERFACE, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         threading.Thread.__init__(self)
         self.CreateUI()
+        self.MyTimer.start(30)
         
     def OnClient_Connect(self):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
@@ -82,9 +82,9 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
             
-            if ((datetime.now() - self.LastRead).seconds > self.TimeoutVal):
-                self.IsTimeout = True
-                self.root.title('Kilobot TIMEOUT')
+            # if (MyTimer.IsTimeout()):
+            #     self.IsTimeout = True
+            #     self.root.title('Kilobot TIMEOUT')
                     
                   
                 #self.root.quit() 
@@ -164,3 +164,5 @@ if (__name__== "__main__"):
     MySocket_Client_UI = Socket_Client_UI()
     
     MySocket_Client_UI.Run_Threads()
+    
+    MySocket_Client_UI.OpenWindow()

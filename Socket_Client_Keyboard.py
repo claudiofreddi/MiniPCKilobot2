@@ -16,6 +16,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                               }
     
     SPECIAL_KEYS_ON_RELEASE =  {'a','d','e','s','w'} #,'Ctrl+M'}
+    SPECIAL_KEYS_CONTINUE_SENDING =  {'a','d','e','s','w'} #,'Ctrl+M'}
     
     _AllowEscape = False
     _StopOnReleaseEvent   = True
@@ -26,7 +27,8 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
     _LastKey_Pressed = ""
     _Ctrl_Pressed = False
     _Alt_Pressed = False
-       
+    _MaxKeyCount = 3
+    _KeyCount = 0
     def IsKeyAllowed(self,Key:str):
         return (self._AllowAllKeys or self.SPECIAL_KEYS_ON_PRESS.__contains__(Key) or self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key))
         
@@ -36,13 +38,12 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         else:
             return self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key)  and not self._StopOnReleaseEvent
         
-
-    
-
+    def IsContinueSending(self,Key:str):
+        return False #(self.SPECIAL_KEYS_CONTINUE_SENDING.__contains__(Key))
     
        
-    def __init__(self, ServiceName = Socket_Services_List.KEYBOARD, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+    def __init__(self, ServiceName = Socket_Services_List.KEYBOARD, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         self.listener = keyboard.Listener(
             on_press=self.on_press,
             on_release=self.on_release)
@@ -128,9 +129,9 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
 
                 ###filtrare Key "key..." "\x0"
                     
-            if (    self.IsKeyAllowed(KeyString)
+            if (self.IsKeyAllowed(KeyString)
                 and self.IsKeyToNotify(KeyString,OnRelease=False)
-                and self._LastKey_Pressed !=  KeyString):
+                and (self._LastKey_Pressed !=  KeyString or self.IsContinueSending(KeyString))):
    
                 self._LastKey_Pressed = KeyString
                 
@@ -146,7 +147,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         
           
 
-
+                    print("send")
                     self.SendToServer(ObjToSend) 
                 
                     

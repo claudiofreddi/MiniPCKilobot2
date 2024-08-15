@@ -1,5 +1,5 @@
 from Socket_Client_BaseClass import * 
-from Socket_Timer import * 
+from Socket_Utils_Timer import * 
 import numpy as np
 import imutils
 import cv2 as cv
@@ -7,22 +7,23 @@ import cv2 as cv
 
 class SocketClient_Webcam(Socket_Client_BaseClass):
 
-    MyTimer:Timer=Timer()
+
     FRAME_PER_SECOND = 10
     USE_GRAY = 0
     SHOW_FRAME = False
     img_counter = 0
     IsFirstImage = True
     CvIsOpen = False
+
     
-    def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort=''):
-        super().__init__(ServiceName,ForceServerIP,ForcePort)
+    def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         self.CvIsOpen = False
         
     def OnClient_Connect(self):
         self.IsFirstImage  = True #Set for reload image also in case of no detection
         #self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
-        #self.MyTimer.start(1,"WebCamTimer")
+
 
     def On_ClientAfterLogin(self):
         self.RegisterTopics(Socket_Default_Message_Topics.INPUT_IMAGE)
@@ -52,18 +53,18 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         
         try:
            
-            if (self.IsFirstImage and not self.CvIsOpen):
+            if (not self.CvIsOpen):
                 self.LogConsole("Opening Webcam... please wait",ConsoleLogLevel.System)
                 #self.cap = cv.VideoCapture(0,cv.CAP_DSHOW)
                 self.cap = cv.VideoCapture(0,cv.CAP_MSMF)
-
+                self.LogConsole("Webcam Opened",ConsoleLogLevel.System)
                 self.cap.set(cv.CAP_PROP_FPS,self.FRAME_PER_SECOND)  
 
                 #encode to jpeg format
                 #encode param image quality 0 to 100. default:95
                 #if you want to shrink data size, choose low image quality.
                 self.encode_param=[int(cv.IMWRITE_JPEG_QUALITY),90]
-                self.IsFirstImage = True
+                self.IsFirstCall = True
                 self.CvIsOpen = True
                 
                 
@@ -74,7 +75,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                         print("Cannot open camera")
             
                     else:      
-                        #if (self.MyTimer.IsTimeout()): 
+
                         # Capture frame-by-frame
                         #print("read")
                         ret, frame = self.cap.read()
@@ -116,7 +117,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                             if (diff_percent == -1 or diff_percent > 30 or self.IsFirstImage):
                                 self.IsFirstImage = False
                                 
-                                print("Image Score" + str(diff_percent))  
+                                self.LogConsole(self.ThisServiceName() + "Image Score: " + str(diff_percent) + "%",ConsoleLogLevel.Test)  
                                 result, image = cv.imencode('.jpg', frame, self.encode_param)
                                 AdditionaByteData = pickle.dumps(image, 0) 
                                 
@@ -142,7 +143,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                         
                                                 
                         cv.waitKey(1)
-                        #self.MyTimer.Reset()
+
                             
                         
             
