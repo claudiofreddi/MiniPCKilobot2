@@ -240,7 +240,7 @@ import logging
 
 if (__name__== "__main__"):
     
-    useThreads = True
+    useThreads = False
     
     MySharedObjs = SharedObjs()
     

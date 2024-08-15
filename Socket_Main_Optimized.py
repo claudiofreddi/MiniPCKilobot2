@@ -26,11 +26,11 @@ Obj.Run_Threads()
 # Obj = SocketClient_Speaker(LogOptimized=_LogOptimized)    
 # Obj.Run_Threads() 
 
-Obj = SocketClient_Telegram(LogOptimized=_LogOptimized)    
-Obj.Run_Threads() 
+#Obj = SocketClient_Telegram(LogOptimized=_LogOptimized)    
+#Obj.Run_Threads() 
 
-Obj = SocketClient_Webcam(LogOptimized=_LogOptimized)    
-Obj.Run_Threads() 
+#Obj = SocketClient_Webcam(LogOptimized=_LogOptimized)    
+#Obj.Run_Threads() 
 
 Obj = SocketClient_Actuators(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 
