@@ -39,7 +39,7 @@ class Common_LogConsoleClass(object):
     def LogConsole(self,Text,*LogLevels):
         if (self.RunOptimized):
             if (len(LogLevels)==1):
-                if (LogLevels[0] == ConsoleLogLevel.Error):
+                if (LogLevels[0] == ConsoleLogLevel.Error or LogLevels[0] == ConsoleLogLevel.System):
                     print(Text) 
         else:
             if (self.EnableConsoleLog):

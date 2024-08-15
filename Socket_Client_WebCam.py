@@ -7,13 +7,14 @@ import cv2 as cv
 
 class SocketClient_Webcam(Socket_Client_BaseClass):
 
-
-    FRAME_PER_SECOND = 10
+    IMAGE_CHANGE_SENSITIVITY_GR_THAN = 30
+    FRAME_PER_SECOND = 35
     USE_GRAY = 0
     SHOW_FRAME = False
     img_counter = 0
     IsFirstImage = True
     CvIsOpen = False
+    ContinuousSending_On = True
 
     
     def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
@@ -87,7 +88,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                         else:
                             
                             
-                            time.sleep(0.4)
+                            self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
                             frame = imutils.resize(frame, width=320)
 
                             frame = cv.flip(frame,180)
@@ -114,7 +115,10 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                             except Exception as e:
                                 self.LogConsole(self.ThisServiceName() + "Error in Comparing Images:  " + str(e),ConsoleLogLevel.Error)
                             
-                            if (diff_percent == -1 or diff_percent > 30 or self.IsFirstImage):
+                            if (    diff_percent == -1 
+                                    or diff_percent > self.IMAGE_CHANGE_SENSITIVITY_GR_THAN 
+                                    or self.IsFirstImage):
+                                
                                 self.IsFirstImage = False
                                 
                                 self.LogConsole(self.ThisServiceName() + "Image Score: " + str(diff_percent) + "%",ConsoleLogLevel.Test)  
@@ -125,9 +129,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                                     
                                 #send
                             
-                                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
-                                                                                        SubClassType = Socket_Default_Message_SubClassType.IMAGE, 
-                                                                                        Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
+                                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
                                                                                         Message = "Test", 
                                                                                         Value = diff_percent)                
 

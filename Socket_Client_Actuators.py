@@ -6,16 +6,14 @@ from Socket_Utils_Q import *
 
 class SocketClient_Actuators(Socket_Client_BaseClass):
 
-    MSG_BLOCK = 2
-    
+
     def __init__(self, ServiceName = Socket_Services_List.ACTUATORS, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
 
         self.MyArduino_Connection = Arduino_Connection()
         self.MyArduino_Connection.OpenConnection(ARDUINO_A_COM_PORT)
         self.ArduinoCommandsQ = Socket_Q[str]("Arduino Commands")
-        self.CountOfMsgs = 0
-        self.CurrNUmOfMsgs = self.MSG_BLOCK
+
 
         
     def OnClient_Connect(self):
@@ -45,9 +43,9 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
                                 self.LogConsole(f"Q Cleared",ConsoleLogLevel.CurrentTest)
                             #Queue command
                             self.LogConsole(f"{self.ThisServiceName()} cmd {ArdCmd} received",ConsoleLogLevel.Test)
-                            if (self.ArduinoCommandsQ.Size()<self.MSG_BLOCK):  ## Queue limit
-                                self.ArduinoCommandsQ.put(ArdCmd)
-                                self.ArduinoCommandsQ.Show()
+                           
+                            self.ArduinoCommandsQ.put(ArdCmd)
+                            self.ArduinoCommandsQ.Show()
                             
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + "Error in OnClient_Receive()  " + str(e),ConsoleLogLevel.Error)
@@ -63,24 +61,11 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
         try:
             if (self.MyArduino_Connection.IsStarted):
                 #if (self.ArduinoCommandsQ.HasItems()):
-                while (self.ArduinoCommandsQ.HasItems() and self.CurrNUmOfMsgs<self.MSG_BLOCK):
+                if (self.ArduinoCommandsQ.HasItems()): # and self.CurrNUmOfMsgs<self.MSG_BLOCK):
                     self.MyArduino_Connection.sendData(self.ArduinoCommandsQ.get()) 
-                    self.CurrNUmOfMsgs +=1
+                    #self.CurrNUmOfMsgs +=1
                 
-                self.CurrNUmOfMsgs = 0
-            
-                #Sample To remove
-                
-                # ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                #                                                         SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
-                #                                                         Topic = Socket_Default_Message_Topics.MESSAGE, 
-                #                                                         Message = "Test", Value = 0)                
-                    
-                
-                # self.SendToServer(ObjToSend) 
-                # self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
-                
-            
+                #self.CurrNUmOfMsgs = 0
             
             
             if (self.IsQuitCalled):

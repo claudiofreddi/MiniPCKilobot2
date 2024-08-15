@@ -20,7 +20,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
     
     _AllowEscape = False
     _StopOnReleaseEvent   = True
-    _AllowAllKeys = True
+    _AllowAllKeys = False
     
     #Key Press management
     _presstime = 0
@@ -39,7 +39,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             return self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key)  and not self._StopOnReleaseEvent
         
     def IsContinueSending(self,Key:str):
-        return False #(self.SPECIAL_KEYS_CONTINUE_SENDING.__contains__(Key))
+        return (self.SPECIAL_KEYS_CONTINUE_SENDING.__contains__(Key))
     
        
     def __init__(self, ServiceName = Socket_Services_List.KEYBOARD, ForceServerIP = '',ForcePort='',LogOptimized = False):
@@ -89,7 +89,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         except:
             print("error")
             return False
-        
+    
     def GetCtrl_Char(self, key, Prefix):
         try:
             if type(key) != enum:
@@ -140,9 +140,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                                          
                     self._presstime = datetime.now()
                     #self.LogConsole('alphanumeric key {0} pressed'.format(key),,ConsoleLogLevel.Test)
-                    ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
-                                                                    SubClassType = Socket_Default_Message_SubClassType.KEYBOARD, 
-                                                                    Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
                                                                     Message = self._LastKey_Pressed,Value=0)
         
           
@@ -174,9 +172,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
             print(str(time_pressed) + " ms")
             self.LogConsole(str(key) + " " + str(time_pressed) + " ms ",ConsoleLogLevel.Test)
             
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
-                                                                                SubClassType = Socket_Default_Message_SubClassType.KEYBOARD,
-                                                                                Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
                                                                                 Message = self._LastKey_Pressed,Value=time_pressed)
                     
             self.SendToServer(ObjToSend) 

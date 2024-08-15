@@ -52,19 +52,12 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
                     
                     self.LastRead = datetime.now()
                     self.IsTimeout = False
-                    if (ReceivedMessage.ClassType == Socket_Default_Message_ClassType.SENSOR):
-                        if (ReceivedMessage.SubClassType == Socket_Default_Message_SubClassType.COMPASS):
-                            self.SetLabel_Pair(LabelIndex.Compass,str(ReceivedMessage.Value))
-                        if (ReceivedMessage.SubClassType == Socket_Default_Message_SubClassType.BATTERY):
-                            self.SetLabel_Pair(LabelIndex.Battery,str(ReceivedMessage.Value))
-                    if (ReceivedMessage.ClassType == Socket_Default_Message_ClassType.INPUT):
-                        if (ReceivedMessage.SubClassType == Socket_Default_Message_SubClassType.KEYBOARD and ReceivedMessage.Value == 0):
-                            self.SetLabel_Pair(LabelIndex.keyPressed,str(ReceivedMessage.Message))
-                    
-         
-            
-       
-                    
+                    if (ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_COMPASS):
+                        self.SetLabel_Pair(LabelIndex.Compass,str(ReceivedMessage.Value))
+                    elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_BATTERY):
+                        self.SetLabel_Pair(LabelIndex.Battery,str(ReceivedMessage.Value))
+                    elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD and ReceivedMessage.Value == 0):
+                        self.SetLabel_Pair(LabelIndex.keyPressed,str(ReceivedMessage.Message))
                     
 
             # self.root.update_idletasks()

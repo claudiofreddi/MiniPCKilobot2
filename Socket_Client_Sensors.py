@@ -74,9 +74,7 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
                             LocalSensorValue = int(val)
                             LocalMessage = str(ARDUINO_B_COM_PORT + ": " + ThisSensor)
                         
-                            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
-                                                                            SubClassType = Socket_Default_Message_SubClassType.COMPASS, 
-                                                                            Topic = Socket_Default_Message_Topics.SENSOR_COMPASS,
+                            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SENSOR_COMPASS,
                                                                             Message = LocalMessage, Value = LocalSensorValue)
                             
                             self.SendToServer(ObjToSend) 
@@ -95,11 +93,9 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
                             self.LogConsole(self.ThisServiceName() + "Send  (" + str(val) + ") "+ ThisSensor,ConsoleLogLevel.Test)
                             
                             LocalSensorValue = int(val)
-                            LocalMessage = str(ARDUINO_B_COM_PORT + ": " + Socket_Default_Message_SubClassType.BATTERY)
+                            LocalMessage = str(ARDUINO_B_COM_PORT + ": " + ThisSensor)
                         
-                            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.SENSOR, 
-                                                                            SubClassType = Socket_Default_Message_SubClassType.BATTERY, 
-                                                                            Topic = Socket_Default_Message_Topics.SENSOR_BATTERY,
+                            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SENSOR_BATTERY,
                                                                             Message = LocalMessage, Value = LocalSensorValue)                
                     
 

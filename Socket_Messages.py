@@ -10,21 +10,10 @@ import time
 ### ***************************************************************************
 ### Message FORMAT
 ### ***************************************************************************
-class Socket_Default_Message_ClassType:
-    MESSAGE = "MESSAGE"    
-    SENSOR = "SENSOR"
-    INPUT = "INPUT"
-    
-class Socket_Default_Message_SubClassType:
-    MESSAGE = "MESSAGE"  
-    KEYBOARD = "KEYBOARD"    
-    BATTERY = "BATTERY"
-    COMPASS = "COMPASS"
-    IMAGE = "IMAGE"
-    TELEGRAM  = "TELEGRAM"
 
 class Socket_Default_Message_Topics:
     NONE = ""                                  #Not subscrible 
+    LOGIN = "LOGIN"                             #Not subscrible 
     MESSAGE = "/MESSAGE"                       #Not subscrible 
     TOPIC_ADD = "/TOPIC/ADD"                    #Not subscrible 
     TOPIC_SUBSCRIBE = "/TOPIC/SUBSCRIBE"        #Not subscrible 
@@ -47,6 +36,9 @@ class Socket_Default_Message_Topics:
             NewTopic == Socket_Default_Message_Topics.TOPIC_UNSUBSCRIBE
             or
             NewTopic == Socket_Default_Message_Topics.MESSAGE
+            or
+            NewTopic == Socket_Default_Message_Topics.LOGIN
+            
             ):
             return True
         
@@ -65,10 +57,8 @@ class SocketDecoder:
    
 
 class Socket_Default_Message(Common_LogConsoleClass):
-    def __init__(self,ClassType=Socket_Default_Message_ClassType.MESSAGE, SubClassType = '',Topic=Socket_Default_Message_Topics.NONE, UID = '',Message ="",
+    def __init__(self,Topic=Socket_Default_Message_Topics.NONE, UID = '',Message ="",
                  Value=0,RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData=''):
-        self.ClassType = ClassType
-        self.SubClassType = SubClassType  #Compass, Battery, .. user defined
         self.Message = Message
         self.Value = Value
         self.Error = Error
@@ -85,8 +75,7 @@ class Socket_Default_Message(Common_LogConsoleClass):
         return json.dumps(self,cls=SocketEncoder,indent=4)
     
     def Copy(self,Source:Socket_Default_Message):
-        self.ClassType = Source.ClassType
-        self.SubClassType = Source.SubClassType
+        self.Topic = Source.Topic
         self.Message = Source.Message
         self.Value = Source.Value
         self.Error = Source.Error
@@ -95,7 +84,7 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.LastRefresh = Source.LastRefresh
         
     def GetMessageDescription(self):
-        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + "  Class: " + self.ClassType + "  SubClass: " + self.SubClassType
+        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic
         if (self.Error != ""):
             Txt = Txt + self.Error 
         if (self.IsAlert == True):

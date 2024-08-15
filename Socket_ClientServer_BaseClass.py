@@ -42,7 +42,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     SOCKET_LOGIN_MSG = "AskForServiceName"
     RETRY_TIME = 8
     
-    SLEEP_TIME:float = 0.1  #time.sleep(self.SLEEP_TIME)
+    SLEEP_TIME:float = 0.0 #time.sleep(self.SLEEP_TIME)
     
     MySocket_SendReceive = Socket_SendReceive()
     

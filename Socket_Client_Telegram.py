@@ -98,17 +98,16 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
             # else:
             #     self.bot.sendMessage(chat_id, f'Mi spiace {name}, non capisco {MyCmd}\nUsa /help per sapere cosa posso fare!')
             if (IsToSendToServer):
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT, 
-                                                                                SubClassType = Socket_Default_Message_SubClassType.TELEGRAM, 
-                                                                                Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
+                print("k->:" +MyCmd)
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
                                                                                 Message = MyCmd, Value = 0)
                                 
                 self.SendToServer(ObjToSend) 
 
 
     def on_chat_send_master_message(self,bot, text_msg):
-
-        self.bot.sendMessage(TELEGRAM_MASTER_TARGET,text_msg)
+        print("z->: " + text_msg)
+        bot.sendMessage(TELEGRAM_MASTER_TARGET,text_msg)
         
             
     def OnClient_Connect(self):
@@ -134,9 +133,10 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
                     #     self.TelegramMsgQ.put(ReceivedMessage.Message)   
                         
                     if (ReceivedMessage.Topic == Socket_Default_Message_Topics.OUTPUT_TELEGRAM):
+                        print("->x: " + ReceivedMessage.Message)
                         self.TelegramMsgQ.put(ReceivedMessage.Message)     
                         
-                    if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
+                    if (ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_IMAGE):
                         self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
                         if (self.SurveillanceMode):
                             if (len(AdditionaByteData)>0):
@@ -168,14 +168,14 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
                return self.OnClient_Core_Task_RETVAL_QUIT
             
             if (self.TelegramMsgQ.HasItems()): 
+                
                 TextToSend = self.TelegramMsgQ.get()
+                print("y->: " + TextToSend)
                 if (TextToSend != ''):
                     if (self.Telegram_Enabled):
                         self.bot.sendMessage(TELEGRAM_MASTER_TARGET,TextToSend)
             
-            # ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-            #                                                         SubClassType = Socket_Default_Message_SubClassType.MESSAGE,
-            #                                                         Topic = Socket_Default_Message_Topics.TELEGRAM, 
+            # ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TELEGRAM, 
             #                                                         Message = "Test", Value = self.MyTimer.GetElapsed())                
                 
             

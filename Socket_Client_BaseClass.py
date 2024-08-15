@@ -109,9 +109,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                         if (ReceivedMessage.Message == self.SOCKET_LOGIN_MSG):                
                             
                             self.LogConsole("Client send Login Name: " + str(self.ServiceName))   
-                            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                                        SubClassType = ''
-                                                                                        ,Topic = Socket_Default_Message_Topics.MESSAGE
+                            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.LOGIN
                                                                                         ,UID = ''
                                                                                         ,Message =str(self.ServiceName),Value="",RefreshInterval=5
                                                                                         ,LastRefresh = 0, IsAlert=False, Error ="")
@@ -168,9 +166,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         for t in ClientTopics:
             try:
                 
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
-                                                                        ,SubClassType = ''
-                                                                        ,Topic = Socket_Default_Message_Topics.TOPIC_ADD
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_ADD
                                                                         , UID = '',Message = t)
                 self.SendToServer( ObjToSend)   
             
@@ -181,9 +177,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         for t in TopicsToSubscribe:
             try:
                 
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
-                                                                        ,SubClassType = ''
-                                                                        ,Topic = Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
                                                                         , UID = '',Message = t)
                 self.SendToServer( ObjToSend)   
             
@@ -198,9 +192,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             # #Default
             # self.LogConsole(self.ThisServiceName() + "Waiting for input...",ConsoleLogLevel.Test)
             # message = '{}'.format(input(''))
-            # ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
-            #                                                             ,SubClassType = ''
-            #                                                             ,Topic = Socket_Default_Message_Topics.MESSAGE
+            # ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE
             #                                                             , UID = '',Message =message)
             # self.SendToServer( ObjToSend)   
         
@@ -244,10 +236,10 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             while True:
                 time.sleep(5)
                 message = self.ServiceName + " tick: " + str(count) + " SIMULATED !"
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE
-                                                                                          ,SubClassType = ''
-                                                                                          ,Topic = Socket_Default_Message_Topics.MESSAGE
-                                                                                          , UID = '',Message =message, Value="",RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="")
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE
+                                                                                          , UID = '',Message =message, 
+                                                                                          Value="",RefreshInterval=5,
+                                                                                          LastRefresh = 0, IsAlert=False, Error ="")
                 self.SendToServer(ObjToSend)  
                 count = count + 1
                 if (self.IsQuitCalled):

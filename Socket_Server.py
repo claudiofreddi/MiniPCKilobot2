@@ -130,9 +130,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 TargetClient.close()
                 msg = '{} left!'.format(ServiceName)
                 self.LogConsole(msg,ConsoleLogLevel.Socket_Flow)
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE, 
-                                                                        SubClassType = '', 
-                                                                        Topic = Socket_Default_Message_Topics.MESSAGE,
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE,
                                                                         UID = '',
                                                                         Message =msg,
                                                                         Value=0,
@@ -165,29 +163,26 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     
             
     def SensorUpdate(self,ReceivedSensorObject:Socket_Default_Message):
-        Log = False
-        if (Log): self.LogConsole("Received Type SENSOR:" + ReceivedSensorObject.SubClassType,ConsoleLogLevel.Socket_Flow)
+
         found = False
-        if (ReceivedSensorObject.ClassType == Socket_Default_Message_ClassType.SENSOR ):
+        if (    ReceivedSensorObject.Topic == Socket_Default_Message_Topics.SENSOR_BATTERY
+            or  ReceivedSensorObject.Topic == Socket_Default_Message_Topics.SENSOR_COMPASS):
             pSensor:Socket_Default_Message
             for pSensor in self.MyListOfSensors:
-                if (Log): self.LogConsole(pSensor.SubClassType + " - curr val: " + str(pSensor.Value),ConsoleLogLevel.Socket_Flow)
-                if (pSensor.SubClassType == ReceivedSensorObject.SubClassType):
+                 if (pSensor.Topic == ReceivedSensorObject.Topic):
                     found = True
                     pSensor.Copy(ReceivedSensorObject)
-                    if (Log): self.LogConsole(pSensor.SubClassType + " - New val: " + str(pSensor.Value),ConsoleLogLevel.Socket_Flow)
-                    if (Log): self.LogConsole(ReceivedSensorObject.SubClassType + " copied",ConsoleLogLevel.Socket_Flow)
                     break
             if (not found):
                 self.MyListOfSensors.append(ReceivedSensorObject)
-                if (Log): self.LogConsole(ReceivedSensorObject.SubClassType + " added",ConsoleLogLevel.Socket_Flow)
+
                 
                 
                 
-    def GetSensor(self,SubClassType):
+    def GetSensor(self,Topic):
         pSensor:Socket_Default_Message
         for pSensor in self.MyListOfSensors:
-            if (pSensor.SubClassType == SubClassType):
+            if (pSensor.Topic == Topic):
                     return True, pSensor
         return False, None   
     
@@ -241,80 +236,77 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             ########################################################################################  
                              
                             ## SEZIONE MESSAGGI SPECIALI
-                            if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.MESSAGE):
-                                                    
-                                if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_ADD):
-                                    if (CurrClientObject.RegisterTopic(ReceivedMessage.Message)):
-                                        self.LogConsole("[" + CurrClientObject.servicename +  "]  Added Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
-                                
-                                if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE):
-                                    if (CurrClientObject.SubscribeTopic(ReceivedMessage.Message)):
-                                        self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
-                                        
-                                if (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
-                                    self.LogConsole("[" + CurrClientObject.servicename +  "] Quitted ",ConsoleLogLevel.System)
-                                    self.QuitClient(client)
-                                    break
+                       
+                            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_ADD):
+                                if (CurrClientObject.RegisterTopic(ReceivedMessage.Message)):
+                                    self.LogConsole("[" + CurrClientObject.servicename +  "]  Added Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
+                            
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE):
+                                if (CurrClientObject.SubscribeTopic(ReceivedMessage.Message)):
+                                    self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
+                                    
+                            elif (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
+                                self.LogConsole("[" + CurrClientObject.servicename +  "] Quitted ",ConsoleLogLevel.System)
+                                self.QuitClient(client)
+                                break
                             
                             ##SocketObjectClassType.SENSOR : value update      
-                            if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.SENSOR):
+                            elif (   ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_COMPASS
+                                or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY):
                                             
                                 self.SensorUpdate(ReceivedMessage)
                                 
                                                            
-                            if (ReceivedMessage.ClassType== Socket_Default_Message_ClassType.INPUT):
-                                if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.KEYBOARD 
-                                    and ReceivedMessage.Value==0):
-                                       
-                                    match(ReceivedMessage.Message):
-                                        
-                                        case "Ctrl+M": #Ctrl + M (Alle Messages about send and receive)
-                                            self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
-                                            print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
-                                            self.Show_SendToClient_Val = self.Show_GetFromClient_Val 
-                                            print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD
+                                and ReceivedMessage.Value==0):
+                                    
+                                match(ReceivedMessage.Message):
+                                    
+                                    case "Ctrl+M": #Ctrl + M (Alle Messages about send and receive)
+                                        self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
+                                        print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
+                                        self.Show_SendToClient_Val = self.Show_GetFromClient_Val 
+                                        print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
 
-                                        case "Ctrl+T": #Ctrl + T (Topic)
-                                            for co in self.client_objects:
-                                                co.ShowDetails()
-                                                   
-                                                    
-                                        case _:
-                                            #print("VAL [" + ReceivedMessage.Message + "]")
+                                    case "Ctrl+T": #Ctrl + T (Topic)
+                                        for co in self.client_objects:
+                                            co.ShowDetails()
+                                                
+                                                
+                                    case _:
+                                        #print("VAL [" + ReceivedMessage.Message + "]")
+                                        pass
+        
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_IMAGE):
+                                self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
+                                if (len(AdditionaByteData)>0):
+                                    if (self.SHOW_FRAME):
+                                        frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
+                                        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
+                                        try:
+                                            cv2.imshow('server',frame)
+                                            cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
+                                        except:
                                             pass
-              
-                                if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.IMAGE):
-                                    self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
-                                    if (len(AdditionaByteData)>0):
-                                        if (self.SHOW_FRAME):
-                                            frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
-                                            frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
-                                            try:
-                                                cv2.imshow('server',frame)
-                                                cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
-                                            except:
-                                                pass
-                                if (ReceivedMessage.SubClassType== Socket_Default_Message_SubClassType.TELEGRAM):
-                                    self.LogConsole("Receiving Telegram Data " +  ReceivedMessage.Message, ConsoleLogLevel.CurrentTest)
-                                    Prs = Socket_TextCommandParser(ReceivedMessage.Message)
-                                    Cmd = Prs.GetSpecificCommand()
-                                    print(Cmd)
-                                    if (Cmd == RobotListOfAvailableCommands.SPEAK):
-                                        c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.SPEAKER)
-                                        print(c.servicename)
-                                        if (c):
-                                            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.INPUT,
-                                                    SubClassType="",
-                                                    Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
-                                                    Message=Prs.GetSpecificCommandParam(1,GetAllTailParams=True),
-                                                    Value=0,
-                                                    Error="")
-                                            print(Prs.GetSpecificCommandParam(1,GetAllTailParams=True))
-                                            #self.SendToClient(c,ObjToSend)
-                                            print("Sending")
-                                            self.SendToClient(TargetClient=c.client,MyMsg=ObjToSend,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
-                                        
-                                     
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_TELEGRAM):
+                                self.LogConsole("Receiving Telegram Data " +  ReceivedMessage.Message, ConsoleLogLevel.CurrentTest)
+                                Prs = Socket_TextCommandParser(ReceivedMessage.Message)
+                                Cmd = Prs.GetSpecificCommand()
+                                print(Cmd)
+                                if (Cmd == RobotListOfAvailableCommands.SPEAK):
+                                    c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.SPEAKER)
+                                    print(c.servicename)
+                                    if (c):
+                                        ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
+                                                                                                    Message=Prs.GetSpecificCommandParam(1,GetAllTailParams=True),
+                                                                                                    Value=0,
+                                                                                                    Error="")
+                                        print(Prs.GetSpecificCommandParam(1,GetAllTailParams=True))
+                                        #self.SendToClient(c,ObjToSend)
+                                        print("Sending")
+                                        self.SendToClient(TargetClient=c.client,MyMsg=ObjToSend,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
+                                    
+                                    
                             cv2.waitKey(1)
                                     
                             ########################################################################################                        
@@ -351,9 +343,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
                 self.LogConsole("Connected with {}".format(str(address)),ConsoleLogLevel.Socket_Flow)
                 
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
-                                                                          SubClassType="",
-                                                                          Topic = Socket_Default_Message_Topics.MESSAGE,
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.LOGIN,
                                                                           Message=self.SOCKET_LOGIN_MSG)
              
                 self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=str(address))
@@ -369,11 +359,11 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 if (ReceivedEnvelope != None):
                     
                     if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                        
+                    
                         
                         ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                         
-                        if (ReceivedMessage.ClassType ==Socket_Default_Message_ClassType.MESSAGE):
+                        if (ReceivedMessage.Topic == Socket_Default_Message_Topics.LOGIN):
                             
                             servicename = ReceivedMessage.Message
                             self.LogConsole(" New Service Name is {}".format(servicename),ConsoleLogLevel.Socket_Flow,ConsoleLogLevel.Show)
@@ -402,9 +392,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             time.sleep(3)
             
             message = self.ThisServiceName() +  "SIMULATED Broadcast tick: " + str(tick)            
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(ClassType=Socket_Default_Message_ClassType.MESSAGE,
-                                                                      SubClassType="",
-                                                                      Topic = Socket_Default_Message_Topics.MESSAGE,
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE,
                                                                       Message=message)
             
             # s = self.GetClientObjectByServiceName(Socket_Services_List.REMOTE)

@@ -12,26 +12,27 @@ from Socket_Setting___ import *
 
 import time
 
+_LogOptimized = True
 
-MyServer = Socket_Server(LogOptimized=True)
+MyServer = Socket_Server(LogOptimized=_LogOptimized)
 MyServer.Run_Threads()
     
-Obj =SocketClient_Keyboard(LogOptimized=True)    
+Obj =SocketClient_Keyboard(LogOptimized=_LogOptimized)    
 Obj.Run_Threads()  
 
-Obj = SocketClient_Sensors(LogOptimized=True)    
+Obj = SocketClient_Sensors(LogOptimized=_LogOptimized)    
 Obj.Run_Threads()  
 
-Obj = SocketClient_Speaker(LogOptimized=True)    
+# Obj = SocketClient_Speaker(LogOptimized=_LogOptimized)    
+# Obj.Run_Threads() 
+
+Obj = SocketClient_Telegram(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 
 
-Obj = SocketClient_Telegram(LogOptimized=True)    
+Obj = SocketClient_Webcam(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 
 
-Obj = SocketClient_Webcam(LogOptimized=True)    
-Obj.Run_Threads() 
-
-Obj = SocketClient_Actuators(LogOptimized=True)    
+Obj = SocketClient_Actuators(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 
 
 # Obj = SocketClient_Remote()    
@@ -40,7 +41,7 @@ Obj.Run_Threads()
 # Obj = SocketClient_Sample()    
 # Obj.Run_Threads() s
     
-Obj = Socket_Client_UI(LogOptimized=True)    
+Obj = Socket_Client_UI(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 
 Obj.OpenWindow()
 
