@@ -21,6 +21,7 @@ class Socket_Services_List:
     SPEAKER = "SPEAKER_Client"
     ACTUATORS = "ACTUATORS_Client"
     TELEGRAM = "TELEGRAM_Client"
+    ARDUINO_READ_WRITE = "ARDUINO_READ_WRITE_TEST_Client"
         
 
 

@@ -25,6 +25,9 @@ class Socket_Default_Message_Topics:
     SENSOR_COMPASS = "/SENSOR/COMPASS"
     OUTPUT_SPEAKER = "/OUTPUT/SPEAKER"
     OUTPUT_TELEGRAM = "/OUTPUT/TELEGRAM"
+    #Arduino SAmple Class
+    INPUT_OBJ00 = "INPUT/OBJ00"
+    INPUT_OBJ01 = "INPUT/OBJ01"
     
     def IsTopicReserved(self,NewTopic):
         if (NewTopic == Socket_Default_Message_Topics.NONE

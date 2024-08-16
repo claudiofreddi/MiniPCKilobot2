@@ -8,9 +8,7 @@ from Socket_ClientServer_BaseClass import *
 import struct
 
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
-    
-    UseStruct = True
-    
+
     OnClient_Core_Task_RETVAL_OK = 0
     OnClient_Core_Task_RETVAL_QUIT= 1
     OnClient_Core_Task_RETVAL_ERROR = -1
