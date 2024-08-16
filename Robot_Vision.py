@@ -10,14 +10,14 @@
 from datetime import datetime
 import cv2
 import matplotlib.pyplot as plt
-from Lib_Processes import * 
+from ZOLD_Lib_Processes import * 
 
 # Variabili
 import numpy as np
 
-from Robot_Shared_Objects import *
-from Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
-from Robot_Simulate_Processes  import Robot_Simulate_Process_Obj_Run, Sparring_Process_Names
+from ZOLD_Robot_Shared_Objects import *
+from ZOLD_Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
+from ZOLD_Robot_Simulate_Processes  import Robot_Simulate_Process_Obj_Run, Sparring_Process_Names
 
 from Robot_Vision_Face_Classifier import RobotVision_Face_Classifier
 from Robot_Vision_Object_Classifer import RobotVision_Object_Classifier

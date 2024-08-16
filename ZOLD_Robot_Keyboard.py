@@ -1,7 +1,7 @@
-from Lib_Processes import *
+from ZOLD_Lib_Processes import *
 import time
-from Robot_Arduino_A_DoActions import *
-from Lib_Utils_MyQ import *
+from ZOLD_Robot_Arduino_A_DoActions import *
+from ZOLD_Lib_Utils_MyQ import *
 from queue import *
 
 # pip install pynput

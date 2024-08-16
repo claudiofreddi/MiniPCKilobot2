@@ -7,9 +7,9 @@ from Robot_Envs import ADMIN_MAIL
 from Robot_Envs import MAIL_SENDER
 
 class MailSender:
-    _defaultMail = ''
-    def __init__(self, defaultMail):
-        self._defaultMail = defaultMail
+    
+    def __init__(self, defaultRecipientMail):
+        self._defaultRecipientMail = defaultRecipientMail
         self.PrintLogEnabled = False
         self.smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         if (self.PrintLogEnabled == True):
@@ -20,7 +20,7 @@ class MailSender:
         msg['Subject'] = subject
         msg['From'] = MAIL_SENDER
         if (recipients == ''):
-            recipients = self._defaultMail 
+            recipients = self._defaultRecipientMail
 
         msg['To'] = recipients 
         #', '.join(recipients)

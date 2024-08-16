@@ -15,7 +15,6 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
         self.ArduinoCommandsQ = Socket_Q[str]("Arduino Commands")
 
 
-        
     def OnClient_Connect(self):
         
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)

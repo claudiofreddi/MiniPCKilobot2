@@ -3,7 +3,7 @@ import email
 from email.header import decode_header
 import webbrowser
 import os
-from Lib_EventManager import *
+from ZOLD_Lib_EventManager import *
 import time
 
 from Robot_Envs import *
@@ -27,9 +27,6 @@ class Event_MailReceiver:
         return "".join(c if c.isalnum() else "_" for c in text)
 
     def Run(self):
-
-        MyServiceName = RaiseEventManager(Event_MailReceiver_NAME)
-        MyServiceName.RegisterService()
 
         # account credentials
         username = MAIL_SENDER
@@ -80,7 +77,7 @@ class Event_MailReceiver:
                     if (self.b_ShowSubject == True):
                         print("Subject:", subject)
                         if (self.b_AddCommandFrom == True):
-                            MyServiceName.Notify(str(i), subject,From, 1)
+                            print(str(i), " ", subject," ", From, " ", 1)
                             print("Added: ",subject )
                     if (self.b_ShowFrom == True): 
                         print("From:", From)

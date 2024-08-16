@@ -1,8 +1,7 @@
 import time
 import serial.tools.list_ports  
 import serial
-from Lib_Utils_Timeout import *
-
+from Socket_Utils_Timer import * 
 class Arduino_Connection:
 
     _TraceLogOn = True
@@ -43,7 +42,7 @@ class Arduino_Connection:
         
         #CheckPort
         if not (self.ReadPorts(ComPort)):
-            self._TraceLog("Port " , ComPort, " not Found")
+            self._TraceLog("Port " + ComPort+" not Found")
             return False
                 
         try:   
@@ -59,10 +58,10 @@ class Arduino_Connection:
             if (WaitForCommand != ""):
                     
                 ArduinoOK = False
-                MyRobotTimeout = RobotTimeout()
+                MyRobotTimeout = Socket_Timer()
                 MaxTimeout = 20 #sec
                 self._TraceLog("waiting for " + WaitForCommand + " for " + str(MaxTimeout) +  "sec(s) ...")    
-                MyRobotTimeout.StartNewTimeout(MaxTimeout)
+                MyRobotTimeout.start(MaxTimeout)
                 IsTimeout = MyRobotTimeout.IsTimeout()
                 while not (ArduinoOK or IsTimeout):
                     data = self.ReadSerial()

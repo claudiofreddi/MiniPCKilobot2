@@ -1,4 +1,4 @@
-from Lib_EventManager import *
+from ZOLD_Lib_EventManager import *
 from array import *
 
 #Sample

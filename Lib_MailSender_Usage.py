@@ -1,6 +1,6 @@
 from Lib_MailSender import MailSender
 
-MyMailSender = MailSender()
+MyMailSender = MailSender("me@claudiofreddi.eu")
 
 subject = "Mail Subject"
 body = "Mail Body"

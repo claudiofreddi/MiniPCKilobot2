@@ -1,7 +1,7 @@
 import tkinter as tk
-from Lib_Processes import *
-from Robot_Arduino_A_DoActions import *
-from Robot_Keyboard import RobotKeyboard_Run
+from ZOLD_Lib_Processes import *
+from ZOLD_Robot_Arduino_A_DoActions import *
+from ZOLD_Robot_Keyboard import RobotKeyboard_Run
 import threading
 import datetime
 from matplotlib.figure import Figure 

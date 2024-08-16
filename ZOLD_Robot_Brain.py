@@ -1,11 +1,11 @@
 from multiprocessing import Manager
-from Lib_Processes import *
+from ZOLD_Lib_Processes import *
 import multiprocessing as mp 
 
 import time
-from Lib_Commands_Interfaces import * 
+from ZOLD_Lib_Commands_Interfaces import * 
 from ZOLD_Robot_Speaker import SpeakerCommandInterface
-from Robot_Telegram import TelegramMsgInterface
+from ZOLD_Robot_Telegram import TelegramMsgInterface
 
 class RobotBrain_Obj(ProcessSuperClass):
     

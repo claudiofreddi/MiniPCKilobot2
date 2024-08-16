@@ -1,14 +1,14 @@
 # Importing Libraries
 import time
 
-from Lib_Processes import *
+from ZOLD_Lib_Processes import *
 from Lib_ArduinoConnection import *
 from Lib_Utils_Compass_Helper import *                   
-from Lib_Commands_Interfaces import * 
+from ZOLD_Lib_Commands_Interfaces import * 
 
 
-from Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
-from Robot_Simulate_Processes  import Robot_Simulate_Process_Obj_Run, Sparring_Process_Names
+from ZOLD_Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
+from ZOLD_Robot_Simulate_Processes  import Robot_Simulate_Process_Obj_Run, Sparring_Process_Names
 
 ##Comandi Elaborabili da Arduino
 class RobotArduinoCommands:

@@ -1,7 +1,7 @@
     
 import multiprocessing as mp 
-from Lib_Commands_Interfaces import *
-from Lib_Utils_MyQ import *
+from ZOLD_Lib_Commands_Interfaces import *
+from ZOLD_Lib_Utils_MyQ import *
 
 
 class SpeakerCommandInterface:
