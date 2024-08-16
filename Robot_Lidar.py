@@ -10,30 +10,24 @@ from multiprocessing import Manager
 import time
 
 from Robot_lidar_base import lidarfunc
-from ZOLD_Robot_Keyboard import RobotKeyboard_Run
-from ZOLD_Robot_UI import RobotUI_Run
-from ZOLD_Robot_Arduino_B_ReadSensors import ArduinoReadSensors_Run
-from ZOLD_Robot_Arduino_A_DoActions import Arduino_A_DoActions_Run
-
-
 
 import serial
-   
+from Robot_Envs import *
 
 class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
   
-    RangingIdleInSeconds = 1
-    SliceHalfSize = 10
-    SliceFullSize = SliceHalfSize * 2
-    NumOfAnglesInterval = 360/SliceFullSize #18    
-    GraphOn = False
+
     
     
     def __init__(self,processName):
         threading.Thread.__init__(self)
         super().__init__(processName)
         self.EnableConsoleLogLevel = ProcessSuperClassLogLevel.Always
-        
+        self.RangingIdleInSeconds = 1
+        self.SliceHalfSize = 10
+        self.SliceFullSize = self.SliceHalfSize * 2
+        self.NumOfAnglesInterval = 360/self.SliceFullSize #18    
+        self.GraphOn = False
    
     def GetDistanceAngle(self,Angle,dataAN, dataD):
         Anglefrom = Angle - self.SliceHalfSize
@@ -72,16 +66,6 @@ class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
         if (len(X) == 0):
             return 0,0,0
         
-        if (False):
-            if (Anglefrom<=10 or Anglefrom>=350):
-                #boolean_array = np.logical(dataD > 15)
-                in_range_indices = np.where(np.array(dataD) < 15)[0]
-                Z = [dataD[index] for index in in_range_indices]
-                for index in in_range_indices:
-                    dataD[index]= 200
-                print(Z)
-                print(len(X))
-        
         #return 0 if len(X) == 0 else self.find_average(X), 0 if len(X) == 0 else min(X), 0 if len(X) == 0 else max(X)
         return self.find_average(X), min(X),  max(X)
         
@@ -118,7 +102,7 @@ class RobotLidar_Obj(ProcessSuperClass,threading.Thread):
         #super().LogConsole("theta360:")
         #super().LogConsole(theta360)
 
-        Myser = serial.Serial(port="COM10",baudrate=230400,timeout=5.0,bytesize=8,parity='N',stopbits=1)
+        Myser = serial.Serial(port=LIDAR_COM_PORT,baudrate=LIDAR_BOAD_RATE,timeout=5.0,bytesize=8,parity='N',stopbits=1)
         
         Continue = True
         while Continue:
@@ -245,7 +229,7 @@ if (__name__== "__main__"):
     MySharedObjs = SharedObjs()
     
     if not (useThreads):
-        if (False):
+        if (True):
             RobotLidar_Run(MySharedObjs)     
         else:        
             run_io_tasks_in_parallel([
@@ -268,23 +252,7 @@ if (__name__== "__main__"):
         x = threading.Thread(target=RobotLidar_Run, args=(MySharedObjs,False,))
         threads.append(x)
         x.start()        
-        
-        x = threading.Thread(target=RobotUI_Run, args=(MySharedObjs,))
-        threads.append(x)
-        x.start()        
-
-        x = threading.Thread(target=RobotKeyboard_Run, args=(MySharedObjs,))
-        threads.append(x)
-        x.start()  
-
-        
-        x = threading.Thread(target=ArduinoReadSensors_Run, args=(MySharedObjs,))
-        threads.append(x)
-        x.start()  
-        
-        x = threading.Thread(target=Arduino_A_DoActions_Run, args=(MySharedObjs,))
-        threads.append(x)
-        x.start()  
+               
         
         print("End Threading...", len(threads))
         

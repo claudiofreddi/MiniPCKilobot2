@@ -39,26 +39,27 @@ class SocketClient_Sample(Socket_Client_BaseClass):
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
             
-          
-            #Sample To remove
-            
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE, 
-                                                                    Message = "Test", Value = self.MyTimer.GetElapsed())                
-                
-            
-            self.SendToServer(ObjToSend) 
-            self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
-        
+            if (self.IsConnected):
+                #Sample To remove
+                time.sleep(2)
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE, 
+                                                                        Message = "Test", Value = 0)                
                     
-            if (self.IsQuitCalled):
-                return self.OnClient_Core_Task_RETVAL_QUIT
-        
-            return self.OnClient_Core_Task_RETVAL_OK
+                
+                self.SendToServer(ObjToSend) 
+                self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
             
+                        
+                if (self.IsQuitCalled):
+                    return self.OnClient_Core_Task_RETVAL_QUIT
+            
+            return self.OnClient_Core_Task_RETVAL_OK
+          
             
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
             return self.OnClient_Core_Task_RETVAL_ERROR
+    
     
      
         

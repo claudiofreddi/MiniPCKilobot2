@@ -22,7 +22,7 @@ class Socket_Services_List:
     ACTUATORS = "ACTUATORS_Client"
     TELEGRAM = "TELEGRAM_Client"
     ARDUINO_READ_WRITE = "ARDUINO_READ_WRITE_TEST_Client"
-        
+    LIDAR = "LIDAR_Client"
 
 
 
