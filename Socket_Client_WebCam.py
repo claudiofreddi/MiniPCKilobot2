@@ -3,24 +3,48 @@ from Socket_Utils_Timer import *
 import numpy as np
 import imutils
 import cv2 as cv
-
+from Robot_Vision_Object_Classifer import *
 
 class SocketClient_Webcam(Socket_Client_BaseClass):
 
-    IMAGE_CHANGE_SENSITIVITY_GR_THAN = 30
-    FRAME_PER_SECOND = 35
-    USE_GRAY = 0
-    SHOW_FRAME = False
-    img_counter = 0
-    IsFirstImage = True
-    CvIsOpen = False
-    ContinuousSending_On = True
+          
 
     
     def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         self.CvIsOpen = False
+        self.IMAGE_CHANGE_SENSITIVITY_GR_THAN = 0
+        self.FRAME_PER_SECOND = 35
+        self.USE_GRAY = 0
+        self.SHOW_FRAME = False
+        self.img_counter = 0
+        self.IsFirstImage = True
+        self.CvIsOpen = False
+        self.ContinuousSending_On = True
+        self._Classifier_Enabled = True
+        self._Classifier_Loaded = False
+    
         
+    def Classifier_Load(self):
+        if (not self._Classifier_Loaded):
+            self.LogConsole("Loaing Classifier... please wait",ConsoleLogLevel.System)
+            self.MyRobotVision_Obj_Classifier = RobotVision_Object_Classifier()
+            self.MyRobotVision_Obj_Classifier.Load()
+            self.MyRobotVision_Obj_Classifier.StartDNN()
+            self._Classifier_Loaded = True
+            
+            
+    def Classifier_Enable(self, Enabled = True):
+        self._Classifier_Enabled = Enabled and self._Classifier_Loaded
+        self.LogConsole(f"Classifier { 'Enabled' if self._Classifier_Enabled else ' Disabled' }",ConsoleLogLevel.System)
+        
+    def Classifier_Apply(self, frame,ConfidenceLev=0.60):
+        success,FoundNames,FoundConfidence,FoundBoxes = self.MyRobotVision_Obj_Classifier.TrackObjects(frame=frame,AddBoxes=True,ConfidenceLev=ConfidenceLev)
+        self.LogConsole(str(FoundNames),ConsoleLogLevel.Test)
+        return success,FoundNames,FoundConfidence,FoundBoxes
+        
+        
+                    
     def OnClient_Connect(self):
         self.IsFirstImage  = True #Set for reload image also in case of no detection
         #self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
@@ -28,6 +52,8 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
 
     def On_ClientAfterLogin(self):
         self.RegisterTopics(Socket_Default_Message_Topics.INPUT_IMAGE)
+        self.Classifier_Load()
+        self.Classifier_Enable(True)
         
 
                 
@@ -88,16 +114,20 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                         else:
                             
                             
+                                
                             self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
                             frame = imutils.resize(frame, width=320)
 
                             frame = cv.flip(frame,180)
                             
+                                
                             diff_percent = -1
                             
                             try:
                                 
-                                                                
+                                if (self.IMAGE_CHANGE_SENSITIVITY_GR_THAN == 0): #non comparo
+                                    time.sleep(0.3)
+                                
                                 ## compare
                                 imgToCompareChg = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
                                 imgToCompareChg = cv.GaussianBlur(imgToCompareChg, (21, 21), 0)
@@ -110,10 +140,15 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                 diff_percent = self.calculate_difference_measure(self.LastFrameToCompareChg , imgToCompareChg) *100
                                 diff_percent = int(diff_percent)                                
                                 self.LastFrameToCompareChg = imgToCompareChg
-                                                                                                
+                                                                                                        
                                                                 
                             except Exception as e:
                                 self.LogConsole(self.ThisServiceName() + "Error in Comparing Images:  " + str(e),ConsoleLogLevel.Error)
+                            
+                            if (self._Classifier_Enabled):
+                                #self.LogConsole("Classifier_Apply",ConsoleLogLevel.Test)
+                                success,FoundNames,FoundConfidence,FoundBoxes = self.Classifier_Apply(frame)
+                                #self.LogConsole(f"Classifier_Apply retval:{success}" ,ConsoleLogLevel.Test)
                             
                             if (    diff_percent == -1 
                                     or diff_percent > self.IMAGE_CHANGE_SENSITIVITY_GR_THAN 
@@ -131,7 +166,8 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                             
                                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
                                                                                         Message = "Test", 
-                                                                                        Value = diff_percent)                
+                                                                                        Value = diff_percent,
+                                                                                        ResultList=FoundNames)                
 
 
                                 self.SendToServer(MyMsg=ObjToSend,AdditionaByteData=AdditionaByteData) 
@@ -140,8 +176,11 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                                             
                             if (self.SHOW_FRAME):
                                 # Display the resulting frame
-                                cv.imshow('frame', frame)
-                               
+                                try:
+                                    cv.imshow('frame', frame)
+                                    cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
+                                except:
+                                    cv2.destroyAllWindows()
                         
                                                 
                         cv.waitKey(1)

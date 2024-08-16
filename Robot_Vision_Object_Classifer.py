@@ -3,6 +3,7 @@ import face_recognition as fr
 from os.path import exists, os
 import numpy as np
 from Robot_Envs import *
+import time
 
 class RobotVision_Object_Classifier():
     
@@ -58,12 +59,17 @@ class RobotVision_Object_Classifier():
             
         print("Look for: " + str(list(self.LookForSpecificObjs)))
         
-    def TrackObjects(self,frame,Title = 'Title',ShowBoxes=True):
+    def TrackObjects(self,frame,Title = 'Title',AddBoxes=True,AddConfLevel=False,ConfidenceLev=0.45):
+        
+        self.thres = ConfidenceLev
+        
         success = False
         FoundIndex = -1
         BestConf = -1
         FoundBox = (0,0,0,0)
-        
+        FoundNames = []
+        FoundConfidence =[]
+        FoundBoxes = []
         if not (frame is None):
             if (len(frame) >0):
                 
@@ -82,28 +88,35 @@ class RobotVision_Object_Classifier():
                                 
                         if (Match):     
                             success = True
-                            if (ShowBoxes):
+                            FoundNames.append(self.classNames[classId-1])
+                            FoundConfidence.append(int(confidence*100) )
+                            FoundBoxes.append(bbox)
+                            if (AddBoxes):
                                 color = self.GreenColor if (confidence*100 >= self.ConfidenceColorThres) else self.RedColor
                                 #color = self.GreenColor
                                 cv2.rectangle(frame,box,color=color,thickness=2)
+                                
                                 cv2.putText(frame,self.classNames[classId-1].upper(),(box[0]+10,box[1]+30),
                                             cv2.FONT_HERSHEY_COMPLEX,1,color,2)
-                                cv2.putText(frame,str(round(confidence*100,2)),(box[0]+200,box[1]+30),
-                                            cv2.FONT_HERSHEY_COMPLEX,1,color,2)
-                            
-                                cv2.putText(frame,Title,(10,30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
+                                if (AddConfLevel):
+                                    cv2.putText(frame,str(round(confidence*100,2)),(box[0]+200,box[1]+30),
+                                                cv2.FONT_HERSHEY_COMPLEX,1,color,2)
+                                if (Title != ""):
+                                    cv2.putText(frame,Title,(10,30),cv2.FONT_HERSHEY_COMPLEX,1,(0,255,0),2)
                         
                         i = i + 1
         
         if (success):
-            return success,  classIds, confs, bbox, FoundIndex, BestConf, FoundBox
+            return success,FoundNames,FoundConfidence,FoundBoxes
+            #return success,  classIds, confs, bbox, FoundIndex, BestConf, FoundBox,FoundNames,FoundConfidence,FoundBoxes
         else:
-            return success, [], [], [], -1, -1, (0,0,0,0)
+            return success, [], [], []
+#           return success, [], [], [], -1, -1, (0,0,0,0),[]    
                 
     
 if (__name__== "__main__"):
         
-    _GetFromCam = True
+    _GetFromCam = False
     
     MyRobotVision_Obj_Classifier = RobotVision_Object_Classifier()
     MyRobotVision_Obj_Classifier.Load()
@@ -126,12 +139,18 @@ if (__name__== "__main__"):
         ret, frame = cap.read()
         
         if (ret):
-            success,  classIds, confs, bbox, FoundIndex, BestConf, FoundBox = MyRobotVision_Obj_Classifier.TrackObjects(frame)
+            success,  FoundNames,FoundConfidence,FoundBoxes = MyRobotVision_Obj_Classifier.TrackObjects(frame=frame,Title="test",AddBoxes=True,ConfidenceLev=0.7)
+            #success,  classIds, confs, bbox, FoundIndex, BestConf, FoundBox, FoundNames,FoundConfidence,FoundBoxes = MyRobotVision_Obj_Classifier.TrackObjects(frame)
             
             
             #print(len(classIds))
-            print("Index " ,FoundIndex, " best conf: ",BestConf )
-            print("Box " ,FoundBox)
+            print(FoundNames)
+            print("\n")
+            print(FoundConfidence)
+            print("\n")
+            print(FoundBoxes)
+            print("\n")
+
             
             if (not success):
                 print("Error")
@@ -140,6 +159,8 @@ if (__name__== "__main__"):
             cv2.imshow("Output",frame)
             cv2.setWindowProperty("Output", cv2.WND_PROP_TOPMOST, 1)
             cv2.waitKey(1)
+            
+            time.sleep(3)
 
             # Exit if ESC pressed
             k = cv2.waitKey(1) & 0xff

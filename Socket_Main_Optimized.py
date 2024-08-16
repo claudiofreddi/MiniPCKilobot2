@@ -8,7 +8,6 @@ from Socket_Client_WebCam import *
 from Socket_Client_Speaker import * 
 from Socket_Client_Telegram import * 
 from Socket_Client_Actuators import * 
-from Socket_Setting___ import *
 
 import time
 
@@ -23,14 +22,14 @@ Obj.Run_Threads()
 Obj = SocketClient_Sensors(LogOptimized=_LogOptimized)    
 Obj.Run_Threads()  
 
-# Obj = SocketClient_Speaker(LogOptimized=_LogOptimized)    
-# Obj.Run_Threads() 
+Obj = SocketClient_Speaker(LogOptimized=_LogOptimized)    
+Obj.Run_Threads() 
 
-#Obj = SocketClient_Telegram(LogOptimized=_LogOptimized)    
-#Obj.Run_Threads() 
+Obj = SocketClient_Telegram(LogOptimized=_LogOptimized)    
+Obj.Run_Threads() 
 
-#Obj = SocketClient_Webcam(LogOptimized=_LogOptimized)    
-#Obj.Run_Threads() 
+Obj = SocketClient_Webcam(LogOptimized=_LogOptimized)    
+Obj.Run_Threads() 
 
 Obj = SocketClient_Actuators(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 

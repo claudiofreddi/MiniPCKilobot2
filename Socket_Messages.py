@@ -61,7 +61,7 @@ class SocketDecoder:
 
 class Socket_Default_Message(Common_LogConsoleClass):
     def __init__(self,Topic=Socket_Default_Message_Topics.NONE, UID = '',Message ="",
-                 Value=0,RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData=''):
+                 Value=0,RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData='', ResultList= [] ):
         self.Message = Message
         self.Value = Value
         self.Error = Error
@@ -72,6 +72,7 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.LastRefresh = LastRefresh
         self.ByteData = ByteData
         self.Topic = Topic
+        self.ResultList = ResultList
        
 
     def json(self):

@@ -98,7 +98,6 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
             # else:
             #     self.bot.sendMessage(chat_id, f'Mi spiace {name}, non capisco {MyCmd}\nUsa /help per sapere cosa posso fare!')
             if (IsToSendToServer):
-                print("k->:" +MyCmd)
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
                                                                                 Message = MyCmd, Value = 0)
                                 
@@ -106,7 +105,6 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
 
 
     def on_chat_send_master_message(self,bot, text_msg):
-        print("z->: " + text_msg)
         bot.sendMessage(TELEGRAM_MASTER_TARGET,text_msg)
         
             
@@ -133,7 +131,6 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
                     #     self.TelegramMsgQ.put(ReceivedMessage.Message)   
                         
                     if (ReceivedMessage.Topic == Socket_Default_Message_Topics.OUTPUT_TELEGRAM):
-                        print("->x: " + ReceivedMessage.Message)
                         self.TelegramMsgQ.put(ReceivedMessage.Message)     
                         
                     if (ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_IMAGE):
@@ -146,7 +143,7 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
                                     frame = cv2.imdecode(frame, cv2.IMREAD_COLOR) 
                                     
                                     cv2.imwrite(self.LOCAL_TEMP_IMAGE , frame) 
-                                    self.LogConsole(f"Sending Image Data To Telegram {str(len(AdditionaByteData))} {ReceivedMessage.Value}%",ConsoleLogLevel.CurrentTest)
+                                    self.LogConsole(f"Sending Image Data To Telegram {str(len(AdditionaByteData))} {ReceivedMessage.Value}%",ConsoleLogLevel.Test)
                                     self.bot.sendPhoto(TELEGRAM_MASTER_TARGET,open(self.LOCAL_TEMP_IMAGE , 'rb'))
                                     self.MyTimer.Reset(self.PHOTO_SEND_MIN_INTERVAL_SEC)     
                         
@@ -170,7 +167,6 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
             if (self.TelegramMsgQ.HasItems()): 
                 
                 TextToSend = self.TelegramMsgQ.get()
-                print("y->: " + TextToSend)
                 if (TextToSend != ''):
                     if (self.Telegram_Enabled):
                         self.bot.sendMessage(TELEGRAM_MASTER_TARGET,TextToSend)

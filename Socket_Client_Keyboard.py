@@ -12,11 +12,12 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                               's',          #backward
                               'w',          #forward
                               'Ctrl+M',     #Show Message Sent From Server_LastKey_Pressed
-                              'Ctrl+T'      #Topic List
+                              'Ctrl+T',      #Topic List
+                              'Ctrl+I'      #Image Enable/Disable
                               }
     
-    SPECIAL_KEYS_ON_RELEASE =  {'a','d','e','s','w'} #,'Ctrl+M'}
-    SPECIAL_KEYS_CONTINUE_SENDING =  {'a','d','e','s','w'} #,'Ctrl+M'}
+    SPECIAL_KEYS_ON_RELEASE =  {'a','d','e','s','w'}
+    SPECIAL_KEYS_CONTINUE_SENDING =  {'a','d','e','s','w'}
     
     _AllowEscape = False
     _StopOnReleaseEvent   = True

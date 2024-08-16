@@ -39,7 +39,7 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
                             if (ArdCmd == RobotArduinoCommands.STOP): 
                                 #pulisco coda
                                 self.ArduinoCommandsQ.Clear()
-                                self.LogConsole(f"Q Cleared",ConsoleLogLevel.CurrentTest)
+                                self.LogConsole(f"Q Cleared",ConsoleLogLevel.Test)
                             #Queue command
                             self.LogConsole(f"{self.ThisServiceName()} cmd {ArdCmd} received",ConsoleLogLevel.Test)
                            

@@ -162,19 +162,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             self.LogConsole("Server Error in broadcastObj() " + str(e),ConsoleLogLevel.Error)                 
     
             
-    def SensorUpdate(self,ReceivedSensorObject:Socket_Default_Message):
 
-        found = False
-        if (    ReceivedSensorObject.Topic == Socket_Default_Message_Topics.SENSOR_BATTERY
-            or  ReceivedSensorObject.Topic == Socket_Default_Message_Topics.SENSOR_COMPASS):
-            pSensor:Socket_Default_Message
-            for pSensor in self.MyListOfSensors:
-                 if (pSensor.Topic == ReceivedSensorObject.Topic):
-                    found = True
-                    pSensor.Copy(ReceivedSensorObject)
-                    break
-            if (not found):
-                self.MyListOfSensors.append(ReceivedSensorObject)
 
                 
                 
@@ -253,59 +241,18 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             ##SocketObjectClassType.SENSOR : value update      
                             elif (   ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_COMPASS
                                 or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY):
-                                            
-                                self.SensorUpdate(ReceivedMessage)
-                                
+                                self.Specific_Topic_Management_SENSOR(ReceivedMessage=ReceivedMessage)            
                                                            
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD
                                 and ReceivedMessage.Value==0):
-                                    
-                                match(ReceivedMessage.Message):
-                                    
-                                    case "Ctrl+M": #Ctrl + M (Alle Messages about send and receive)
-                                        self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
-                                        print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
-                                        self.Show_SendToClient_Val = self.Show_GetFromClient_Val 
-                                        print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
-
-                                    case "Ctrl+T": #Ctrl + T (Topic)
-                                        for co in self.client_objects:
-                                            co.ShowDetails()
-                                                
-                                                
-                                    case _:
-                                        #print("VAL [" + ReceivedMessage.Message + "]")
-                                        pass
+                                self.Specific_Topic_Management_INPUT_KEYBOARD(ReceivedMessage=ReceivedMessage)    
         
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_IMAGE):
-                                self.LogConsole("Receiving Image Data " + str(len(AdditionaByteData)),ConsoleLogLevel.Test)
-                                if (len(AdditionaByteData)>0):
-                                    if (self.SHOW_FRAME):
-                                        frame= pickle.loads(AdditionaByteData, fix_imports=True, encoding="bytes")
-                                        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
-                                        try:
-                                            cv2.imshow('server',frame)
-                                            cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
-                                        except:
-                                            pass
+                                self.Specific_Topic_Management_INPUT_IMAGE(ReceivedMessage=ReceivedMessage,AdditionalData=AdditionaByteData)
+   
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_TELEGRAM):
-                                self.LogConsole("Receiving Telegram Data " +  ReceivedMessage.Message, ConsoleLogLevel.CurrentTest)
-                                Prs = Socket_TextCommandParser(ReceivedMessage.Message)
-                                Cmd = Prs.GetSpecificCommand()
-                                print(Cmd)
-                                if (Cmd == RobotListOfAvailableCommands.SPEAK):
-                                    c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.SPEAKER)
-                                    print(c.servicename)
-                                    if (c):
-                                        ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
-                                                                                                    Message=Prs.GetSpecificCommandParam(1,GetAllTailParams=True),
-                                                                                                    Value=0,
-                                                                                                    Error="")
-                                        print(Prs.GetSpecificCommandParam(1,GetAllTailParams=True))
-                                        #self.SendToClient(c,ObjToSend)
-                                        print("Sending")
-                                        self.SendToClient(TargetClient=c.client,MyMsg=ObjToSend,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
-                                    
+                                self.Specific_Topic_Management_INPUT_TELEGRAM(ReceivedMessage=ReceivedMessage)
+   
                                     
                             cv2.waitKey(1)
                                     
@@ -405,6 +352,82 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             
             tick = tick + 1
+            
+    ########################################################################################                        
+    ##Gestione TOPICS
+    ########################################################################################  
+            
+    def Specific_Topic_Management_INPUT_TELEGRAM(self,ReceivedMessage:Socket_Default_Message, AdditionalData = b''):
+        self.LogConsole("Receiving Telegram Data " +  ReceivedMessage.Message, ConsoleLogLevel.Test)
+        Prs = Socket_TextCommandParser(ReceivedMessage.Message)
+        Cmd = Prs.GetSpecificCommand()
+        print(Cmd)
+        if (Cmd == RobotListOfAvailableCommands.SPEAK):
+            c:client_object = self.GetClientObjectByServiceName(Socket_Services_List.SPEAKER)
+            print(c.servicename)
+            if (c):
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
+                                                                            Message=Prs.GetSpecificCommandParam(1,GetAllTailParams=True),
+                                                                            Value=0,
+                                                                            Error="")
+                print(Prs.GetSpecificCommandParam(1,GetAllTailParams=True))
+                #self.SendToClient(c,ObjToSend)
+                print("Sending")
+                self.SendToClient(TargetClient=c.client,MyMsg=ObjToSend,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionalData)
+    
+            
+    def Specific_Topic_Management_INPUT_IMAGE(self,ReceivedMessage:Socket_Default_Message, AdditionalData = b''):
+        self.LogConsole("Receiving Image Data " + str(len(AdditionalData)),ConsoleLogLevel.Test)
+        self.LogConsole("Detection List " + str(ReceivedMessage.ResultList),ConsoleLogLevel.Test)
+        if (len(AdditionalData)>0):
+            if (self.SHOW_FRAME):
+                frame= pickle.loads(AdditionalData, fix_imports=True, encoding="bytes")
+                frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
+                try:
+                    cv2.imshow('server',frame)
+                    cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
+                except:
+                    cv2.destroyAllWindows()
+            else:
+                cv2.destroyAllWindows()
+    
+    def Specific_Topic_Management_INPUT_KEYBOARD(self,ReceivedMessage, AdditionalData = b''): 
+        match(ReceivedMessage.Message):
+            
+            case "Ctrl+M": #Ctrl + M (Alle Messages about send and receive)
+                self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
+                print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
+                self.Show_SendToClient_Val = self.Show_GetFromClient_Val 
+                print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
+
+            case "Ctrl+T": #Ctrl + T (Topic)
+                for co in self.client_objects:
+                    co.ShowDetails()
+                        
+            case "Ctrl+I": #Ctrl + I (Image On Off)
+                self.SHOW_FRAME = not self.SHOW_FRAME
+                                   
+            case _:
+                #print("VAL [" + ReceivedMessage.Message + "]")
+                pass
+    
+    def Specific_Topic_Management_SENSOR(self,ReceivedMessage, AdditionalData = b''): 
+
+        found = False
+        if (    ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_BATTERY
+            or  ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_COMPASS):
+            pSensor:Socket_Default_Message
+            for pSensor in self.MyListOfSensors:
+                if (pSensor.Topic == ReceivedMessage.Topic):
+                    found = True
+                    pSensor.Copy(ReceivedMessage)
+                    break
+            if (not found):
+                self.MyListOfSensors.append(ReceivedMessage)
+    
+    #######################################################################################                        
+    ##Gestione TOPICS
+    ########################################################################################  
         
     def Run_Threads(self,SimulOn = False):
         simul_thread = threading.Thread(target=self.WaitingForNewClient)
