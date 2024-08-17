@@ -7,17 +7,19 @@ from Robot_lidar_base import lidarfunc
 from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 from Robot_Envs import *
+from Socket_Utils_Lidar_Algo import *
 
 class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
 
-   
+    MyAlgo = Socket_Utils_Lidar_Algorithm()
+    
     def __init__(self, ServiceName = Socket_Services_List.LIDAR, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         self.IsLidarConnected = False
-        self.RangingIdleInSeconds = 0.5
-        self.SliceHalfSize = 10
+        self.RangingIdleInSeconds = 2
+        self.SliceHalfSize = 3
         self.SliceFullSize = self.SliceHalfSize * 2
-        self.NumOfAnglesInterval = 360/self.SliceFullSize #18    
+        self.NumOfAnglesInterval = int(360/self.SliceFullSize) #18    
         self.GraphOn = True
         #Params
         self.MaxScale = 200
@@ -34,7 +36,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
             self.ax = self.fig.add_subplot(111, projection='polar')
             self.ax.set_title('Scanning environment..', fontsize=10)
         
-        self.theta = np.linspace(0 ,2*np.pi,self.SliceFullSize) # [0, 30, 60 , 90, 120, 150, 180... 360]
+        self.theta = np.linspace(0 ,2*np.pi,self.NumOfAnglesInterval) # [0, 30, 60 , 90, 120, 150, 180... 360]
 
         self.LogConsole(self.ThisServiceName() + f"theta: {self.theta}",ConsoleLogLevel.Test)
         
@@ -151,7 +153,12 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                             radiusMin.append(mi)
                         
                         radiusSafe = radiusMin
-                    
+                        
+                        print(radiusSafe)
+                        
+                        BestNewAngleToFollow = self.MyAlgo.GetBestAngleToMove(radiusSafe)
+                        print("Best Angle To Follow: " + str(BestNewAngleToFollow))
+                        
                         #idx = np.where( np.array(radiusMin) < 10 )[0] 
                         #for i in idx:
                         #    radiusMin[i] = 10
@@ -160,7 +167,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         if (self.GraphOn):
                             
                             if (self.TraceAllLines):
-                                super().LogConsole("radius:")
+                                
                                 if ('lineav' in locals()):
                                     lineav.remove()
                                 lineav = self.ax.scatter(self.theta, radiusAv, c="yellow", s=5)
@@ -194,11 +201,14 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         if (min_front != self.last_min_front ):
                             
                             if (self.IsConnected):
+                                print("Best Angle To Follow: " + BestNewAngleToFollow)
+                                print("min_front: " + str(min_front))
+                                
                                 # self.SharedMem.LidarInfo.FrontDistance = min_front
                                 # self.SharedMem.LidarInfo.LastUpdate = time.time()
                                 self.SemaphoreReadyToSend = True
                                 
-                            print("min_front: " + str(min_front))
+                           
                             self.last_min_front = min_front
                         
                         if (self.GraphOn):
@@ -249,13 +259,76 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         
         #return 0 if len(X) == 0 else self.find_average(X), 0 if len(X) == 0 else min(X), 0 if len(X) == 0 else max(X)
         return self.find_average(X), min(X),  max(X)
-        
-        
+         
 
 
     def find_average(self,arr): 
         total = sum(arr) 
         return total / len(arr) 
+
+
+    def GetBestAngleToMove(self,Arr):
+        Test = False
+        numitems = len(Arr)
+        FClass = [0] * numitems
+        Weight = [0] * numitems
+        Degrees = [0] * numitems
+        TotalWeight = [0] * numitems
+        
+        Pos = 0
+        Step = int(356/numitems)
+        for i in range(0,len(Degrees)): 
+            Degrees[i] = Pos
+            Pos += Step
+            FClass[i] = int(Arr[i]/100)*100
+            Weight[i] = 0
+        if (Test): print(numitems)    
+        for i in range(0,numitems):
+            index_1 = numitems-1 if (i-1<0) else i-1
+            index_2 = numitems-2 if (i-2<0) else i-2
+            index_1b = 0 if (i+1>numitems) else i
+            index_2b = 1 if (i+2>numitems) else i+1
+            if (Test): print(index_1,index_2, index_1b, index_2b)
+            if (FClass[i] == FClass[index_1]): Weight[i] +=1
+            if (FClass[i] == FClass[index_2]): Weight[i] +=2
+            if (FClass[i] == FClass[index_1b]): Weight[i] +=1
+            if (FClass[i] == FClass[index_2b]): Weight[i] +=2
+        
+        MaxIndex = -1
+        LastMaxTotal = 0
+        CountMaxVal = 0
+        for i in range(0,numitems):    
+            TotalWeight[i] = FClass[i] * Weight[i] 
+            if (TotalWeight[i] >= LastMaxTotal): 
+                MaxIndex = i
+                
+                if (TotalWeight[i] == LastMaxTotal): 
+                    CountMaxVal += 1
+                else:
+                    CountMaxVal =1
+                LastMaxTotal = TotalWeight[i]
+                
+        StepBack = int(CountMaxVal/2)
+        if (MaxIndex - StepBack<0):
+            MaxIndex = MaxIndex - StepBack  + numitems
+        else:
+            MaxIndex = MaxIndex - StepBack
+            
+        if (Test):
+            print(Arr)    
+            print(Degrees)
+            print(FClass)
+            print(Weight)
+            print(TotalWeight)
+            print(MaxIndex)
+            print(LastMaxTotal)
+            print(Degrees[MaxIndex])
+        
+        if (MaxIndex!=-1):
+            return Degrees[MaxIndex],CountMaxVal    
+        
+        return -1
+        
 
     def OpenWindow(self):
         self.MainExecution()
