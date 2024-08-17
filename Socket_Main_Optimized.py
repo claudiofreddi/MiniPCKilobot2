@@ -8,6 +8,7 @@ from Socket_Client_WebCam import *
 from Socket_Client_Speaker import * 
 from Socket_Client_Telegram import * 
 from Socket_Client_Actuators import * 
+from Socket_Client_Lidar import * 
 
 import time
 
@@ -39,6 +40,11 @@ Obj.Run_Threads()
 
 # Obj = SocketClient_Sample()    
 # Obj.Run_Threads() s
+
+Obj = SocketClient_Lidar(LogOptimized=_LogOptimized)
+Obj.Run_Threads()
+Obj.OpenWindow()
+
     
 Obj = Socket_Client_UI(LogOptimized=_LogOptimized)    
 Obj.Run_Threads() 

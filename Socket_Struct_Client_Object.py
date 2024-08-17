@@ -1,5 +1,5 @@
 import socket
-from Socket_Messages import * 
+from Socket_Struct_Messages import * 
 import queue
 
 class client_object:

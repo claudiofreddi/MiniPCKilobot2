@@ -1,4 +1,4 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Lib_ArduinoConnection import *
 from Robot_Envs import * 
 from Socket_Utils_Timer import * 

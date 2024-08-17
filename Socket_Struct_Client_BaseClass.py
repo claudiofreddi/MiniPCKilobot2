@@ -4,7 +4,7 @@ import time
 from typing import cast
 from Robot_Envs import *
 #from Lib_Sockets import * 
-from Socket_ClientServer_BaseClass import * 
+from Socket_Struct_ClientServer_BaseClass import * 
 import struct
 
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):

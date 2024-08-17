@@ -1,7 +1,7 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 from Lib_ArduinoConnection import *
-from Socket_Client_Actuators_Helpers import * 
+from Socket_Struct_Client_Actuators_Helpers import * 
 from Socket_Utils_Q import * 
 
 class SocketClient_Actuators(Socket_Client_BaseClass):

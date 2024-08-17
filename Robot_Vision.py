@@ -20,7 +20,7 @@ from ZOLD_Robot_SharedParamsMonitor import RobotSharedParamsMonitor_Run
 from ZOLD_Robot_Simulate_Processes  import Robot_Simulate_Process_Obj_Run, Sparring_Process_Names
 
 from Robot_Vision_Face_Classifier import RobotVision_Face_Classifier
-from Robot_Vision_Object_Classifer import RobotVision_Object_Classifier
+from Socket_Logic_Vision_Object_Classifer import RobotVision_Object_Classifier
 from Robot_Vision_Object_Tracker import RobotVision_Object_Tracker
 
 

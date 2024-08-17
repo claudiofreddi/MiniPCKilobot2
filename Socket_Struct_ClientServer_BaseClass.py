@@ -6,9 +6,9 @@ from Robot_Envs import *
 import uuid
 import pickle
 
-from Socket_Send_Receive import *
-from Socket_ConsoleLog import * 
-from Socket_Messages import * 
+from Socket_Utils_Send_Receive import *
+from Socket_Utils_ConsoleLog import * 
+from Socket_Struct_Messages import * 
 
 class Socket_Services_List:
     SERVER = "SERVER"

@@ -1,4 +1,4 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 
 class SocketClient_Remote(Socket_Client_BaseClass):

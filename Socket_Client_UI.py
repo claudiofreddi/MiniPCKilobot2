@@ -1,4 +1,4 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 import tkinter as tk
 import threading
 from socket import *
@@ -116,7 +116,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
     def CreateUI(self):
         try:
             self.root = tk.Tk()
-            self.root.geometry("500x600")
+            self.root.geometry("500x200")
             #self.root.resizable(0, 0)
             self.root.title('Kilobot')
             

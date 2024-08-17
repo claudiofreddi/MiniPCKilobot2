@@ -1,5 +1,5 @@
 
-from Socket_ClientServer_BaseClass import *
+from Socket_Struct_ClientServer_BaseClass import *
 
     
 

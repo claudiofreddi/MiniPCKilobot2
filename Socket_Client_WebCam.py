@@ -1,13 +1,11 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 import numpy as np
 import imutils
 import cv2 as cv
-from Robot_Vision_Object_Classifer import *
+from Socket_Logic_Vision_Object_Classifer import *
 
 class SocketClient_Webcam(Socket_Client_BaseClass):
-
-          
 
     
     def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
@@ -16,7 +14,9 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         self.IMAGE_CHANGE_SENSITIVITY_GR_THAN = 0
         self.FRAME_PER_SECOND = 35
         self.USE_GRAY = 0
+        self.IMAGE_SIZE_WIDTH = 500
         self.SHOW_FRAME = False
+        
         self.img_counter = 0
         self.IsFirstImage = True
         self.CvIsOpen = False
@@ -116,7 +116,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                             
                                 
                             self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
-                            frame = imutils.resize(frame, width=320)
+                            frame = imutils.resize(frame, width=self.IMAGE_SIZE_WIDTH)
 
                             frame = cv.flip(frame,180)
                             

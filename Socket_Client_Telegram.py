@@ -1,10 +1,10 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
-from Socket_Client_Actuators_Helpers import * 
+from Socket_Struct_Client_Actuators_Helpers import * 
 import time
 import telepot  
 from telepot.loop import MessageLoop
-from Socket_Server_Robot_Commands import *
+from Socket_Struct_Server_Robot_Commands import *
 from Socket_Utils_Q import * 
 from Socket_Utils_Timer import *
 import cv2
@@ -40,7 +40,7 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
     MyTimer = Socket_Timer()
     PHOTO_SEND_MIN_INTERVAL_SEC = 10
     LOCAL_TEMP_IMAGE = "c:/dati/Snapshot/LocalTempPhoto.png"
-    SurveillanceMode = True
+    SurveillanceMode = False
     
     def __init__(self, ServiceName = Socket_Services_List.TELEGRAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
@@ -113,8 +113,10 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
     def On_ClientAfterLogin(self):
-        self.RegisterTopics(Socket_Default_Message_Topics.INPUT_TELEGRAM,Socket_Default_Message_Topics.OUTPUT_TELEGRAM)
-        self.SubscribeTopics(Socket_Default_Message_Topics.INPUT_IMAGE )
+        self.RegisterTopics(Socket_Default_Message_Topics.INPUT_TELEGRAM)
+        if not self.Exclude_Code():  self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_TELEGRAM) 
+                     
+        self.SubscribeTopics(Socket_Default_Message_Topics.INPUT_IMAGE)
         
         
         

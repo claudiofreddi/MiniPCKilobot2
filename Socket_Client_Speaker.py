@@ -1,4 +1,4 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 from Lib_SpeakToMe import *
 import queue
@@ -20,7 +20,7 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
         
     
     def On_ClientAfterLogin(self):
-        self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)
+        self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)  #ToCheck: Serve ? 
         self.SubscribeTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)
         pass
         

@@ -4,34 +4,38 @@ import threading
 import time
 from ZOLD_Lib_Utils_MyQ import * 
 from Robot_Envs import * 
-from Socket_ClientServer_BaseClass import * 
-from Socket_Messages import * 
-from Socket_Client_Object import *
+from Socket_Struct_ClientServer_BaseClass import * 
+from Socket_Struct_Messages import * 
+from Socket_Struct_Client_Object import *
 from Socket_Utils_TextCommandParser import *
-from Socket_Server_Robot_Commands import *
+from Socket_Struct_Server_Robot_Commands import *
 from PIL import Image
+
+from Socket_Struct_Server_StatusParamList import * 
 
 import cv2
 
 
-        
-        
 class Socket_Server(Socket_ClientServer_BaseClass): 
 
 
     client_objects = []
-    SHOW_FRAME = True
         
     # SensorMessage List 
     MyListOfSensors = []
     
     
-    Show_GetFromClient_Val = 0
-    Show_SendToClient_Val = 0
-    
     def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort='',LogOptimized=False):
         super().__init__(ServiceName,ForceServerIP,ForcePort, True,LogOptimized)
         self.RunOptimized = LogOptimized
+        
+        
+        self.MyListOfStatusParams = StatusParamList()
+        self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON) 
+        self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.OFF) 
+        self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.OFF) 
+    
+        
         self.Connect()    
 
 
@@ -48,9 +52,13 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             self.MySocket_SendReceive.send_msg(TargetClient,SerializedObj,AdditionaByteData)
             
-            
-            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,self.Show_SendToClient_Val)
-            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,self.Show_SendToClient_Val)
+            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.ON)):
+                LogParam = ConsoleLogLevel.Show
+            else:
+                LogParam = 0
+
+            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,LogParam)
+            self.LogConsole("Server SendToClient [" + ToServiceName + "]: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,LogParam)
             
         except Exception as e:
             
@@ -69,7 +77,12 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             ser_obj,AdditionaByteData,retval = self.MySocket_SendReceive.recv_msg(TargetClient)
                 
             MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,self.Show_GetFromClient_Val)
+            
+            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
+                LogParam = ConsoleLogLevel.Show
+            else:
+                LogParam = 0
+            self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,LogParam)
             
             return MyEnvelope,AdditionaByteData ,True 
 
@@ -163,7 +176,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     
             
 
-
+    
                 
                 
                 
@@ -202,7 +215,13 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                                             
                             ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
-                            self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,self.Show_GetFromClient_Val )                
+                            
+                            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
+                                LogParam = ConsoleLogLevel.Show
+                            else:
+                                LogParam = 0
+
+                            self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,LogParam )                
                                         
                             ########################################################################################                        
                             ##Gestione Inoltro Messaggi  
@@ -380,7 +399,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.LogConsole("Receiving Image Data " + str(len(AdditionalData)),ConsoleLogLevel.Test)
         self.LogConsole("Detection List " + str(ReceivedMessage.ResultList),ConsoleLogLevel.Test)
         if (len(AdditionalData)>0):
-            if (self.SHOW_FRAME):
+            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON)):
                 frame= pickle.loads(AdditionalData, fix_imports=True, encoding="bytes")
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
                 try:
@@ -395,18 +414,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         match(ReceivedMessage.Message):
             
             case "Ctrl+M": #Ctrl + M (Alle Messages about send and receive)
-                self.Show_GetFromClient_Val = ConsoleLogLevel.Show if self.Show_GetFromClient_Val != ConsoleLogLevel.Show else ConsoleLogLevel.Test 
-                print("GetFromClient Active" if self.Show_GetFromClient_Val == ConsoleLogLevel.Show else  "GetFromClient Disabled")
-                self.Show_SendToClient_Val = self.Show_GetFromClient_Val 
-                print("SendToClient Active" if self.Show_SendToClient_Val == ConsoleLogLevel.Show else  "SendToClient Disabled")
-
+                NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS)
+                self.LogConsole(f"SHOW_RECEIVED_MSGS is {NewVal}",ConsoleLogLevel.System)
+                
+                NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_SHOW_SEND_MSGS)
+                self.LogConsole(f"SHOW_SEND_MSGS is {NewVal}",ConsoleLogLevel.System)
+               
             case "Ctrl+T": #Ctrl + T (Topic)
                 for co in self.client_objects:
                     co.ShowDetails()
                         
             case "Ctrl+I": #Ctrl + I (Image On Off)
-                self.SHOW_FRAME = not self.SHOW_FRAME
-                                   
+                NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_CAMERA)
+                self.LogConsole(f"SERVER_CAMERA is {NewVal}",ConsoleLogLevel.System)                   
             case _:
                 #print("VAL [" + ReceivedMessage.Message + "]")
                 pass
@@ -440,9 +460,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         
 if (__name__== "__main__"):
     
-    MyClients = []
-    
+        
     MyServer = Socket_Server()
-    MyServer.Run_Threads(False)
+    MyServer.Run_Threads()
     
    

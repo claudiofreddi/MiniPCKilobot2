@@ -35,6 +35,9 @@ class Common_LogConsoleClass(object):
                               ]
     RunOptimized = True
 
+    def Exclude_Code(self):
+        return True
+    
     
     def LogConsole(self,Text,*LogLevels):
         if (self.RunOptimized):

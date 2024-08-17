@@ -1,4 +1,4 @@
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from pynput import keyboard
 from  datetime import datetime
 import enum

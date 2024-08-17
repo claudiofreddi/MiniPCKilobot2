@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import threading
 from Robot_lidar_base import lidarfunc
-from Socket_Client_BaseClass import * 
+from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 from Robot_Envs import *
 
@@ -30,9 +30,9 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         
         # Make a figure for the LiDAR polar graph
         if (self.GraphOn):
-            self.fig = plt.figure(figsize=(8, 8))
+            self.fig = plt.figure(figsize=(4, 4))
             self.ax = self.fig.add_subplot(111, projection='polar')
-            self.ax.set_title('Scanning environment..', fontsize=18)
+            self.ax.set_title('Scanning environment..', fontsize=10)
         
         self.theta = np.linspace(0 ,2*np.pi,self.SliceFullSize) # [0, 30, 60 , 90, 120, 150, 180... 360]
 

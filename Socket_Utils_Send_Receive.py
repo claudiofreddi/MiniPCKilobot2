@@ -1,6 +1,6 @@
 import socket
 import struct
-from Socket_ConsoleLog import * 
+from Socket_Utils_ConsoleLog import * 
 
 
 class Socket_SendReceive(Common_LogConsoleClass):
