@@ -80,7 +80,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         try:
             
             if (self.SemaphoreReadyToSend):
-                self.LogConsole("Send LIdar info" ,ConsoleLogLevel.CurrentTest)
+                self.LogConsole("Send LIdar info" ,ConsoleLogLevel.Test)
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_LIDAR, 
                                                                         Message = "Lidare", Value = self.last_min_front)                
                     
