@@ -8,6 +8,7 @@ from Socket_Struct_Client_BaseClass import *
 from Socket_Utils_Timer import * 
 from Robot_Envs import *
 from Socket_Utils_Lidar_Algo import *
+from datetime import datetime
 
 class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
 
@@ -34,7 +35,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         if (self.GraphOn):
             self.fig = plt.figure(figsize=(4, 4))
             self.ax = self.fig.add_subplot(111, projection='polar')
-            self.ax.set_title('Scanning environment..', fontsize=10)
+            self.ax.set_title(str(datetime.now().time())[:8] + ' Scanning environment..', fontsize=10)
         
         self.theta = np.linspace(0 ,2*np.pi,self.NumOfAnglesInterval) # [0, 30, 60 , 90, 120, 150, 180... 360]
 
@@ -123,6 +124,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
 
                     
                         if (self.GraphOn):
+                            self.ax.set_title(str(datetime.now().time())[:8] + ' Scanning environment..', fontsize=10)
                             # Disegno confini
                             if ('line' in locals()):
                                 line.remove()
@@ -154,10 +156,14 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         
                         radiusSafe = radiusMin
                         
-                        print(radiusSafe)
+                        #print(radiusSafe)
                         
                         BestNewAngleToFollow = self.MyAlgo.GetBestAngleToMove(radiusSafe)
                         print("Best Angle To Follow: " + str(BestNewAngleToFollow))
+                        BestNewAngleToFollowRad = (BestNewAngleToFollow/360)*2*np.pi
+                        if ('line_Path' in locals()):
+                            line_Path.remove()
+                        line_Path, = self.ax.plot([BestNewAngleToFollowRad]*3,[0,50, 200],  c="red")
                         
                         #idx = np.where( np.array(radiusMin) < 10 )[0] 
                         #for i in idx:
