@@ -2,7 +2,6 @@ import socket
 
 import threading
 import time
-from ZOLD_Lib_Utils_MyQ import * 
 from Robot_Envs import * 
 from Socket_Struct_ClientServer_BaseClass import * 
 from Socket_Struct_Messages import * 
@@ -34,7 +33,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON) 
         self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.OFF) 
         self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.OFF) 
-    
+          
         
         self.Connect()    
 
@@ -47,8 +46,6 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             MyEnvelope:SocketMessageEnvelope = self.Prepare_StandardEnvelope(MsgToSend=MyMsg,To=ToServiceName,From=self.ServiceName)
             SerializedObj = self.Pack_Envelope_And_Serialize(MyEnvelope)
-            
-            
             
             self.MySocket_SendReceive.send_msg(TargetClient,SerializedObj,AdditionaByteData)
             
@@ -257,6 +254,12 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                 self.QuitClient(client)
                                 break
                             
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK):
+                                ParamName = ReceivedMessage.Message #self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE
+                                ParamValueStr = ReceivedMessage.ValueStr
+                                self.LogConsole("[" + ParamName +  "] Received ACK: [" + ParamValueStr + "]",ConsoleLogLevel.System)
+                                self.MyListOfStatusParams.UpdateParam(ParamName,ParamValueStr) 
+                                                               
                             ##SocketObjectClassType.SENSOR : value update      
                             elif (   ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_COMPASS
                                 or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY):
@@ -426,7 +429,15 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                         
             case "Ctrl+I": #Ctrl + I (Image On Off)
                 NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_CAMERA)
-                self.LogConsole(f"SERVER_CAMERA is {NewVal}",ConsoleLogLevel.System)                   
+                self.LogConsole(f"SERVER_CAMERA is {NewVal}",ConsoleLogLevel.System) 
+                
+            case "Ctrl+L": #Ctrl + L Lidar Idle 
+                self.SetClient_Status_Change_Idle(Socket_Services_List.LIDAR)
+                self.LogConsole(f"LIDAR_IS_IDLE ask to change status",ConsoleLogLevel.System) 
+                
+            case "Ctrl+S": #Ctrl + S Param Status
+                self.LogConsole(self.MyListOfStatusParams.GetStatusDescription(),ConsoleLogLevel.Show)     
+                
             case _:
                 #print("VAL [" + ReceivedMessage.Message + "]")
                 pass
@@ -448,7 +459,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     #######################################################################################                        
     ##Gestione TOPICS
     ########################################################################################  
-        
+    def SetClient_Status_Change_Idle(self,clientName:str):
+         c:client_object = self.GetClientObjectByServiceName(ServiceNameToFind=clientName)
+         if (c):
+             self._SetClient_Status_Change_Idle(c.client)
+    
+    def _SetClient_Status_Change_Idle(self,client):
+        ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD,
+                                                                          Message="", Value=0, ValueStr="")
+             
+        self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=Socket_Services_List.SERVER)
+       
+    
+    
     def Run_Threads(self,SimulOn = False):
         simul_thread = threading.Thread(target=self.WaitingForNewClient)
         simul_thread.start()

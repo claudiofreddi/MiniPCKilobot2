@@ -3,9 +3,8 @@ import threading
 import time
 from typing import cast
 from Robot_Envs import *
-#from Lib_Sockets import * 
 from Socket_Struct_ClientServer_BaseClass import * 
-import struct
+from Socket_Struct_Server_StatusParamList import * 
 
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
 
@@ -13,11 +12,16 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     OnClient_Core_Task_RETVAL_QUIT= 1
     OnClient_Core_Task_RETVAL_ERROR = -1
 
+    
+
     def __init__(self, ServiceName = "", ForceServerIP = '',ForcePort='',LogOptimized=False):
         super().__init__(ServiceName,ForceServerIP,ForcePort, False,LogOptimized)    
         self.DisconnectCount = 0
+        self.IDLE_SLEEP_TIME = 2 #sec
+        self.LocalListOfStatusParams = StatusParamList()
+        self.LocalListOfStatusParams.UpdateParam(ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE,StatusParamListOfValues.OFF) 
+           
         
-    
     def SendToServer(self,MyMsg:Socket_Default_Message, 
                         Target=SocketMessageEnvelopeTargetType.SERVER,AdditionaByteData=b''):
         
@@ -63,8 +67,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         self.LogConsole("On_ClientAfterLogin()",ConsoleLogLevel.Override_Call)
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
-        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
         pass
+
+            
         
     def OnClient_Disconnect(self):
         self.LogConsole("OnClient_Disconnect",ConsoleLogLevel.Override_Call)
@@ -96,14 +101,15 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     
                     ReceivedEnvelope, AdditionaByteData = self.ReceiveFromServer()
                     if (ReceivedEnvelope != None):
-                        self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                        self.LogConsole(self.ThisServiceName() + " ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                     
                     IsMessageAlreayManaged = False                   
                     if (ReceivedEnvelope != None):
                         
                         
                         ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-                                                 
+                        IsMessageAlreayManaged = True                         
+                        
                         if (ReceivedMessage.Message == self.SOCKET_LOGIN_MSG):                
                             
                             self.LogConsole("Client send Login Name: " + str(self.ServiceName))   
@@ -116,14 +122,41 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             
                             self.On_ClientAfterLogin()
                             
-                            IsMessageAlreayManaged = True   
-                        
+                            
+                            #######################################################
+                            # Send First Param Status
+                            #######################################################
+                            pParam:StatusParam
+                            for pParam in self.LocalListOfStatusParams.List:
+                                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK
+                                                                , UID = ''
+                                                                #Suffix to service name
+                                                                ,Message = pParam.ParamName
+                                                                ,ValueStr= pParam.Value)
+
+                                self.SendToServer( ObjToSend)    
+                                
+                                         
                         elif (ReceivedMessage.Message == self.SOCKET_QUIT_MSG): 
                             self.LogConsole("Quit Message Received",ConsoleLogLevel.System)
                             self.OnClient_Quit()
                             self.Quit()
-                            IsMessageAlreayManaged = True
+                           
+                                               
+                        elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD):
+                            NewVal = self.LocalListOfStatusParams.SwitchParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
+                            self.LogConsole(self.ThisServiceName() + f" Idle New Status:{ NewVal }",ConsoleLogLevel.System)
+                            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK
+                                                                                        , UID = ''
+                                                                                        #Suffix to service name
+                                                                                        ,Message = self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE
+                                                                                        ,ValueStr= NewVal)
 
+                            self.SendToServer( ObjToSend)                        
+                        else:
+                            IsMessageAlreayManaged = False
+                       
+        
                         #Send To Inherited Objcts
                         self.OnClient_Receive(ReceivedEnvelope=ReceivedEnvelope,AdditionaByteData=AdditionaByteData,IsMessageAlreayManaged=IsMessageAlreayManaged)   
                         
@@ -156,9 +189,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         else:
             self.LogConsole("Service Quitted",ConsoleLogLevel.System)
             return True
-
-        
-        
+     
     
     def RegisterTopics(self, *ClientTopics):
         for t in ClientTopics:
@@ -185,7 +216,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
 
     def OnClient_Core_Task_Cycle(self, QuitCalled):
         try:
-            
+            retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
+            if (pParam.Value==StatusParamListOfValues.ON):
+                return self.OnClient_Core_Task_RETVAL_OK
             
             # #Default
             # self.LogConsole(self.ThisServiceName() + "Waiting for input...",ConsoleLogLevel.Test)
@@ -209,8 +242,17 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     def Client_Core_Task(self):
         try:
             while True:
+                
+                #Basic Management of Service Idle 
+                retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
+                if (pParam.Value==StatusParamListOfValues.ON): 
+                    time.sleep(self.IDLE_SLEEP_TIME)
+                    continue
+                
                 self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
+                
                 retval = self.OnClient_Core_Task_Cycle(self.IsQuitCalled) 
+                
                 if (self.IsQuitCalled or  retval == self.OnClient_Core_Task_RETVAL_QUIT):
                     
                     self.Disconnect()

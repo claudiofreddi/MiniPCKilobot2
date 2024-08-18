@@ -99,18 +99,17 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                 if (self.CvIsOpen):
                 
                     if not self.cap.isOpened():
-                        print("Cannot open camera")
+                        self.LogConsole("Cannot open camera",ConsoleLogLevel.System)
             
                     else:      
 
                         # Capture frame-by-frame
-                        #print("read")
                         ret, frame = self.cap.read()
 
                         
                         # if frame is read correctly ret is True
                         if not ret:
-                            print("Can't receive frame (stream end?). Exiting ...")
+                            self.LogConsole("Can't receive frame (stream end?). Exiting ...",ConsoleLogLevel.System)
                         else:
                             
                             
@@ -209,7 +208,6 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         total_pixels = img1.shape[0] * img1.shape[1] * 1.0
         diff_on_pixels = cv.countNonZero(thresh_diff) * 1.0
         difference_measure = diff_on_pixels / total_pixels
-        #print('difference_measure: {}'.format(difference_measure))
         return difference_measure
     
     def calculate_difference_measure2(self,img1: np.array, img2: np.array) -> float:

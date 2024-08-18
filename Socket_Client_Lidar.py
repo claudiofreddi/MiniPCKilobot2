@@ -108,6 +108,12 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
             while True:
                 if (self.IsQuitCalled): break
                 
+                
+                retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
+                if (pParam.Value==StatusParamListOfValues.ON):
+                    time.sleep(self.IDLE_SLEEP_TIME)
+                    continue
+                
                 if (not self.SemaphoreReadyToSend):
                 
                     if (self.IsLidarConnected):
@@ -159,16 +165,11 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         #print(radiusSafe)
                         
                         BestNewAngleToFollow = self.MyAlgo.GetBestAngleToMove(radiusSafe)
-                        print("Best Angle To Follow: " + str(BestNewAngleToFollow))
+                        #print("Best Angle To Follow: " + str(BestNewAngleToFollow))
                         BestNewAngleToFollowRad = (BestNewAngleToFollow/360)*2*np.pi
                         if ('line_Path' in locals()):
                             line_Path.remove()
                         line_Path, = self.ax.plot([BestNewAngleToFollowRad]*3,[0,50, 200],  c="red")
-                        
-                        #idx = np.where( np.array(radiusMin) < 10 )[0] 
-                        #for i in idx:
-                        #    radiusMin[i] = 10
-                                    
                         
                         if (self.GraphOn):
                             
@@ -207,7 +208,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         if (min_front != self.last_min_front ):
                             
                             if (self.IsConnected):
-                                print("Best Angle To Follow: " + BestNewAngleToFollow)
+                                print("Best Angle To Follow: " + str(BestNewAngleToFollow))
                                 print("min_front: " + str(min_front))
                                 
                                 # self.SharedMem.LidarInfo.FrontDistance = min_front
@@ -223,7 +224,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                             time.sleep(self.RangingIdleInSeconds)
             
         except Exception as e:
-            self.LogConsole(self.ThisServiceName() + "Error in MainExecution()  " + str(e),ConsoleLogLevel.Error)
+            self.LogConsole(self.ThisServiceName() + " Error in MainExecution()  " + str(e),ConsoleLogLevel.Error)
             
     
     def GetDistanceAngle(self,Angle,dataAN, dataD):

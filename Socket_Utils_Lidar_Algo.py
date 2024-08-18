@@ -24,7 +24,6 @@ class Socket_Utils_Lidar_Algorithm():
     def GetBestAngleToMove(self,Arr, Test=False):
 
         numitems = len(Arr)
-        #FClass = [0] * numitems
         Degrees = [0] * numitems
         TotalWeight = [0] * numitems
         
@@ -33,7 +32,6 @@ class Socket_Utils_Lidar_Algorithm():
         for i in range(0,len(Degrees)): 
             Degrees[i] = Pos
             Pos += Step
-            #FClass[i] = int(Arr[i]/100)*100
             
         if (Test): print(numitems)    
         MAX_HALF_WINDOW = 6
@@ -61,7 +59,7 @@ class Socket_Utils_Lidar_Algorithm():
             print(LastMaxTotal)
             print(Degrees[MaxIndex])
         
-        print(TotalWeight)
+            print(TotalWeight)
         
         if (MaxIndex!=-1):
             return Degrees[MaxIndex]

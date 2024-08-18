@@ -13,11 +13,14 @@ import time
 
 class Socket_Default_Message_Topics:
     NONE = ""                                  #Not subscrible 
-    LOGIN = "LOGIN"                             #Not subscrible 
-    MESSAGE = "/MESSAGE"                       #Not subscrible 
-    TOPIC_ADD = "/TOPIC/ADD"                    #Not subscrible 
-    TOPIC_SUBSCRIBE = "/TOPIC/SUBSCRIBE"        #Not subscrible 
-    TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"    #Not subscrible 
+    LOGIN = "LOGIN"                                     #Not subscrible 
+    MESSAGE = "/MESSAGE"                                #Not subscrible 
+    TOPIC_ADD = "/TOPIC/ADD"                            #Not subscrible 
+    TOPIC_SUBSCRIBE = "/TOPIC/SUBSCRIBE"                #Not subscrible 
+    TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"            #Not subscrible 
+    TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"      #Not subscrible 
+    TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"      #Not subscrible 
+    
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
     INPUT_TELEGRAM = "/INPUT/TELEGRAM"
@@ -64,9 +67,10 @@ class SocketDecoder:
 
 class Socket_Default_Message(Common_LogConsoleClass):
     def __init__(self,Topic=Socket_Default_Message_Topics.NONE, UID = '',Message ="",
-                 Value=0,RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData='', ResultList= [] ):
+                 Value=0, ValueStr="", RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData='', ResultList= [] ):
         self.Message = Message
         self.Value = Value
+        self.ValueStr = ValueStr
         self.Error = Error
         self.IsAlert = IsAlert
         if (UID==''):
@@ -91,7 +95,7 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.LastRefresh = Source.LastRefresh
         
     def GetMessageDescription(self):
-        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic
+        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr) 
         if (self.Error != ""):
             Txt = Txt + self.Error 
         if (self.IsAlert == True):

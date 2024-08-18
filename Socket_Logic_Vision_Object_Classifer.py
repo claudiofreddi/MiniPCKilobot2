@@ -4,8 +4,9 @@ from os.path import exists, os
 import numpy as np
 from Robot_Envs import *
 import time
+from Socket_Utils_ConsoleLog import*  
 
-class RobotVision_Object_Classifier():
+class RobotVision_Object_Classifier(Common_LogConsoleClass):
     
     
     configPath = PATH_OBJ_CLASS_configPath
@@ -30,7 +31,7 @@ class RobotVision_Object_Classifier():
         
         self.classNamesMatched = self.classNames
         
-        print("Classes: " + str(list(self.classNames)))
+        #"Classes: " + str(list(self.classNames)))
         
         
     def __init__(self):
@@ -42,13 +43,13 @@ class RobotVision_Object_Classifier():
         self._LoadObjectDatabase()
         
     def StartDNN(self):
-        print("Starting DNN...")
+        self.LogConsole("Starting DNN...",ConsoleLogLevel.System)
         self.net = cv2.dnn_DetectionModel(self.weightsPath,self.configPath)
         self.net.setInputSize(320,320)
         self.net.setInputScale(1.0/ 127.5)
         self.net.setInputMean((127.5, 127.5, 127.5))
         self.net.setInputSwapRB(True)
-        print("Model ok") 
+        self.LogConsole("Model Loaded",ConsoleLogLevel.System)
         
     def SetSpecificObjSearch(self,_LookForSpecificObjs, _LookForSpecificObjsConf:float):
         self.LookForSpecificObjs   = np.array(_LookForSpecificObjs).copy()
@@ -57,7 +58,8 @@ class RobotVision_Object_Classifier():
         for i in range(0,len(self.LookForSpecificObjs)):
             self.LookForSpecificObjs[i] = self.LookForSpecificObjs[i].upper()
             
-        print("Look for: " + str(list(self.LookForSpecificObjs)))
+        
+        self.LogConsole("Look for: " + str(list(self.LookForSpecificObjs)),ConsoleLogLevel.System)
         
     def TrackObjects(self,frame,Title = 'Title',AddBoxes=True,AddConfLevel=False,ConfidenceLev=0.45):
         
@@ -144,16 +146,16 @@ if (__name__== "__main__"):
             
             
             #print(len(classIds))
-            print(FoundNames)
-            print("\n")
-            print(FoundConfidence)
-            print("\n")
-            print(FoundBoxes)
-            print("\n")
+            # print(FoundNames)
+            # print("\n")
+            # print(FoundConfidence)
+            # print("\n")
+            # print(FoundBoxes)
+            # print("\n")
 
             
             if (not success):
-                print("Error")
+                print("Can't receive frame (stream end?). Exiting ...")
             
             # Display result
             cv2.imshow("Output",frame)

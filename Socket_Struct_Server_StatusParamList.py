@@ -1,10 +1,13 @@
 from datetime import datetime 
+from Socket_Utils_ConsoleLog import * 
 
 class StatusParamName:
-    SERVER_CAMERA = "SERVER_CAMERA"
+    #Common suffix and local param name
+    THIS_SERVICE_IS_IDLE = "_IS_IDLE"   #The Service do nothing during Main Cycle or Cyling Functions (for eavy duty clients)
+                                        #Receve Messages (to allow re-enable)
+    SERVER_CAMERA = "SERVER_CAMERA" 
     SERVER_SHOW_RECEIVED_MSGS = "SERVER_SHOW_RECEIVED_MSGS"
     SERVER_SHOW_SEND_MSGS = "SERVER_SHOW_SEND_MSGS"
- 
 
 class StatusParam():
     def __init__(self,ParamName="",Value=""):
@@ -20,7 +23,7 @@ class StatusParamListOfValues:
     ON = "ON"
     OFF = "OFF"
     
-class StatusParamList():
+class StatusParamList(Common_LogConsoleClass):
    
     def __init__(self):
         self.List = []
@@ -57,7 +60,8 @@ class StatusParamList():
             elif (pParam.Value == StatusParamListOfValues.OFF):
                 pParam.Update(StatusParamListOfValues.ON)
             return pParam.Value
-        print("null")
+        
+        self.LogConsole("Null Retval in SwitchParam()",ConsoleLogLevel.System)
         return ""
             
     def UpdateParam(self,ParamName="",Value=""):
@@ -69,6 +73,12 @@ class StatusParamList():
             pObj:StatusParam = StatusParam(ParamName=ParamName,Value=Value)
             self.List.append(pObj)
     
+    def GetStatusDescription(self):
+        pParam:StatusParam
+        retval = "Param Status:\n\n" 
+        for pParam in self.List:
+            retval += pParam.ParamName + ": " + pParam.Value + "\n"
 
+        return retval
     
         

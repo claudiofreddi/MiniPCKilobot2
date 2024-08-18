@@ -2,6 +2,7 @@ from Socket_Struct_Client_BaseClass import *
 from pynput import keyboard
 from  datetime import datetime
 import enum
+from Socket_Struct_Server_StatusParamList import * 
 
 class SocketClient_Keyboard(Socket_Client_BaseClass):
     
@@ -13,7 +14,9 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                               'w',          #forward
                               'Ctrl+M',     #Show Message Sent From Server_LastKey_Pressed
                               'Ctrl+T',      #Topic List
-                              'Ctrl+I'      #Image Enable/Disable
+                              'Ctrl+I',      #Image Enable/Disable
+                              'Ctrl+L',      #Lidar Enable/Disable
+                              'Ctrl+S'      #Params Status
                               }
     
     SPECIAL_KEYS_ON_RELEASE =  {'a','d','e','s','w'}
@@ -87,8 +90,8 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
                 return ((ord(letter.upper())-64) == ord(key.char))
             else:
                 False
-        except:
-            print("error")
+        except Exception as e:
+            self.LogConsole(self.ThisServiceName() + "Error in IsCtrl_Char()  " + str(e),ConsoleLogLevel.Error)
             return False
     
     def GetCtrl_Char(self, key, Prefix):
@@ -146,7 +149,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         
           
 
-                    print("send")
+                    self.LogConsole(f"Send Key {self._LastKey_Pressed}",ConsoleLogLevel.Test)
                     self.SendToServer(ObjToSend) 
                 
                     
@@ -170,7 +173,6 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
 
   
             time_pressed = int((datetime.now() - self._presstime).total_seconds() * 1000)
-            print(str(time_pressed) + " ms")
             self.LogConsole(str(key) + " " + str(time_pressed) + " ms ",ConsoleLogLevel.Test)
             
             ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_KEYBOARD,
