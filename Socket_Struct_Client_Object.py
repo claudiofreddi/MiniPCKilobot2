@@ -23,12 +23,14 @@ class client_object:
         
     def ShowDetails(self):
 
-        print("******************************************") 
-        print(self.servicename + " " + str(self.address))     
-        print("registered topics:        NONE" if len(self.Topics)==0 else f"registered topics:        {self.Topics}") 
-        print("registered subscriptions: NONE" if len(self.TopicSubscriptions)==0 else f"registered subscriptions: {self.TopicSubscriptions}") 
-        
-                                                    
+        Text = "******************************************"+ "\n"
+        Text += self.servicename + " " + str(self.address) + "\n"
+        Text += "registered topics:        NONE" if len(self.Topics)==0 else f"registered topics:        {self.Topics}" + "\n"
+        Text += "registered subscriptions: NONE" if len(self.TopicSubscriptions)==0 else f"registered subscriptions: {self.TopicSubscriptions}" + "\n"
+        Text += "\n"
+        print(Text)
+        return Text
+    
     def ExistsTopic(self,Topic):
         for t in self.Topics:
             if (t==Topic):

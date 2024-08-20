@@ -220,18 +220,6 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             if (pParam.Value==StatusParamListOfValues.ON):
                 return self.OnClient_Core_Task_RETVAL_OK
             
-            # #Default
-            # self.LogConsole(self.ThisServiceName() + "Waiting for input...",ConsoleLogLevel.Test)
-            # message = '{}'.format(input(''))
-            # ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE
-            #                                                             , UID = '',Message =message)
-            # self.SendToServer( ObjToSend)   
-        
-            # if (message == self.SOCKET_QUIT_MSG):
-            #     self.OnClient_Quit()
-            #     self.Quit()
-            #     self.LogConsole("OnClient_Core_Task_Cycle terminated for " + self.ServiceName,ConsoleLogLevel.System)
-            #     return self.OnClient_Core_Task_RETVAL_QUIT
 
             return self.OnClient_Core_Task_RETVAL_OK
         

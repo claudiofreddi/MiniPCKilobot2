@@ -23,6 +23,8 @@ class Socket_Services_List:
     TELEGRAM = "TELEGRAM_Client"
     ARDUINO_READ_WRITE = "ARDUINO_READ_WRITE_TEST_Client"
     LIDAR = "LIDAR_Client"
+    TEXT_COMMANDS = "TEXT_COMMANDS_Client"
+    JOYSTICK = "JOYSTICK_Client"
 
 
 

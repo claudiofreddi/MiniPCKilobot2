@@ -129,4 +129,4 @@ if (__name__== "__main__"):
     
     MySocketClient_Sensors = SocketClient_Sensors(Socket_Services_List.SENSORS)
     
-    MySocketClient_Sensors.Run_Threads(True)
+    MySocketClient_Sensors.Run_Threads()

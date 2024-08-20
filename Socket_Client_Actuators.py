@@ -22,6 +22,7 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
     def On_ClientAfterLogin(self):
         #self.RegisterTopics(Socket_Default_Message_Topics.NONE)
         self.SubscribeTopics(Socket_Default_Message_Topics.INPUT_KEYBOARD)
+        self.SubscribeTopics(Socket_Default_Message_Topics.INPUT_JOYSTICK)
         pass
         
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
@@ -32,7 +33,8 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                     
-                    if (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD):
+                    if (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD
+                        or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_JOYSTICK):
                            
                         ArdCmd = Arduino_Keyboard_To_Actions().convert(ReceivedMessage.Message)
                         if (ArdCmd != ""):

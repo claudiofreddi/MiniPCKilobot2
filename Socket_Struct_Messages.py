@@ -15,21 +15,25 @@ class Socket_Default_Message_Topics:
     NONE = ""                                  #Not subscrible 
     LOGIN = "LOGIN"                                     #Not subscrible 
     MESSAGE = "/MESSAGE"                                #Not subscrible 
+    SERVER_LOCAL = "/TOPIC/SERVER_LOCAL"                #Not subscrible 
     TOPIC_ADD = "/TOPIC/ADD"                            #Not subscrible 
     TOPIC_SUBSCRIBE = "/TOPIC/SUBSCRIBE"                #Not subscrible 
     TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"            #Not subscrible 
-    TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"      #Not subscrible 
-    TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"      #Not subscrible 
+    TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"    #Not subscrible    
+    TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"    #Not subscrible    
     
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
     INPUT_TELEGRAM = "/INPUT/TELEGRAM"
     INPUT_LIDAR = "/INPUT/LIDAR"
+    INPUT_TEXT_COMMANDS = "/INPUT/TEXT_COMMANDS"
+    INPUT_JOYSTICK = "/INPUT/JOYSTICK"
     
     SENSOR_BATTERY = "/SENSOR/BATTERY"
     SENSOR_COMPASS = "/SENSOR/COMPASS"
     OUTPUT_SPEAKER = "/OUTPUT/SPEAKER"
     OUTPUT_TELEGRAM = "/OUTPUT/TELEGRAM"
+    OUTPUT_TEXT_COMMANDS = "/OUTPUT/TEXT_COMMANDS"
     
     #Arduino Sample Class
     INPUT_OBJ00 = "INPUT/OBJ00"
@@ -47,6 +51,10 @@ class Socket_Default_Message_Topics:
             NewTopic == Socket_Default_Message_Topics.MESSAGE
             or
             NewTopic == Socket_Default_Message_Topics.LOGIN
+            or
+            NewTopic == Socket_Default_Message_Topics.SERVER_LOCAL
+            or
+            NewTopic == Socket_Default_Message_Topics.SERVER_LOCAL
             
             ):
             return True

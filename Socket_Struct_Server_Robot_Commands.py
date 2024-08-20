@@ -14,6 +14,13 @@ class RobotListOfAvailableCommands:
     ROT_CW = "rot"
     ROT_ACW = "rota"
     
+    #Server Local
+    CTRL_T = "ctrl+t"  #Ctrl + T Topic List
+    CTRL_M = "ctrl+m"  #Ctrl + M (Alle Messages about send and receive)
+    CTRL_S = "ctrl+s"  #Ctrl + S Param Status
+    CTRL_I = "ctrl+i"  #Ctrl + I (Image On Off)
+    
+    
     def __init__(self):
         
         self.AllowedCommandList = list(

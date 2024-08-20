@@ -37,18 +37,20 @@ class Common_LogConsoleClass(object):
 
     def Exclude_Code(self):
         return True
-    
-    
+       
+        
     def LogConsole(self,Text,*LogLevels):
         if (self.RunOptimized):
             if (len(LogLevels)==1):
                 if (LogLevels[0] == ConsoleLogLevel.Error or LogLevels[0] == ConsoleLogLevel.System):
                     print(Text) 
+                    return True
         else:
             if (self.EnableConsoleLog):
                 
                 if (self.EnableAll):
                     print(Text) 
+                    return True
                     
                 else:
                     if (len(LogLevels) == 0):
@@ -58,11 +60,12 @@ class Common_LogConsoleClass(object):
                         for v in self.EnableConsoleLogLevels:
                             if (v == LogLevel):
                                 print(Text)
-                                break
+                                return True
                                 
                     else:
                         for LogLevel in LogLevels:
                             for v in self.EnableConsoleLogLevels:
                                 if (v == LogLevel):
                                     print(Text)
-                                    break
+                                    return True
+            return False

@@ -20,7 +20,7 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
         
     
     def On_ClientAfterLogin(self):
-        self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)  #ToCheck: Serve ? 
+        self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)  
         self.SubscribeTopics(Socket_Default_Message_Topics.OUTPUT_SPEAKER)
         pass
         

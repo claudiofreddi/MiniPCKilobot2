@@ -1,3 +1,4 @@
+from Socket_Client_Joystick import SocketClient_Joystick_Commands
 
 ##Comandi Elaborabili da Arduino
 class RobotArduinoCommands:
@@ -29,8 +30,15 @@ class Arduino_Keyboard_To_Actions:
     _Mov_Right = 'a'
     _Mov_Stop = 'e'
   
+    
+    _Joy_Fw = SocketClient_Joystick_Commands.FW
+    _Joy_Bw = SocketClient_Joystick_Commands.BW
+    _Joy_Left = SocketClient_Joystick_Commands.RIGHT
+    _Joy_Right = SocketClient_Joystick_Commands.LEFT
+    _Joy_Stop = SocketClient_Joystick_Commands.BUTTON_6
         
     def PrintUsageCommands(self):
+        print("Keyboard:")
         print('Forward key {0} '.format(self._Mov_Fw))
         print('Backward key {0} '.format(self._Mov_Bw))
         print('Left key {0} '.format(self._Mov_Left))
@@ -38,16 +46,16 @@ class Arduino_Keyboard_To_Actions:
         print('Stop key {0} '.format(self._Mov_Stop))
         
     def convert(self,KeyString:str):
-            
-        if (KeyString == self._Mov_Stop):
+           
+        if (KeyString == self._Mov_Stop     or KeyString == self._Joy_Stop):
             ArdCmd = RobotArduinoCommands.STOP
-        elif (KeyString == self._Mov_Fw):
+        elif (KeyString == self._Mov_Fw     or KeyString == self._Joy_Fw):
             ArdCmd = RobotArduinoCommands.MOVE_FW
-        elif (KeyString == self._Mov_Bw):
+        elif (KeyString == self._Mov_Bw     or KeyString == self._Joy_Bw):
             ArdCmd = RobotArduinoCommands.MOVE_BW
-        elif (KeyString == self._Mov_Right):
+        elif (KeyString == self._Mov_Right  or KeyString == self._Joy_Right):
             ArdCmd =  RobotArduinoCommands.TURN
-        elif (KeyString == self._Mov_Left):
+        elif (KeyString == self._Mov_Left   or KeyString == self._Joy_Left):
             ArdCmd = RobotArduinoCommands.TURN_B
         else:
             ArdCmd = ""
