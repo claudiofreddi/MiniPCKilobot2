@@ -33,17 +33,20 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
     GET_TOPICS = "get topics"
     GET_STATUS = "get status"
     GET_CLIENTS = "get clients"
-        
+    TARGET_PREFIX = "#"    
+    
     def __init__(self):
         pass
     
     def ListOfCommands(self):
         cmds = []
-        #cmds.append(self.GET_HELP1   + "     #this list")
-        #cmds.append(self.GET_HELP2   + "     #this list")
-        cmds.append(self.GET_STATUS  + "     #get params status")
-        cmds.append(self.GET_TOPICS  + "     #get Topics")
-        cmds.append(self.GET_CLIENTS + "     #get Clients")
+        #cmds.append(self.GET_HELP1   + "     ->this list")
+        #cmds.append(self.GET_HELP2   + "     ->this list")
+        cmds.append(self.GET_STATUS   + "      ->get params status")
+        cmds.append(self.GET_TOPICS  + "      ->get Topics")
+        cmds.append(self.GET_CLIENTS + "      ->get Clients")
+        cmds.append(self.GET_CLIENTS + "      ->get Clients")
+        cmds.append(self.TARGET_PREFIX + "    ->TargetPrefix  sample: [#KEYBOARD_Client on] ")
         cmds.append("speak [Text]")
         return cmds
     
@@ -66,30 +69,26 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
             MyCmdParser = Socket_TextCommandParser(InputCmd)
             CmdLowered = MyCmdParser.GetSpecificCommand().lower()
             FullInputCmdLowered = InputCmd.lower()
-       
+            
+            ## ***************************************************
             ## remapping di Keyboard commands
+            ## ***************************************************
             if (FullInputCmdLowered==self.GET_STATUS):
                 CmdLowered = RobotListOfAvailableCommands.CTRL_S
 
             if (FullInputCmdLowered==self.GET_TOPICS):
                 CmdLowered = RobotListOfAvailableCommands.CTRL_T
 
+            ## ***************************************************
+            ## Server Local Msgs
+            ## ***************************************************
             if (FullInputCmdLowered==self.GET_CLIENTS):
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SERVER_LOCAL,
                                                                 Message =FullInputCmdLowered
                                                                 ,ReplyToTopic=ReceivedMessage.ReplyToTopic
                                                                 )
                 RetValMsgs.append(ObjToSend)    
-
-            if (CmdLowered==RobotListOfAvailableCommands.SPEAK):
-                TextToSpeech = MyCmdParser.GetSpecificCommandParam(1,True)
-
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
-                                                            Message =TextToSpeech
-                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
-                                                            )
-                RetValMsgs.append(ObjToSend)
-                
+               
             #Server Side
             if (CmdLowered==RobotListOfAvailableCommands.CTRL_T
                 or CmdLowered==RobotListOfAvailableCommands.CTRL_S
@@ -103,6 +102,29 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
                                                             )
                 RetValMsgs.append(ObjToSend)
             
+            ## ***************************************************
+            ## OTHER CLIENT MSGS
+            ## ***************************************************
+            if (CmdLowered==RobotListOfAvailableCommands.SPEAK):
+                TextToSpeech = MyCmdParser.GetSpecificCommandParam(1,True)
+
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
+                                                            Message =TextToSpeech
+                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
+                                                            )
+                RetValMsgs.append(ObjToSend)
+
+            if (FullInputCmdLowered.startswith(self.TARGET_PREFIX)):
+                MyCmdParser2 = Socket_TextCommandParser(InputCmd[1:])
+                GetClientName = MyCmdParser2.GetSpecificCommand()
+                GetAllParams = MyCmdParser2.GetSpecificCommandParam(1,True)
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD,
+                                                            Message =GetAllParams
+                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
+                                                            ,TargetClientName=GetClientName
+                                                            )
+                RetValMsgs.append(ObjToSend) 
+                
             
                     
             if (len(RetValMsgs)==0):

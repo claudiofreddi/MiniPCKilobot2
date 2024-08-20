@@ -10,21 +10,7 @@ from Socket_Utils_Send_Receive import *
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Messages import * 
 
-class Socket_Services_List:
-    SERVER = "SERVER"
-    SENSORS = "SENSORS_Client"
-    KEYBOARD = "KEYBOARD_Client"
-    USERINTERFACE = "UI_Client"
-    REMOTE = "REMOTE_Client"
-    SAMPLE = "SAMPLE_Client"
-    WEBCAM = "WEBCAM_Client" 
-    SPEAKER = "SPEAKER_Client"
-    ACTUATORS = "ACTUATORS_Client"
-    TELEGRAM = "TELEGRAM_Client"
-    ARDUINO_READ_WRITE = "ARDUINO_READ_WRITE_TEST_Client"
-    LIDAR = "LIDAR_Client"
-    TEXT_COMMANDS = "TEXT_COMMANDS_Client"
-    JOYSTICK = "JOYSTICK_Client"
+from Socket_Struct_Services_List import Socket_Services_List
 
 
 

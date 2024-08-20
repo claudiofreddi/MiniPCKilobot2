@@ -6,7 +6,7 @@ PYTHON_CLIENT_DIR = "c:/Dati/MiniPCKilobot2/"
 
 #Mode 0 = Disabled
 #Mode 1 = subprocess.CREATE_NEW_CONSOLE 
-#     2 = 
+#     2 = Run without Console
 
 FilesToRun = [('Socket_Server.py', 1),
              ('Socket_Client_Keyboard.py', 1),
@@ -20,6 +20,8 @@ FilesToRun = [('Socket_Server.py', 1),
             ('Socket_Client_Remote.py',0),
             ("Socket_Client_Sample.py",0),
             ("Socket_Client_ArduinoReadWrite_Sample.py", 0),
+            ("Socket_Client_TextCommands.py", 1),
+            ("Socket_Logic_Joystick.py", 2),
             ]
 
 

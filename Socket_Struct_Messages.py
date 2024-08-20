@@ -6,13 +6,14 @@ import uuid
 from Socket_Utils_ConsoleLog import * 
 from json import JSONEncoder
 import time
+from Socket_Struct_Services_List import Socket_Services_List
 
 ### ***************************************************************************
 ### Message FORMAT
 ### ***************************************************************************
 
 class Socket_Default_Message_Topics:
-    NONE = ""                                  #Not subscrible 
+    NONE = ""                                           #Not subscrible 
     LOGIN = "LOGIN"                                     #Not subscrible 
     MESSAGE = "/MESSAGE"                                #Not subscrible 
     SERVER_LOCAL = "/TOPIC/SERVER_LOCAL"                #Not subscrible 
@@ -21,6 +22,7 @@ class Socket_Default_Message_Topics:
     TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"            #Not subscrible 
     TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"    #Not subscrible    
     TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"    #Not subscrible    
+    TOPIC_CLIENT_DIRECT_CMD = "/TOPIC/CLIENT_DIRECT"    #Not subscrible    
     
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
@@ -57,7 +59,8 @@ class Socket_Default_Message_Topics:
             NewTopic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD
             or
             NewTopic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK
-            
+            or
+            NewTopic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD
             ):
             return True
         
@@ -76,23 +79,19 @@ class SocketDecoder:
    
 
 class Socket_Default_Message(Common_LogConsoleClass):
-    def __init__(self,Topic=Socket_Default_Message_Topics.NONE, UID = '',Message ="",
-                 Value=0, ValueStr="", RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData='', ResultList= []
+    def __init__(self,Topic=Socket_Default_Message_Topics.NONE,Message ="",
+                 Value=0, ValueStr="",ByteData='', ResultList= []
                  , ReplyToTopic=Socket_Default_Message_Topics.NONE 
+                 , TargetClientName = Socket_Services_List.NONE
                  ):
         self.Message = Message
         self.Value = Value
         self.ValueStr = ValueStr
-        self.Error = Error
-        self.IsAlert = IsAlert
-        if (UID==''):
-            self.UID =  str(uuid.uuid4())
-        self.RefreshInterval = RefreshInterval
-        self.LastRefresh = LastRefresh
         self.ByteData = ByteData
         self.Topic = Topic
         self.ResultList = ResultList
         self.ReplyToTopic = ReplyToTopic
+        self.TargetClientName = TargetClientName
        
 
     def json(self):
@@ -102,18 +101,16 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.Topic = Source.Topic
         self.Message = Source.Message
         self.Value = Source.Value
-        self.Error = Source.Error
-        self.IsAlert = Source.IsAlert 
-        self.RefreshInterval = Source.RefreshInterval
-        self.LastRefresh = Source.LastRefresh
+        self.ValueStr = Source.ValueStr
+        self.ByteData = Source.ByteData       
+        self.ResultList = Source.ResultList
         self.ReplyToTopic = Source.ReplyToTopic
+        self.TargetClientName = Source.TargetClientName
         
     def GetMessageDescription(self):
-        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr) + " Reply To Topic: " + str(self.ReplyToTopic)
-        if (self.Error != ""):
-            Txt = Txt + self.Error 
-        if (self.IsAlert == True):
-            Txt = Txt + self.IsAlert
+        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr) 
+        Txt += " Reply To Topic: " + str(self.ReplyToTopic)
+        Txt += " Target Client Name: " + str(self.TargetClientName)
         return Txt
     
     def _ShowStdMessageJsonForma(self):

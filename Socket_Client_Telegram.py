@@ -124,11 +124,16 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
         
         
 
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
-        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreadyManaged=False):
+        # if (self.IsConnected):
+        #     if (not IsMessageAlreadyManaged):
+        #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+        #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
+        #                 MySpecificCommand = ReceivedMessage.Message
         
         try:
-            if (IsMessageAlreayManaged == False):
+            if (IsMessageAlreadyManaged == False):
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                     

@@ -18,11 +18,16 @@ class SocketClient_TextCommands(Socket_Client_BaseClass):
         self.SubscribeTopics(Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS)     #receive feedback
         pass
         
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
-        #ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreadyManaged=False):
+        # if (self.IsConnected):
+        #     if (not IsMessageAlreadyManaged):
+        #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+        #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
+        #                 MySpecificCommand = ReceivedMessage.Message
         self.LogConsole("OnClient_Receive " +  ReceivedEnvelope.From, ConsoleLogLevel.Test)
         try:
-            if (IsMessageAlreayManaged == False):
+            if (IsMessageAlreadyManaged == False):
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                     ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                     if (ReceivedMessage.Topic == Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS):
@@ -51,12 +56,6 @@ class SocketClient_TextCommands(Socket_Client_BaseClass):
                 self.LogConsole(self.ThisServiceName() + "Waiting for your command...",ConsoleLogLevel.Test)
                 FullTextCommand = '{}'.format(input(''))
                 
-                # MyTmpObj = Socket_Logic_GlobalTextCmdMng()
-                # if (FullTextCommand==Socket_Logic_GlobalTextCmdMng.GET_HELP1 
-                #     or FullTextCommand==Socket_Logic_GlobalTextCmdMng.GET_HELP2):
-                #     for t in MyTmpObj.ListOfCommands():
-                #         print(t)
-                # else:
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS,
                                                                 Message =FullTextCommand
                                                                 ,ReplyToTopic=Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS

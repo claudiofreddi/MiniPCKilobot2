@@ -113,11 +113,11 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             self.LogConsole("Server Error in GetClientObject() " + str(e),ConsoleLogLevel.Error)  
             return None,found
             
-    def GetClientObjectByServiceName(self,ServiceNameToFind)->client_object:
+    def GetClientObjectByServiceName(self,ServiceNameToFind:str)->client_object:
         
         c:client_object
         for c in self.client_objects:
-            if (c.servicename == ServiceNameToFind):
+            if (c.servicename.lower() == ServiceNameToFind.lower()):
                 return c
         return None
     
@@ -141,13 +141,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 msg = '{} left!'.format(ServiceName)
                 self.LogConsole(msg,ConsoleLogLevel.Socket_Flow)
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE,
-                                                                        UID = '',
-                                                                        Message =msg,
-                                                                        Value=0,
-                                                                        RefreshInterval=5,
-                                                                        LastRefresh = 0,
-                                                                        IsAlert=False, 
-                                                                        Error ="")
+                                                                        Message =msg
+                                                                        )
                 if (Broadcast):
                     self.broadcastObj(ObjToSend)
         
@@ -180,8 +175,21 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 #if (c.servicename != CurrClientObject.servicename):
                 if (c.IsSubscribedToThisTopic(ReceivedMessage.Topic)):
                     self.SendToClient(TargetClient=c.client,MyMsg=ReceivedMessage,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
-        
+    
+    #Direct Messages to Specific Client    
+    def PassThroughtMsg(self, ReceivedMessage:Socket_Default_Message,AdditionaByteData=b''):
+        try:
+            c:client_object
+            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
                 
+                if (ReceivedMessage.TargetClientName != Socket_Default_Message_Topics.NONE 
+                    and ReceivedMessage.TargetClientName != ""):
+                    c = self.GetClientObjectByServiceName(ReceivedMessage.TargetClientName)
+                    if (c):
+                        self.SendToClient(TargetClient=c.client,MyMsg=ReceivedMessage,From=Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
+
+        except Exception as e:
+            self.LogConsole("Server Error in broadcastObj() " + str(e),ConsoleLogLevel.Error)                  
                 
     def GetSensor(self,Topic):
         pSensor:Socket_Default_Message
@@ -259,7 +267,11 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                 ParamValueStr = ReceivedMessage.ValueStr
                                 self.LogConsole("[" + ParamName +  "] Received ACK: [" + ParamValueStr + "]",ConsoleLogLevel.System)
                                 self.MyListOfStatusParams.UpdateParam(ParamName,ParamValueStr) 
-                                                               
+                            
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
+                                print("A")
+                                self.PassThroughtMsg(ReceivedMessage,AdditionaByteData)
+                                                                                           
                             ##SocketObjectClassType.SENSOR : value update      
                             elif (   ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_COMPASS
                                 or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY):
@@ -386,15 +398,17 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         AnyFound, MsgsToSend = GlobalTextCommandsManagement.ParseCommandAndGetMsgs(ReceivedMessage)
         
         if (AnyFound):
-           
             ObjToSend:Socket_Default_Message
             for ObjToSend in MsgsToSend:
-                if (ObjToSend.Topic != Socket_Default_Message_Topics.SERVER_LOCAL):
-                    self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
-                    self.BroadCastMessageByTopic(ObjToSend,AdditionaByteData=AdditionalData)
-                else:                
+                if (ObjToSend.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
+                    self.PassThroughtMsg(ObjToSend,AdditionalData)
+                if (ObjToSend.Topic == Socket_Default_Message_Topics.SERVER_LOCAL):
                     self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
                     self.Specific_Topic_Management_SERVER_LOCAL(ReceivedMessage=ObjToSend,CurrClientObject=CurrClientObject, AdditionalData=AdditionalData)
+                else:                
+                    self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
+                    self.BroadCastMessageByTopic(ObjToSend,AdditionaByteData=AdditionalData)
+
  
 
             
@@ -467,7 +481,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = TopicToUse,Message=BackToClientMsg)
             
-            self.LogConsole("SendToClient " +  BackToClientMsg, ConsoleLogLevel.CurrentTest)
+            self.LogConsole("SendToClient " +  BackToClientMsg, ConsoleLogLevel.Test)
             self.SendToClient(CurrClientObject.client,ObjToSend)  
     
     def Specific_Topic_Management_SENSOR(self,ReceivedMessage, AdditionalData = b''): 

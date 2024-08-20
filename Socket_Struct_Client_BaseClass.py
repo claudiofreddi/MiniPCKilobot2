@@ -66,11 +66,15 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     def On_ClientAfterLogin(self):
         self.LogConsole("On_ClientAfterLogin()",ConsoleLogLevel.Override_Call)
     
-    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreayManaged=False):
+    def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreadyManaged=False):
+        # if (self.IsConnected):
+        #     if (not IsMessageAlreadyManaged):
+        #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+        #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
+        #                 MySpecificCommand = ReceivedMessage.Message        
         pass
 
-            
-        
     def OnClient_Disconnect(self):
         self.LogConsole("OnClient_Disconnect",ConsoleLogLevel.Override_Call)
         
@@ -103,20 +107,19 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     if (ReceivedEnvelope != None):
                         self.LogConsole(self.ThisServiceName() + " ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                     
-                    IsMessageAlreayManaged = False                   
+                    IsMessageAlreadyManaged = False                   
                     if (ReceivedEnvelope != None):
                         
                         
                         ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-                        IsMessageAlreayManaged = True                         
+                        IsMessageAlreadyManaged = True                         
                         
                         if (ReceivedMessage.Message == self.SOCKET_LOGIN_MSG):                
                             
                             self.LogConsole("Client send Login Name: " + str(self.ServiceName))   
                             ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.LOGIN
-                                                                                        ,UID = ''
-                                                                                        ,Message =str(self.ServiceName),Value="",RefreshInterval=5
-                                                                                        ,LastRefresh = 0, IsAlert=False, Error ="")
+                                                                                        ,Message =str(self.ServiceName)
+                                                                                       )
                             
                             self.SendToServer(ObjToSend)    
                             
@@ -129,7 +132,6 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             pParam:StatusParam
                             for pParam in self.LocalListOfStatusParams.List:
                                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK
-                                                                , UID = ''
                                                                 #Suffix to service name
                                                                 ,Message = pParam.ParamName
                                                                 ,ValueStr= pParam.Value)
@@ -147,18 +149,18 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             NewVal = self.LocalListOfStatusParams.SwitchParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
                             self.LogConsole(self.ThisServiceName() + f" Idle New Status:{ NewVal }",ConsoleLogLevel.System)
                             ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK
-                                                                                        , UID = ''
                                                                                         #Suffix to service name
                                                                                         ,Message = self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE
                                                                                         ,ValueStr= NewVal)
-
                             self.SendToServer( ObjToSend)                        
+                            
+                            
                         else:
-                            IsMessageAlreayManaged = False
+                            IsMessageAlreadyManaged = False
                        
         
                         #Send To Inherited Objcts
-                        self.OnClient_Receive(ReceivedEnvelope=ReceivedEnvelope,AdditionaByteData=AdditionaByteData,IsMessageAlreayManaged=IsMessageAlreayManaged)   
+                        self.OnClient_Receive(ReceivedEnvelope=ReceivedEnvelope,AdditionaByteData=AdditionaByteData,IsMessageAlreadyManaged=IsMessageAlreadyManaged)   
                         
                     else: 
                         if (self.ForceDisconnect()):               
@@ -196,7 +198,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             try:
                 
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_ADD
-                                                                        , UID = '',Message = t)
+                                                                        , Message = t)
                 self.SendToServer( ObjToSend)   
             
             except Exception as e:
@@ -207,7 +209,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             try:
                 
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
-                                                                        , UID = '',Message = t)
+                                                                        ,Message = t)
                 self.SendToServer( ObjToSend)   
             
             except Exception as e:
@@ -265,9 +267,8 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                 time.sleep(5)
                 message = self.ServiceName + " tick: " + str(count) + " SIMULATED !"
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE
-                                                                                          , UID = '',Message =message, 
-                                                                                          Value="",RefreshInterval=5,
-                                                                                          LastRefresh = 0, IsAlert=False, Error ="")
+                                                                                         ,Message =message
+                                                                                          )
                 self.SendToServer(ObjToSend)  
                 count = count + 1
                 if (self.IsQuitCalled):
