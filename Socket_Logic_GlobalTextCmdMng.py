@@ -39,26 +39,37 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
     
     def ListOfCommands(self):
         cmds = []
-        cmds.append(self.GET_HELP1   + "     #this list")
-        cmds.append(self.GET_HELP2   + "     #this list")
-        cmds.append("")
+        #cmds.append(self.GET_HELP1   + "     #this list")
+        #cmds.append(self.GET_HELP2   + "     #this list")
         cmds.append(self.GET_STATUS  + "     #get params status")
         cmds.append(self.GET_TOPICS  + "     #get Topics")
         cmds.append(self.GET_CLIENTS + "     #get Clients")
         cmds.append("speak [Text]")
         return cmds
+    
+    def ShowCommands(self):
+        cmds = self.ListOfCommands()
+        Txt = ""
+        Txt += "---------------------------------" + "\n"
+        Txt += "AVAILABLE COMMANDS:" + "\n"
 
-    def ParseCommandAndGetMsgs(self,InputCmd:str):
+        for c in cmds:
+            Txt += c + "\n"
+        
+        Txt += "---------------------------------" + "\n"
+        return Txt
+        
+    def ParseCommandAndGetMsgs(self,ReceivedMessage:Socket_Default_Message):
         try:
             RetValMsgs = []
+            InputCmd = ReceivedMessage.Message
             MyCmdParser = Socket_TextCommandParser(InputCmd)
             CmdLowered = MyCmdParser.GetSpecificCommand().lower()
             FullInputCmdLowered = InputCmd.lower()
        
-            ## remapping ti Keyboard commands
+            ## remapping di Keyboard commands
             if (FullInputCmdLowered==self.GET_STATUS):
                 CmdLowered = RobotListOfAvailableCommands.CTRL_S
-                
 
             if (FullInputCmdLowered==self.GET_TOPICS):
                 CmdLowered = RobotListOfAvailableCommands.CTRL_T
@@ -66,6 +77,7 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
             if (FullInputCmdLowered==self.GET_CLIENTS):
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SERVER_LOCAL,
                                                                 Message =FullInputCmdLowered
+                                                                ,ReplyToTopic=ReceivedMessage.ReplyToTopic
                                                                 )
                 RetValMsgs.append(ObjToSend)    
 
@@ -74,6 +86,7 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
 
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER,
                                                             Message =TextToSpeech
+                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
                                                             )
                 RetValMsgs.append(ObjToSend)
                 
@@ -81,16 +94,22 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
             if (CmdLowered==RobotListOfAvailableCommands.CTRL_T
                 or CmdLowered==RobotListOfAvailableCommands.CTRL_S
                 or CmdLowered==RobotListOfAvailableCommands.CTRL_I
-                or CmdLowered==RobotListOfAvailableCommands.CTRL_M):
+                or CmdLowered==RobotListOfAvailableCommands.CTRL_M
+                or CmdLowered==Socket_Logic_GlobalTextCmdMng.GET_HELP1 
+                or CmdLowered==Socket_Logic_GlobalTextCmdMng.GET_HELP2):
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SERVER_LOCAL,
-                                                            Message =CmdLowered
+                                                            Message = CmdLowered
+                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
                                                             )
                 RetValMsgs.append(ObjToSend)
+            
+            
                     
             if (len(RetValMsgs)==0):
                 print(f"Command {InputCmd} Not Found")
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SERVER_LOCAL,
                                                             Message =InputCmd
+                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
                                                             )
                 RetValMsgs.append(ObjToSend)
                 

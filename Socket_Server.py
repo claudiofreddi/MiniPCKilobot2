@@ -383,7 +383,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.LogConsole("Receiving Command Text Data " +  ReceivedMessage.Message, ConsoleLogLevel.Test)
         
         GlobalTextCommandsManagement = Socket_Logic_GlobalTextCmdMng()
-        AnyFound, MsgsToSend = GlobalTextCommandsManagement.ParseCommandAndGetMsgs(ReceivedMessage.Message)
+        AnyFound, MsgsToSend = GlobalTextCommandsManagement.ParseCommandAndGetMsgs(ReceivedMessage)
         
         if (AnyFound):
            
@@ -449,7 +449,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             for co in self.client_objects:
                 BackToClientMsg += co.servicename + "\n"
         
-        
+        elif  (ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_HELP1 or ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_HELP2):
+            BackToClientMsg = ""
+            Tmp = Socket_Logic_GlobalTextCmdMng()
+            BackToClientMsg = Tmp.ShowCommands()
         
         else: ### ERROR
             BackToClientMsg = "Command not found: " +  ReceivedMessage.Message 
@@ -457,8 +460,12 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     
         #For TEST PORPOUSE
         if (BackToClientMsg!=""):
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS,
-                                                                                Message=BackToClientMsg)
+            if (ReceivedMessage.ReplyToTopic != Socket_Default_Message_Topics.NONE):
+                TopicToUse = ReceivedMessage.ReplyToTopic 
+            else:
+                TopicToUse = Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS
+            
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = TopicToUse,Message=BackToClientMsg)
             
             self.LogConsole("SendToClient " +  BackToClientMsg, ConsoleLogLevel.CurrentTest)
             self.SendToClient(CurrClientObject.client,ObjToSend)  

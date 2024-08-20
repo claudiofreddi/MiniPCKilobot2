@@ -99,7 +99,10 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
             #     self.bot.sendMessage(chat_id, f'Mi spiace {name}, non capisco {MyCmd}\nUsa /help per sapere cosa posso fare!')
             if (IsToSendToServer):
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
-                                                                                Message = MyCmd, Value = 0)
+                                                                                Message = MyCmd
+                                                                                , Value = 0
+                                                                                ,ReplyToTopic=Socket_Default_Message_Topics.OUTPUT_TELEGRAM
+                                                                                )
                                 
                 self.SendToServer(ObjToSend) 
 
@@ -114,10 +117,10 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
     
     def On_ClientAfterLogin(self):
         self.RegisterTopics(Socket_Default_Message_Topics.INPUT_TELEGRAM)
-        if not self.Exclude_Code():  self.RegisterTopics(Socket_Default_Message_Topics.OUTPUT_TELEGRAM) 
+        
                      
         self.SubscribeTopics(Socket_Default_Message_Topics.INPUT_IMAGE)
-        
+        self.SubscribeTopics(Socket_Default_Message_Topics.OUTPUT_TELEGRAM) 
         
         
 

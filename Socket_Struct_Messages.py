@@ -54,7 +54,9 @@ class Socket_Default_Message_Topics:
             or
             NewTopic == Socket_Default_Message_Topics.SERVER_LOCAL
             or
-            NewTopic == Socket_Default_Message_Topics.SERVER_LOCAL
+            NewTopic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD
+            or
+            NewTopic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK
             
             ):
             return True
@@ -75,7 +77,9 @@ class SocketDecoder:
 
 class Socket_Default_Message(Common_LogConsoleClass):
     def __init__(self,Topic=Socket_Default_Message_Topics.NONE, UID = '',Message ="",
-                 Value=0, ValueStr="", RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData='', ResultList= [] ):
+                 Value=0, ValueStr="", RefreshInterval=5,LastRefresh = 0, IsAlert=False, Error ="",ByteData='', ResultList= []
+                 , ReplyToTopic=Socket_Default_Message_Topics.NONE 
+                 ):
         self.Message = Message
         self.Value = Value
         self.ValueStr = ValueStr
@@ -88,6 +92,7 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.ByteData = ByteData
         self.Topic = Topic
         self.ResultList = ResultList
+        self.ReplyToTopic = ReplyToTopic
        
 
     def json(self):
@@ -101,9 +106,10 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.IsAlert = Source.IsAlert 
         self.RefreshInterval = Source.RefreshInterval
         self.LastRefresh = Source.LastRefresh
+        self.ReplyToTopic = Source.ReplyToTopic
         
     def GetMessageDescription(self):
-        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr) 
+        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr) + " Reply To Topic: " + str(self.ReplyToTopic)
         if (self.Error != ""):
             Txt = Txt + self.Error 
         if (self.IsAlert == True):

@@ -51,17 +51,18 @@ class SocketClient_TextCommands(Socket_Client_BaseClass):
                 self.LogConsole(self.ThisServiceName() + "Waiting for your command...",ConsoleLogLevel.Test)
                 FullTextCommand = '{}'.format(input(''))
                 
-                MyTmpObj = Socket_Logic_GlobalTextCmdMng()
-                if (FullTextCommand==Socket_Logic_GlobalTextCmdMng.GET_HELP1 
-                    or FullTextCommand==Socket_Logic_GlobalTextCmdMng.GET_HELP2):
-                    for t in MyTmpObj.ListOfCommands():
-                        print(t)
-                else:
-                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS,
+                # MyTmpObj = Socket_Logic_GlobalTextCmdMng()
+                # if (FullTextCommand==Socket_Logic_GlobalTextCmdMng.GET_HELP1 
+                #     or FullTextCommand==Socket_Logic_GlobalTextCmdMng.GET_HELP2):
+                #     for t in MyTmpObj.ListOfCommands():
+                #         print(t)
+                # else:
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS,
                                                                 Message =FullTextCommand
+                                                                ,ReplyToTopic=Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS
                                                                 )
                     
-                    self.SendToServer( ObjToSend)   
+                self.SendToServer( ObjToSend)   
                         
                 if (self.IsQuitCalled):
                     return self.OnClient_Core_Task_RETVAL_QUIT
