@@ -24,6 +24,25 @@ class Socket_TextCommandParser():
     
     def GetSpecificCommandParam(self, paramPos, GetAllTailParams = False)-> str:
         return self._parseText(self.CmdToParse,paramPos,GetAllTailParams)
+    
+    def Utils_Split_Cmd_Param(self, CmdToParse="",Lowered=True):
+        if (CmdToParse!=""):
+            self.CmdToParse = CmdToParse
+        if (Lowered):self.CmdToParse =self.CmdToParse.lower()
+        return self.GetSpecificCommand(), self.GetSpecificCommandParam(1,True)
+     
+    def Utils_Split_Cmd_Param_Param(self, CmdToParse="",Lowered=True):
+        if (CmdToParse!=""):
+            self.CmdToParse = CmdToParse
+        if (Lowered):self.CmdToParse =self.CmdToParse.lower()
+        return self.GetSpecificCommand(), self.GetSpecificCommandParam(1,False), self.GetSpecificCommandParam(2,True)
+        
+#Sample
+# MyTP = Socket_TextCommandParser("pippo pluto e paparino")
+# print(MyTP.Utils_Split_Cmd_Param())
+# print(MyTP.Utils_Split_Cmd_Param_Param())
+# print(MyTP.Utils_Split_Cmd_Param("Testo 1"))
+# print(MyTP.Utils_Split_Cmd_Param_Param("Testo 1"))
 
 #Main Class    
 class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
@@ -33,21 +52,24 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
     GET_TOPICS = "get topics"
     GET_STATUS = "get status"
     GET_CLIENTS = "get clients"
-    TARGET_PREFIX = "#"    
+    SHOW_SERVER_MSGS = "show messages"
+    SHOW_SERVER_IMAGE = "show image"
+    TARGET_CLIENT_PREFIX = "@"    
     
     def __init__(self):
         pass
-    
+    def Padding(self,txt):
+        return ('{: <20}'.format(txt))
+        
     def ListOfCommands(self):
         cmds = []
-        #cmds.append(self.GET_HELP1   + "     ->this list")
-        #cmds.append(self.GET_HELP2   + "     ->this list")
-        cmds.append(self.GET_STATUS   + "      ->get params status")
-        cmds.append(self.GET_TOPICS  + "      ->get Topics")
-        cmds.append(self.GET_CLIENTS + "      ->get Clients")
-        cmds.append(self.GET_CLIENTS + "      ->get Clients")
-        cmds.append(self.TARGET_PREFIX + "    ->TargetPrefix  sample: [#KEYBOARD_Client on] ")
-        cmds.append("speak [Text]")
+        cmds.append(self.Padding(self.GET_STATUS)             + "      ->get params status (Ctrl+S with Keyboard)")
+        cmds.append(self.Padding(self.GET_TOPICS)             + "      ->get Topics (Ctrl+T with Keyboard)")
+        cmds.append(self.Padding(self.SHOW_SERVER_MSGS)       + "      ->show Messages on/off (Ctrl+M with Keyboard)")
+        cmds.append(self.Padding(self.SHOW_SERVER_IMAGE)      + "      ->show Image (Ctrl+I with Keyboard)")
+        cmds.append(self.Padding(self.GET_CLIENTS)            + "      ->get Clients")
+        cmds.append(self.Padding(self.TARGET_CLIENT_PREFIX)   + "      ->TargetPrefix  sample: [@KEYBOARD_Client idle on] ")
+        cmds.append(self.Padding("speak [Text]")              + "      ->Speak a Text")
         return cmds
     
     def ShowCommands(self):
@@ -78,6 +100,12 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
 
             if (FullInputCmdLowered==self.GET_TOPICS):
                 CmdLowered = RobotListOfAvailableCommands.CTRL_T
+                
+            if (FullInputCmdLowered==self.SHOW_SERVER_MSGS):
+                CmdLowered = RobotListOfAvailableCommands.CTRL_M
+                
+            if (FullInputCmdLowered==self.SHOW_SERVER_IMAGE):
+                CmdLowered = RobotListOfAvailableCommands.CTRL_I
 
             ## ***************************************************
             ## Server Local Msgs
@@ -114,7 +142,7 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
                                                             )
                 RetValMsgs.append(ObjToSend)
 
-            if (FullInputCmdLowered.startswith(self.TARGET_PREFIX)):
+            if (FullInputCmdLowered.startswith(self.TARGET_CLIENT_PREFIX)):
                 MyCmdParser2 = Socket_TextCommandParser(InputCmd[1:])
                 GetClientName = MyCmdParser2.GetSpecificCommand()
                 GetAllParams = MyCmdParser2.GetSpecificCommandParam(1,True)

@@ -168,7 +168,7 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
     def OnClient_Quit(self):
         self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             
             if (self.GlbFlagProcessKilled):

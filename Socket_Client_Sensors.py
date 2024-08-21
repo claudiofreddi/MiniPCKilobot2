@@ -59,7 +59,7 @@ class SocketClient_Sensors(Socket_Client_BaseClass):
         
         return IsToSend
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             if (self.MyArduino_Connection.IsStarted):
                 retData = self.MyArduino_Connection.ReadSerial()

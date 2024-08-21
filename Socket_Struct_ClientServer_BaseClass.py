@@ -12,22 +12,24 @@ from Socket_Struct_Messages import *
 
 from Socket_Struct_Services_List import Socket_Services_List
 
-
+class Socket_ClientServer_Local_Commands:
+    CLIENT_QUIT = "quit"
+    SOCKET_LOGIN_MSG = "AskForServiceName"
 
 class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
      # Connection Data
-    ServerIP = ''
-    ServerPort = SOCKET_SERVER_PORT
-    buffer = SOCKET_BUFFER
-    ServiceName:str = ""
-    IsServer:bool = False
-    ServerConnection:socket
-    client:socket
-    IsConnected = False
-    IsQuitCalled = False
+    # ServerIP = ''
+    # ServerPort = SOCKET_SERVER_PORT
+    # buffer = SOCKET_BUFFER
+    # ServiceName:str = ""
+    # IsServer:bool = False
+    # ServerConnection:socket
+    # client:socket
+    # IsConnected = False
+    # IsQuitCalled = False
     
     
-    SOCKET_QUIT_MSG = "Quit"
+    CLIENT_QUIT = "quit"
     SOCKET_LOGIN_MSG = "AskForServiceName"
     RETRY_TIME = 8
     
@@ -61,6 +63,18 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
 
     
     def __init__(self,ServiceName = '', ForceServerIP = '',ForcePort='', IsServer=False,LogOptimized=False):
+            
+            # Connection Data
+            self.ServerIP = ''
+            self.ServerPort = SOCKET_SERVER_PORT
+            self.buffer = SOCKET_BUFFER
+            self.ServiceName:str = ""
+            self.IsServer:bool = False
+            self.ServerConnection:socket
+            self.client:socket
+            self.IsConnected = False
+            self.IsQuitCalled = False
+            
             
             self.RunOptimized = LogOptimized
             
@@ -118,26 +132,23 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     
     def Disconnect(self):
         
+        if  (not self.IsConnected):return
+        
         self.IsConnected = False
         if (self.IsServer):
             self.ServerConnection.close()
         else:
             self.client.close()     
                
-        self.LogConsole(self.ThisServiceName() + "  Disconnected",ConsoleLogLevel.System)   
+        self.LogConsole(self.ThisServiceName() + "Service Disconnected",ConsoleLogLevel.System)   
     
     def Quit(self):
         
+        if (self.IsQuitCalled):return
+        
         try:
-            self.LogConsole(self.ThisServiceName() + "  Quitted",ConsoleLogLevel.System) 
+            self.LogConsole(self.ThisServiceName() + "Service Quitted",ConsoleLogLevel.System) 
             self.Disconnect()
-            if (self.IsServer):
-                self.ServerConnection.close()
-                
-            else:
-                self.client.close()
-                         
-            self.IsConnected = False
             self.IsQuitCalled = True
          
             
@@ -175,11 +186,12 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
         try:
             myobj:SocketMessageEnvelope = pickle.loads(ser_obj)
             
-            return myobj
+            return myobj, True
         
         except Exception as e:
-            self.LogConsole(self.ThisServiceName() + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e),ConsoleLogLevel.Error)
-            return None
+            
+            #self.LogConsole(self.ThisServiceName() + " Error in UnPack_StandardEnvelope_And_Deserialize " + str(e),ConsoleLogLevel.Error)
+            return None, False
         
 
     

@@ -2,10 +2,10 @@ from Socket_Struct_Client_BaseClass import *
 from Socket_Utils_Timer import * 
 from Socket_Logic_GlobalTextCmdMng import *
 
-class SocketClient_TextCommands(Socket_Client_BaseClass):
+class SocketClient_Console(Socket_Client_BaseClass):
 
    
-    def __init__(self, ServiceName = Socket_Services_List.TEXT_COMMANDS, ForceServerIP = '',ForcePort='',LogOptimized = False):
+    def __init__(self, ServiceName = Socket_Services_List.CONSOLE, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         
         
@@ -47,7 +47,7 @@ class SocketClient_TextCommands(Socket_Client_BaseClass):
     def OnClient_Quit(self):
         self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             
             if (self.IsConnected):
@@ -78,6 +78,6 @@ class SocketClient_TextCommands(Socket_Client_BaseClass):
         
 if (__name__== "__main__"):
     
-    MySocketClient = SocketClient_TextCommands()
+    MySocketClient = SocketClient_Console()
     
     MySocketClient.Run_Threads()

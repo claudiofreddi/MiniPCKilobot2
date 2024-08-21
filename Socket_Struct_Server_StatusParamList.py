@@ -8,6 +8,9 @@ class StatusParamName:
     SERVER_CAMERA = "SERVER_CAMERA" 
     SERVER_SHOW_RECEIVED_MSGS = "SERVER_SHOW_RECEIVED_MSGS"
     SERVER_SHOW_SEND_MSGS = "SERVER_SHOW_SEND_MSGS"
+    
+    def LOCAL_COMPOSED_PARAM_NAME(thisService:str, paramSuffix:str):
+        return thisService + paramSuffix
 
 class StatusParam():
     def __init__(self,ParamName="",Value=""):
@@ -43,6 +46,27 @@ class StatusParamList(Common_LogConsoleClass):
         else:
             return ""
     
+    def GetValueInt(self,ParamName="")->int:
+        pParam:StatusParam
+        retval , pParam = self.GetParam(ParamName)
+        if (retval):
+            try:
+                return int(pParam.Value)
+            except:
+                return 0
+        else:
+            return 0
+        
+    def GetValueFloat(self,ParamName="")->float:
+        pParam:StatusParam
+        retval , pParam = self.GetParam(ParamName)
+        if (retval):
+            try:
+                return float(pParam.Value)
+            except:
+                return 0.0
+        else:
+            return 0.0    
     def CheckParam(self,ParamName="",ValueToCheck = ""):
         pParam:StatusParam
         retval , pParam = self.GetParam(ParamName)
@@ -72,6 +96,7 @@ class StatusParamList(Common_LogConsoleClass):
         else:
             pObj:StatusParam = StatusParam(ParamName=ParamName,Value=Value)
             self.List.append(pObj)
+        return Value
     
     def GetStatusDescription(self):
         pParam:StatusParam

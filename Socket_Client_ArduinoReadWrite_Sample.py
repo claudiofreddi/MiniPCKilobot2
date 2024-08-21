@@ -79,7 +79,7 @@ class SocketClient_ArduinoReadWrite_Sample(Socket_Client_BaseClass):
         
         return IsToSend
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             if (self.MyArduino_Connection.IsStarted):
                 

@@ -77,7 +77,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
     def OnClient_Quit(self):
         self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             
             # if (MyTimer.IsTimeout()):

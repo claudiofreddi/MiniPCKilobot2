@@ -25,25 +25,28 @@ class SocketClient_Sample(Socket_Client_BaseClass):
                     if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
                         ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
                         if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                            MySpecificCommand = ReceivedMessage.Message
+                            #Add Sample for Change Params
+                            pass
                             
+    
                             
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + "Error in OnClient_Receive()  " + str(e),ConsoleLogLevel.Error)
             return self.OnClient_Core_Task_RETVAL_ERROR
-        
+    
+ 
     def OnClient_Disconnect(self):
         self.LogConsole("OnClient_Disconnect",ConsoleLogLevel.Override_Call)
     
     def OnClient_Quit(self):
         self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             
             if (self.IsConnected):
                 #Sample To remove
-                time.sleep(2)
+                time.sleep(5)
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE, 
                                                                         Message = "Test", Value = 0)                
                     
@@ -63,8 +66,9 @@ class SocketClient_Sample(Socket_Client_BaseClass):
             return self.OnClient_Core_Task_RETVAL_ERROR
     
     
-     
-        
+
+          
+                
 if (__name__== "__main__"):
     
     MySocketClient = SocketClient_Sample()

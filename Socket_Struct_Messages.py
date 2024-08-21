@@ -17,12 +17,13 @@ class Socket_Default_Message_Topics:
     LOGIN = "LOGIN"                                     #Not subscrible 
     MESSAGE = "/MESSAGE"                                #Not subscrible 
     SERVER_LOCAL = "/TOPIC/SERVER_LOCAL"                #Not subscrible 
-    TOPIC_ADD = "/TOPIC/ADD"                            #Not subscrible 
+    TOPIC_REGISTER = "/TOPIC/ADD"                            #Not subscrible 
     TOPIC_SUBSCRIBE = "/TOPIC/SUBSCRIBE"                #Not subscrible 
     TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"            #Not subscrible 
-    TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"    #Not subscrible    
-    TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"    #Not subscrible    
+    TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"    #Not subscrible    to remove
+    TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"    #Not subscrible    to remove
     TOPIC_CLIENT_DIRECT_CMD = "/TOPIC/CLIENT_DIRECT"    #Not subscrible    
+    TOPIC_CLIENT_PARAM_UPDATED = "/TOPIC/CLIENT_PARAM_UPDATED"    #Not subscrible    
     
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
@@ -44,7 +45,7 @@ class Socket_Default_Message_Topics:
     def IsTopicReserved(self,NewTopic):
         if (NewTopic == Socket_Default_Message_Topics.NONE
             or 
-            NewTopic == Socket_Default_Message_Topics.TOPIC_ADD
+            NewTopic == Socket_Default_Message_Topics.TOPIC_REGISTER
             or 
             NewTopic == Socket_Default_Message_Topics.TOPIC_SUBSCRIBE
             or

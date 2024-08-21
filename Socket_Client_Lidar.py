@@ -84,7 +84,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
     def OnClient_Quit(self):
         self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
     
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             
             if (self.SemaphoreReadyToSend):
@@ -116,7 +116,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                 
                 retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
                 if (pParam.Value==StatusParamListOfValues.ON):
-                    time.sleep(self.IDLE_SLEEP_TIME)
+                    time.sleep(self.WAIT_SLEEP_TIME)
                     continue
                 
                 if (not self.SemaphoreReadyToSend):

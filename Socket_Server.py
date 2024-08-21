@@ -68,26 +68,34 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                           
             c, retval = self.GetClientObject(TargetClient)
           
+            #if (c):
+                
             FromServiceName = c.servicename if (retval) else ''
 
 
             ser_obj,AdditionaByteData,retval = self.MySocket_SendReceive.recv_msg(TargetClient)
+            
+        
+            MyEnvelope, retval = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
+ 
+            if (retval):
+            
+                if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
+                    LogParam = ConsoleLogLevel.Show
+                else:
+                    LogParam = 0
+                self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,LogParam)
                 
-            MyEnvelope = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
-            
-            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
-                LogParam = ConsoleLogLevel.Show
+                return MyEnvelope,AdditionaByteData ,True 
             else:
-                LogParam = 0
-            self.LogConsole("Server GetFromClient [" + FromServiceName + "] " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow,LogParam)
-            
-            return MyEnvelope,AdditionaByteData ,True 
-
+                #self.LogConsole("MyEnvelope not Decoded in GetFromClient - May be Client disconncted ",ConsoleLogLevel.System)
+                return None, b'',False   
+        
         except Exception as e:
-            if (TargetClient):
-                self.QuitClient(TargetClient,True)
+            # if (TargetClient):
+            #     self.QuitClient(TargetClient,True)
             
-            self.LogConsole("Server Error in GetFromClient " + str(e),ConsoleLogLevel.Error)
+            #self.LogConsole("Server Error in GetFromClient " + str(e),ConsoleLogLevel.Error)
             return None, b'',False   
     
     
@@ -144,7 +152,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                                                         Message =msg
                                                                         )
                 if (Broadcast):
-                    self.broadcastObj(ObjToSend)
+                    self.broadcastObj(ObjToSend,ServiceName)
         
         except Exception as e:
             
@@ -226,6 +234,9 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                             
                             ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
                             
+                            ########################################################################################    
+                            #ENABLE/DISABLE SHOW OF ALL MESSAGES FROM CLIENT
+                            ########################################################################################    
                             if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
                                 LogParam = ConsoleLogLevel.Show
                             else:
@@ -234,7 +245,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             self.LogConsole("Server GetFromClient [" + CurrClientObject.servicename + "] " + ReceivedMessage.GetMessageDescription(),ConsoleLogLevel.Socket_Flow,LogParam )                
                                         
                             ########################################################################################                        
-                            ##Gestione Inoltro Messaggi  
+                            ##BROADCAST IF REQUIRED (to All client except this [sender])
                             ########################################################################################                                        
                             if (ReceivedEnvelope.To == SocketMessageEnvelopeTargetType.BROADCAST):   
                                 #Broadcast requested by client
@@ -249,7 +260,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                              
                             ## SEZIONE MESSAGGI SPECIALI
                        
-                            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_ADD):
+                            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_REGISTER):
                                 if (CurrClientObject.RegisterTopic(ReceivedMessage.Message)):
                                     self.LogConsole("[" + CurrClientObject.servicename +  "]  Added Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
                             
@@ -257,21 +268,15 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                 if (CurrClientObject.SubscribeTopic(ReceivedMessage.Message)):
                                     self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
                                     
-                            elif (ReceivedMessage.Message == self.SOCKET_QUIT_MSG):
-                                self.LogConsole("[" + CurrClientObject.servicename +  "] Quitted ",ConsoleLogLevel.System)
-                                self.QuitClient(client)
-                                break
-                            
-                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_ACK):
-                                ParamName = ReceivedMessage.Message #self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE
-                                ParamValueStr = ReceivedMessage.ValueStr
-                                self.LogConsole("[" + ParamName +  "] Received ACK: [" + ParamValueStr + "]",ConsoleLogLevel.System)
-                                self.MyListOfStatusParams.UpdateParam(ParamName,ParamValueStr) 
-                            
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED):
+                                self.MyListOfStatusParams.UpdateParam(ReceivedMessage.Message,ReceivedMessage.ValueStr)
+                                
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                                print("A")
                                 self.PassThroughtMsg(ReceivedMessage,AdditionaByteData)
                                                                                            
+                            ########################################################################################                        
+                            ## TOPIC TO BE MANAGED  
+                            ########################################################################################  
                             ##SocketObjectClassType.SENSOR : value update      
                             elif (   ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_COMPASS
                                 or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY):
@@ -298,12 +303,6 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     
                 except Exception as e:
                     self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e),ConsoleLogLevel.Error)
-                    try:
-                        self.QuitClient(client)
-                    except:
-                        self.LogConsole(LocalMsgPrefix + " handle() Error. Assume Break Connection. Quit.",ConsoleLogLevel.System)
-                        break
-                    self.LogConsole(LocalMsgPrefix + " handle() Error. Assume Break Connection. Quit.",ConsoleLogLevel.System)
                     break
            
     # Receiving / Listening Function
@@ -325,7 +324,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 self.LogConsole("Connected with {}".format(str(address)),ConsoleLogLevel.Socket_Flow)
                 
                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.LOGIN,
-                                                                          Message=self.SOCKET_LOGIN_MSG)
+                                                                          Message=Socket_ClientServer_Local_Commands.SOCKET_LOGIN_MSG)
              
                 self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=str(address))
               

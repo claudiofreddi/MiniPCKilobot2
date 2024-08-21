@@ -20,7 +20,7 @@ FilesToRun = [('Socket_Server.py', 1),
             ('Socket_Client_Remote.py',0),
             ("Socket_Client_Sample.py",0),
             ("Socket_Client_ArduinoReadWrite_Sample.py", 0),
-            ("Socket_Client_TextCommands.py", 1),
+            ("Socket_Client_Console.py", 1),
             ("Socket_Logic_Joystick.py", 2),
             ]
 

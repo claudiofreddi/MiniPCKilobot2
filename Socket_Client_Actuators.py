@@ -65,7 +65,7 @@ class SocketClient_Actuators(Socket_Client_BaseClass):
     def OnClient_Quit(self):
         self.LogConsole("OnClient_Quit",ConsoleLogLevel.Override_Call) 
 
-    def OnClient_Core_Task_Cycle(self, QuitCalled):
+    def OnClient_Core_Task_Cycle(self):
         try:
             if (self.MyArduino_Connection.IsStarted):
                 #if (self.ArduinoCommandsQ.HasItems()):
