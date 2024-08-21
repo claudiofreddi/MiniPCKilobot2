@@ -91,17 +91,14 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
             if (self.IsWindowOn and (self.IsTimeout == False)):
                 self.root.title('Kilobot ' + str(datetime.now().time())[:8])
             
-            if (QuitCalled):
                 
-                return self.OnClient_Core_Task_RETVAL_QUIT
-            
             return self.OnClient_Core_Task_RETVAL_OK
             
             
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + "Error in OnClient_Core_Task_Cycle()  " + str(e),ConsoleLogLevel.Error)
             self.root.quit()
-            return self.OnClient_Core_Task_RETVAL_ERROR
+            return self.OnClient_Core_Task_RETVAL_QUIT
     
   
     def AddLabel_Pair(self,container,index, Label, Value, Row, Sector): 
@@ -149,8 +146,8 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
         self.root.mainloop()
         
         
-    def Run_Threads(self, SimulOn=False):
-        super().Run_Threads(SimulOn)
+    def Run_Threads(self):
+        super().Run_Threads()
         
         return 
   

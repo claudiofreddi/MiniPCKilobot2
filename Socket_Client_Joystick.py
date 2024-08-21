@@ -162,7 +162,8 @@ class SocketClient_Joystick(Socket_Client_BaseClass):
             
             j.set_vibration(self.left_speed, self.right_speed)
             
-            if (Message != ""):              
+            if (Message != ""):  
+                print(Message)         
                 if (self.MyTimer.IsTimeout()):
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_JOYSTICK, 
                                                                             Message = Message, Value = 0)                
@@ -179,8 +180,8 @@ class SocketClient_Joystick(Socket_Client_BaseClass):
             j.dispatch_events()
             time.sleep(.01)
      
-    def Run_Threads(self,SimulOn = False):
-        super().Run_Threads(SimulOn)
+    def Run_Threads(self):
+        super().Run_Threads()
         
         # Starting Threads For Listening And Writing
         receive_thread = threading.Thread(target=self.MainJoystick_Thread)

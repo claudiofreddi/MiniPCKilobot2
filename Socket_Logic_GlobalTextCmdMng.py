@@ -156,12 +156,13 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
             
                     
             if (len(RetValMsgs)==0):
-                print(f"Command {InputCmd} Not Found")
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SERVER_LOCAL,
-                                                            Message =InputCmd
-                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic
-                                                            )
-                RetValMsgs.append(ObjToSend)
+                #print(f"Command {InputCmd} Not Found")
+                if (ReceivedMessage.ReplyToTopic!=""):
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.SERVER_LOCAL,
+                                                                Message =InputCmd
+                                                                ,ReplyToTopic=ReceivedMessage.ReplyToTopic
+                                                                )
+                    RetValMsgs.append(ObjToSend)
                 
             return (len(RetValMsgs)>0), RetValMsgs
     

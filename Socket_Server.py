@@ -469,7 +469,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         
         else: ### ERROR
             BackToClientMsg = "Command not found: " +  ReceivedMessage.Message 
-            self.LogConsole(BackToClientMsg , ConsoleLogLevel.System)           
+            self.LogConsole(BackToClientMsg , ConsoleLogLevel.System)
+            BackToClientMsg  = "" #Do not reply          
                     
         #For TEST PORPOUSE
         if (BackToClientMsg!=""):
