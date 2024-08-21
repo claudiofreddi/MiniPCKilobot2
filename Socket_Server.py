@@ -30,9 +30,9 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         
         
         self.MyListOfStatusParams = StatusParamList()
-        self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON) 
-        self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.OFF) 
-        self.MyListOfStatusParams.UpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.OFF) 
+        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON) 
+        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.OFF) 
+        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.OFF) 
           
         
         self.Connect()    
@@ -269,7 +269,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                     self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
                                     
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED):
-                                self.MyListOfStatusParams.UpdateParam(ReceivedMessage.Message,ReceivedMessage.ValueStr)
+                                self.MyListOfStatusParams.CreateOrUpdateParam(ReceivedMessage.Message,ReceivedMessage.ValueStr)
                                 
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
                                 self.PassThroughtMsg(ReceivedMessage,AdditionaByteData)

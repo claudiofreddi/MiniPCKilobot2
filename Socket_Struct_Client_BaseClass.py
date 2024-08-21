@@ -36,8 +36,12 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         
         
         self.LocalListOfStatusParams = StatusParamList()
-        self.LocalListOfStatusParams.UpdateParam(self.LOCAL_PARAMS_IS_IDLE,StatusParamListOfValues.OFF) 
-        self.LocalListOfStatusParams.UpdateParam(self.LOCAL_PARAMS_SLEEP_TIME,"2") 
+        self.LocalListOfStatusParams.CreateOrUpdateParam(ParamName=self.LOCAL_PARAMS_IS_IDLE,Value=StatusParamListOfValues.OFF
+                                                             ,UserCmd=Local_Params_User_Command._IS_IDLE,ServiceName=ServiceName)
+        self.LocalListOfStatusParams.CreateOrUpdateParam( ParamName=self.LOCAL_PARAMS_SLEEP_TIME,Value="2"
+                                                             ,UserCmd=Local_Params_User_Command._SLEEP_TIME,ServiceName=ServiceName)
+        
+        
         
     def SendToServer(self,MyMsg:Socket_Default_Message, 
                         Target=SocketMessageEnvelopeTargetType.SERVER,AdditionaByteData=b''):
@@ -92,56 +96,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         #                 pass
         pass
 
-    #######################################################
-    # Utils To Manage Params and Server Feedback
-    #######################################################
-    def Util_Params_IsValid_Integer(self,value):
-        try:
-            return int(value), True
-        except:
-            return 0, False
-        
-    
-    def Util_Params_IsValid_Float(self,value):
-        try:
-            return float(value), True
-        except:
-            return 0, False
-    
-    def Util_Params_IsValid_ON_OFF_SWITCH(self,cmd:str):
-        return (cmd=="on" or cmd=="off" or cmd=="switch")
-    
-    def Util_Params_SetValue_ON_OFF_SWITCH(self,ParamName,NewStatus_On_Off_Switch):
-        if (NewStatus_On_Off_Switch=="on"):
-                NewVal = self.LocalListOfStatusParams.UpdateParam(ParamName,StatusParamListOfValues.ON)
-        elif (NewStatus_On_Off_Switch=="off"):
-            NewVal = self.LocalListOfStatusParams.UpdateParam(ParamName,StatusParamListOfValues.OFF)
-        elif (NewStatus_On_Off_Switch=="switch"):
-            NewVal = self.LocalListOfStatusParams.SwitchParam(ParamName)
-        return NewVal
-    
-    def Util_Params_SetValue(self,ParamName,NewValue):
-        NewVal = self.LocalListOfStatusParams.UpdateParam(ParamName,str(NewValue))
-        return NewVal
-    
-    def Util_Params_Ack_Msg(self,ParamName,NewVal,AlsoReplyToTopic=False,ReplyToTopic:str="")->Socket_Default_Message:
-        ObjToServer:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED
-                                                                            #Suffix to service name
-                                                                            ,Message = ParamName
-                                                                            ,ValueStr= NewVal)
-        if (AlsoReplyToTopic and ReplyToTopic!=""):
-            ObjToReplyTopic:Socket_Default_Message = Socket_Default_Message(Topic = ReplyToTopic
-                                                                            #Suffix to service name
-                                                                            ,Message = f"Command Succesfully Executed: {ParamName} New Status:{ NewVal }"
-                                                                            )
-        else:
-            ObjToReplyTopic = None
-            
-        return ObjToServer,ObjToReplyTopic
-    #######################################################
-    # END --- Utils To Manage Params and Server Feedback
-    #######################################################
-        
+
     #######################################################
     # Common Commands Management (To call in Client)
     #######################################################
@@ -160,19 +115,15 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             #Change Variable
             VarChanged = False
             bAlsoReplyToTopic=True
-            if (Cmd == Local_Params_User_Command._IS_IDLE):   
-                MyParamName = self.LOCAL_PARAMS_IS_IDLE
-                if (self.Util_Params_IsValid_ON_OFF_SWITCH(P1)):
-                    NewVal = self.Util_Params_SetValue_ON_OFF_SWITCH(MyParamName,P1)
+            MyParamName = ""
+            pPar:StatusParam
+            pPar, retval = self.LocalListOfStatusParams.GetParamByUserCmd(Cmd)
+            if (retval):
+                MyParamName = pPar.ParamName
+                if (pPar.Util_Params_IsValid(P1)):
+                    NewVal = self.LocalListOfStatusParams.Util_Params_SetValue(pPar,P1)
                     VarChanged = True
-                   
-            if (Cmd == Local_Params_User_Command._SLEEP_TIME):
-                MyParamName = self.LOCAL_PARAMS_SLEEP_TIME
-                val, retval = self.Util_Params_IsValid_Integer(P1)
-                if (retval):
-                    #self.LogConsole(f"MyParamName:{MyParamName}-{val}",ConsoleLogLevel.CurrentTest)  
-                    NewVal = self.Util_Params_SetValue(MyParamName,val)
-                    VarChanged = True
+             
             
             if (Cmd == Local_Params_User_Command.QUIT):
                 self.OnClient_Quit()
@@ -182,8 +133,8 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                 bAlsoReplyToTopic = False
                
             #Notify Changes Change Variable
-            if (VarChanged):
-                    ObjToServer,ObjToReplyTopic = self.Util_Params_Ack_Msg(ParamName=MyParamName,NewVal=NewVal
+            if (VarChanged and MyParamName !=""):
+                    ObjToServer,ObjToReplyTopic = self.LocalListOfStatusParams.Util_Params_ConfimationMsg(ParamName=MyParamName,NewVal=NewVal
                                                                            ,AlsoReplyToTopic=bAlsoReplyToTopic
                                                                            ,ReplyToTopic=ReceivedMessage.ReplyToTopic)
                     if (ObjToServer): self.SendToServer(ObjToServer)                        
@@ -335,7 +286,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     #OVERRIDE: CORE TASK CYCLE: inner main cycle of Service
     def OnClient_Core_Task_Cycle(self):
         try:
-            retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
+            pParam, retval = self.LocalListOfStatusParams.GetParam(self.LOCAL_PARAMS_IS_IDLE)
             if (pParam.Value==StatusParamListOfValues.ON):
                 return self.OnClient_Core_Task_RETVAL_OK
             
@@ -352,11 +303,12 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             while not self.IsQuitCalled:
                 
                 #Basic Management of Service Idle 
-                retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
-                if (pParam.Value==StatusParamListOfValues.ON): 
-                    time.sleep(self.WAIT_SLEEP_TIME)
-                    continue
-                
+                pParam, retval  = self.LocalListOfStatusParams.GetParam(self.LOCAL_PARAMS_IS_IDLE)
+                if (retval):
+                    if (pParam.Value==StatusParamListOfValues.ON): 
+                        time.sleep(self.SLEEP_TIME)
+                        continue
+                    
                 self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
                 
                 retval = self.OnClient_Core_Task_Cycle() 
@@ -388,6 +340,6 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
 if (__name__== "__main__"):
     
     for i in range(1):
-        MySocket_Client_BaseClass =  Socket_Client_BaseClass("Servizio " + str(i))
+        MySocket_Client_BaseClass =  Socket_Client_BaseClass("Servizio" + str(i))
         MySocket_Client_BaseClass.Run_Threads()      
  

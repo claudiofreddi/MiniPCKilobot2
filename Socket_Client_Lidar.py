@@ -114,9 +114,9 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                 if (self.IsQuitCalled): break
                 
                 
-                retval , pParam = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
+                pParam, retval  = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
                 if (pParam.Value==StatusParamListOfValues.ON):
-                    time.sleep(self.WAIT_SLEEP_TIME)
+                    time.sleep(self.SLEEP_TIME)
                     continue
                 
                 if (not self.SemaphoreReadyToSend):
