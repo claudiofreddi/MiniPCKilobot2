@@ -27,7 +27,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort='',LogOptimized=False):
         super().__init__(ServiceName,ForceServerIP,ForcePort, True,LogOptimized)
         self.RunOptimized = LogOptimized
-        
+        self.FrameName = 'server'
         
         self.MyListOfStatusParams = StatusParamList()
         self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON) 
@@ -418,9 +418,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON)):
                 frame= pickle.loads(AdditionalData, fix_imports=True, encoding="bytes")
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
+                self.FrameName = ReceivedMessage.Message
                 try:
-                    cv2.imshow('server',frame)
-                    cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
+                    cv2.imshow(self.FrameName,frame)
+                    cv2.setWindowProperty(self.FrameName, cv2.WND_PROP_TOPMOST, 1)
                 except:
                     cv2.destroyAllWindows()
             else:
@@ -498,19 +499,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             if (not found):
                 self.MyListOfSensors.append(ReceivedMessage)
     
-    #######################################################################################                        
-    ##Gestione TOPICS
-    ########################################################################################  
-    def SetClient_Status_Change_Idle(self,clientName:str):
-         c:client_object = self.GetClientObjectByServiceName(ServiceNameToFind=clientName)
-         if (c):
-             self._SetClient_Status_Change_Idle(c.client)
+    # #######################################################################################                        
+    # ##Gestione TOPICS
+    # ########################################################################################  
+    # def SetClient_Status_Change_Idle(self,clientName:str):
+    #      c:client_object = self.GetClientObjectByServiceName(ServiceNameToFind=clientName)
+    #      if (c):
+    #          self._SetClient_Status_Change_Idle(c.client)
     
-    def _SetClient_Status_Change_Idle(self,client):
-        ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD,
-                                                                          Message="", Value=0, ValueStr="")
+    # def _SetClient_Status_Change_Idle(self,client):
+    #     ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD,
+    #                                                                       Message="", Value=0, ValueStr="")
              
-        self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=Socket_Services_List.SERVER)
+    #     self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=Socket_Services_List.SERVER)
        
     
     

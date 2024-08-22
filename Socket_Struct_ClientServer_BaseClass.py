@@ -17,17 +17,6 @@ class Socket_ClientServer_Local_Commands:
     SOCKET_LOGIN_MSG = "AskForServiceName"
 
 class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
-     # Connection Data
-    # ServerIP = ''
-    # ServerPort = SOCKET_SERVER_PORT
-    # buffer = SOCKET_BUFFER
-    # ServiceName:str = ""
-    # IsServer:bool = False
-    # ServerConnection:socket
-    # client:socket
-    # IsConnected = False
-    # IsQuitCalled = False
-    
     
     CLIENT_QUIT = "quit"
     SOCKET_LOGIN_MSG = "AskForServiceName"
@@ -44,17 +33,17 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     
     def ServerIPToUse(self)-> str:
         if (SOCKET_USE_LOCALHOST == 1):
-            self.LogConsole(self.ServiceName + " Using Localhost  IP: "+ SOCKET_SERVER_LOCALHOST_IP,ConsoleLogLevel.Always)
+            self.LogConsole(self.ServiceName + " Using Localhost  IP: "+ SOCKET_SERVER_LOCALHOST_IP+ ":" + str(self.ServerPort),ConsoleLogLevel.Always)
             return SOCKET_SERVER_LOCALHOST_IP, True
         else:
             if (SOCKET_SERVER_IP_REMOTE !="" ):
-                self.LogConsole(self.ServiceName + " Using Forced IP: "+ SOCKET_SERVER_IP_REMOTE,ConsoleLogLevel.Always)
+                self.LogConsole(self.ServiceName + " Using Forced IP: "+ SOCKET_SERVER_IP_REMOTE+ ":" + str(self.ServerPort),ConsoleLogLevel.Always)
                 return SOCKET_SERVER_IP_REMOTE, True
             else:
                 if (SOCKET_THIS_IS_SERVER_MACHINE == 1):
                     #GetThis Machine IP
                     ThisMachineIP = socket.gethostbyname(socket.gethostname())
-                    self.LogConsole(self.ServiceName + " Using Local Machine IP: "+ ThisMachineIP,ConsoleLogLevel.Always)
+                    self.LogConsole(self.ServiceName + " Using Local Machine IP: "+ ThisMachineIP + ":" + str(self.ServerPort),ConsoleLogLevel.Always)
                     return ThisMachineIP, True
                 else:
                     Err = self.ServiceName + " This May be a Remote Client. Please configure SOCKET_SERVER_IP_REMOTE"
@@ -119,7 +108,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
             else:
                 self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.client.connect((self.ServerIP, self.ServerPort))
-            
+                
             self.LogConsole(self.ServiceName + " Connected!",ConsoleLogLevel.System)
             self.IsConnected = True
             return True        

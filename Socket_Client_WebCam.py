@@ -4,9 +4,12 @@ import numpy as np
 import imutils
 import cv2 as cv
 from Socket_Logic_Vision_Object_Classifer import *
+import random as rnd
 
 class SocketClient_Webcam(Socket_Client_BaseClass):
 
+    LOCAL_PARAMS_ENABLE_CLASSIFICATION = "ENABLE_CLASSIFICATION"
+    LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD = "classify"
     
     def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
@@ -23,7 +26,11 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         self.ContinuousSending_On = True
         self._Classifier_Enabled = True
         self._Classifier_Loaded = False
+        
+        self.LocalListOfStatusParams.CreateOrUpdateParam(ParamName=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION ,Value=StatusParamListOfValues.OFF
+                                                             ,UserCmd=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD,ServiceName=ServiceName)
     
+        self.FrameName = "Frame"+ str(rnd.randrange(100,999))
         
     def Classifier_Load(self):
         if (not self._Classifier_Loaded):
@@ -40,7 +47,8 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         
     def Classifier_Apply(self, frame,ConfidenceLev=0.60):
         success,FoundNames,FoundConfidence,FoundBoxes = self.MyRobotVision_Obj_Classifier.TrackObjects(frame=frame,AddBoxes=True,ConfidenceLev=ConfidenceLev)
-        self.LogConsole(str(FoundNames),ConsoleLogLevel.Test)
+        if (success):
+            self.LogConsole(str(FoundNames),ConsoleLogLevel.Test)
         return success,FoundNames,FoundConfidence,FoundBoxes
         
         
@@ -150,6 +158,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                 self.LogConsole(self.ThisServiceName() + "Error in Comparing Images:  " + str(e),ConsoleLogLevel.Error)
                             
                             if (self._Classifier_Enabled):
+                                #and self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_CLASSIFICATION)):
                                 #self.LogConsole("Classifier_Apply",ConsoleLogLevel.Test)
                                 success,FoundNames,FoundConfidence,FoundBoxes = self.Classifier_Apply(frame)
                                 #self.LogConsole(f"Classifier_Apply retval:{success}" ,ConsoleLogLevel.Test)
@@ -167,21 +176,21 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                 #AdditionaByteData = b''
                                                     
                                 #send
-                            
-                                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
-                                                                                        Message = "Test", 
-                                                                                        Value = diff_percent,
-                                                                                        ResultList=FoundNames)                
+                                if (success):
+                                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
+                                                                                            Message = self.FrameName, 
+                                                                                            Value = diff_percent,
+                                                                                            ResultList=FoundNames)                
 
 
-                                self.SendToServer(MyMsg=ObjToSend,AdditionaByteData=AdditionaByteData) 
+                                    self.SendToServer(MyMsg=ObjToSend,AdditionaByteData=AdditionaByteData) 
                             
                             
                                                             
                             if (self.SHOW_FRAME):
                                 # Display the resulting frame
                                 try:
-                                    cv.imshow('frame', frame)
+                                    cv.imshow(self.FrameName, frame)
                                     cv2.setWindowProperty('server', cv2.WND_PROP_TOPMOST, 1)
                                 except:
                                     cv2.destroyAllWindows()
@@ -228,8 +237,8 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         
         return percentage
         
-    def Run_Threads(self, SimulOn=False):
-        super().Run_Threads(SimulOn)
+    def Run_Threads(self):
+        super().Run_Threads()
         
 
     

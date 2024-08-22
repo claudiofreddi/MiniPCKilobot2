@@ -134,7 +134,7 @@ class StatusParamList(Common_LogConsoleClass):
     
     def Util_IsParamOn(self,ParamName=""):
         pParam:StatusParam
-        pParam, retval = self.GetParam()
+        pParam, retval = self.GetParam(ParamName)
         if (retval):
             if (pParam.IsOnOff):
                 if (pParam.Value == StatusParamListOfValues.ON):
@@ -143,7 +143,7 @@ class StatusParamList(Common_LogConsoleClass):
     
     def Util_IsParamOff(self,ParamName=""):
         pParam:StatusParam
-        pParam, retval = self.GetParam()
+        pParam, retval = self.GetParam(ParamName)
         if (retval):
             if (pParam.IsOnOff):
                 if (pParam.Value == StatusParamListOfValues.OFF):
