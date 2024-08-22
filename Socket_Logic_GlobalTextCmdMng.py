@@ -1,6 +1,7 @@
 from Socket_Struct_Messages import * 
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Server_Robot_Commands import * 
+from Socket_Utils_Text import Padding, PaddingTuples
 
 #Utils
 class Socket_TextCommandParser():
@@ -58,30 +59,31 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
     
     def __init__(self):
         pass
-    def Padding(self,txt):
-        return ('{: <20}'.format(txt))
         
     def ListOfCommands(self):
         cmds = []
-        cmds.append(self.Padding(self.GET_STATUS)             + "      ->get params status (Ctrl+S with Keyboard)")
-        cmds.append(self.Padding(self.GET_TOPICS)             + "      ->get Topics (Ctrl+T with Keyboard)")
-        cmds.append(self.Padding(self.SHOW_SERVER_MSGS)       + "      ->show Messages on/off (Ctrl+M with Keyboard)")
-        cmds.append(self.Padding(self.SHOW_SERVER_IMAGE)      + "      ->show Image (Ctrl+I with Keyboard)")
-        cmds.append(self.Padding(self.GET_CLIENTS)            + "      ->get Clients")
-        cmds.append(self.Padding(self.TARGET_CLIENT_PREFIX)   + "      ->TargetPrefix  sample: [@KEYBOARD_Client idle on] ")
-        cmds.append(self.Padding("speak [Text]")              + "      ->Speak a Text")
+        
+        cmds.append(PaddingTuples((self.GET_STATUS,20),("->get params status",20), ("(Ctrl+S with Keyboard)",20)))
+        cmds.append(PaddingTuples((self.GET_TOPICS,20),("->get Topics",20), ("(Ctrl+T with Keyboard)",20)))
+        
+        cmds.append(PaddingTuples((self.SHOW_SERVER_MSGS,20),("->show Messages",20), ("(Ctrl+M with Keyboard)",20)))
+        cmds.append(PaddingTuples((self.SHOW_SERVER_IMAGE,20),("->show Image",20), ("(Ctrl+I with Keyboard)",20)))
+        cmds.append(PaddingTuples((self.GET_CLIENTS,20),("->get Clients",20), ("",20)))
+        cmds.append(PaddingTuples((self.TARGET_CLIENT_PREFIX,20),("->TargetPrefix",20), ("sample: [@KEYBOARD_Client idle on]",20)))
+        cmds.append(PaddingTuples(("speak [Text]",20),("->Speak a Text",20), ("",20)))
+
         return cmds
     
     def ShowCommands(self):
         cmds = self.ListOfCommands()
         Txt = ""
-        Txt += "---------------------------------" + "\n"
+        Txt += "------------------------------------------------------------------------------" + "\n"
         Txt += "AVAILABLE COMMANDS:" + "\n"
 
         for c in cmds:
             Txt += c + "\n"
         
-        Txt += "---------------------------------" + "\n"
+        Txt += "------------------------------------------------------------------------------" + "\n"
         return Txt
         
     def ParseCommandAndGetMsgs(self,ReceivedMessage:Socket_Default_Message):

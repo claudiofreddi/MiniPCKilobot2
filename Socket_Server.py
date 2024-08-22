@@ -30,9 +30,23 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.FrameName = 'server'
         
         self.MyListOfStatusParams = StatusParamList()
-        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON) 
-        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.OFF) 
-        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.OFF) 
+        self.MyListOfStatusParams.CreateOrUpdateParam(ParamName=StatusParamName.SERVER_CAMERA
+                                                      ,Value=StatusParamListOfValues.ON
+                                                      ,UserCmd=Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_IMAGE
+                                                      ,ServiceName=ServiceName
+                                                      ,UserCmdDescription= Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_IMAGE)
+         
+        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS
+                                                      ,StatusParamListOfValues.OFF
+                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS
+                                                      ,ServiceName
+                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS) 
+        
+        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS
+                                                      ,StatusParamListOfValues.OFF
+                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS
+                                                      ,ServiceName
+                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS) 
           
         
         self.Connect()    
@@ -226,6 +240,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     
                     ReceivedEnvelope, AdditionaByteData, retval = self.GetFromClient(client)
                     
+                    
                     if (not retval): 
                         self.LogConsole(LocalMsgPrefix + " handle() Evelope Not Correct. Assume Break Connection. Quit.",ConsoleLogLevel.System)
                         break
@@ -269,7 +284,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                     self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
                                     
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED):
-                                self.MyListOfStatusParams.CreateOrUpdateParam(ReceivedMessage.Message,ReceivedMessage.ValueStr)
+                                self.MyListOfStatusParams.CreateOrUpdateParam(ParamName=ReceivedMessage.Message,Value=ReceivedMessage.ValueStr
+                                                                              ,UserCmd=ReceivedMessage.ValueStr2
+                                                                              ,UserCmdDescription=ReceivedMessage.ValueStr3
+                                                                              ,ServiceName=CurrClientObject.servicename)
                                 
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
                                 self.PassThroughtMsg(ReceivedMessage,AdditionaByteData)
@@ -498,21 +516,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     break
             if (not found):
                 self.MyListOfSensors.append(ReceivedMessage)
-    
-    # #######################################################################################                        
-    # ##Gestione TOPICS
-    # ########################################################################################  
-    # def SetClient_Status_Change_Idle(self,clientName:str):
-    #      c:client_object = self.GetClientObjectByServiceName(ServiceNameToFind=clientName)
-    #      if (c):
-    #          self._SetClient_Status_Change_Idle(c.client)
-    
-    # def _SetClient_Status_Change_Idle(self,client):
-    #     ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_STANDBY_CMD,
-    #                                                                       Message="", Value=0, ValueStr="")
-             
-    #     self.SendToClient(TargetClient=client,MyMsg=ObjToSend,From=Socket_Services_List.SERVER)
-       
+
     
     
     def Run_Threads(self,SimulOn = False):

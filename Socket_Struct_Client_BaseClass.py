@@ -37,9 +37,13 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         
         self.LocalListOfStatusParams = StatusParamList()
         self.LocalListOfStatusParams.CreateOrUpdateParam(ParamName=self.LOCAL_PARAMS_IS_IDLE,Value=StatusParamListOfValues.OFF
-                                                             ,UserCmd=Local_Params_User_Command._IS_IDLE,ServiceName=ServiceName)
+                                                             ,UserCmd=Local_Params_User_Command._IS_IDLE
+                                                             ,ServiceName=ServiceName
+                                                             ,UserCmdDescription=Local_Params_User_Command._IS_IDLE + " [on/off/switch]")
         self.LocalListOfStatusParams.CreateOrUpdateParam( ParamName=self.LOCAL_PARAMS_SLEEP_TIME,Value="2"
-                                                             ,UserCmd=Local_Params_User_Command._SLEEP_TIME,ServiceName=ServiceName)
+                                                             ,UserCmd=Local_Params_User_Command._SLEEP_TIME
+                                                             ,ServiceName=ServiceName
+                                                             ,UserCmdDescription=Local_Params_User_Command._SLEEP_TIME + " [val]")
         
         
         
@@ -210,7 +214,9 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED
                                                                 #Suffix to service name
                                                                 ,Message = pParam.ParamName
-                                                                ,ValueStr= pParam.Value)
+                                                                ,ValueStr= pParam.Value
+                                                                ,ValueStr2= pParam.UserCmd
+                                                                ,ValueStr3= pParam.UserCmdDescription)
 
                                 self.SendToServer( ObjToSend)    
                                 

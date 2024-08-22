@@ -10,6 +10,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
 
     LOCAL_PARAMS_ENABLE_CLASSIFICATION = "ENABLE_CLASSIFICATION"
     LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD = "classify"
+    LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD_DESCR = "classify [on/off/switch]"
     
     def __init__(self, ServiceName = Socket_Services_List.WEBCAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
@@ -28,7 +29,8 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         self._Classifier_Loaded = False
         
         self.LocalListOfStatusParams.CreateOrUpdateParam(ParamName=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION ,Value=StatusParamListOfValues.OFF
-                                                             ,UserCmd=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD,ServiceName=ServiceName)
+                                                             ,UserCmd=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD,ServiceName=ServiceName
+                                                             ,UserCmdDescription=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION_USR_CMD_DESCR)
     
         self.FrameName = THIS_MACHINE_NAME + "_" + str(rnd.randrange(10,99))
         

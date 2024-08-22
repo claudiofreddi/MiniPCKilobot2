@@ -3,10 +3,20 @@ from Socket_Utils_Timer import *
 
 class SocketClient_Sample(Socket_Client_BaseClass):
 
-   
+    LOCAL_PARAMS_ENABLE_Sample = "ENABLE_Sample"
+    LOCAL_PARAMS_ENABLE_SampleUserCmd = "sample"
+    LOCAL_PARAMS_ENABLE_SampleUserCmdDescr = "sample [on/off/switch]"
+    
     def __init__(self, ServiceName = Socket_Services_List.SAMPLE, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
 
+        #Params Definition:
+        self.LocalListOfStatusParams.CreateOrUpdateParam(ParamName=self.LOCAL_PARAMS_ENABLE_Sample ,Value=StatusParamListOfValues.OFF
+                                                             ,UserCmd=self.LOCAL_PARAMS_ENABLE_SampleUserCmd,ServiceName=ServiceName
+                                                             ,UserCmdDescription=self.LOCAL_PARAMS_ENABLE_SampleUserCmdDescr)
+        #Params Usage:
+        #if (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_Sample)): 
+        #
         
     def OnClient_Connect(self):
         

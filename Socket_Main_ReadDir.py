@@ -17,11 +17,11 @@ FilesToRun = [('Socket_Server.py', 1),
             ('Socket_Client_Telegram.py', 2),
             ('Socket_Client_UI.py', 2),
             ('Socket_Client_WebCam.py', 2),
-            #('Socket_Client_Remote.py',0),
-            #("Socket_Client_Sample.py",0),
-            #("Socket_Client_ArduinoReadWrite_Sample.py", 0),
+            ('Socket_Client_Remote.py',0),
+            ("Socket_Client_Sample.py",0),
+            ("Socket_Client_ArduinoReadWrite_Sample.py", 0),
             ("Socket_Client_Console.py", 1),
-            ("Socket_Logic_Joystick.py", 2),
+            ("Socket_Client_Joystick.py", 2),
             ]
 
 

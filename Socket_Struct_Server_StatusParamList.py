@@ -1,6 +1,7 @@
 from datetime import datetime 
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Messages import *
+from Socket_Utils_Text import Padding, PaddingTuples
 
 class StatusParamName:
     #Common suffix and local param name
@@ -16,11 +17,12 @@ class StatusParamListOfValues:
     OFF = "OFF"
 
 class StatusParam():
-    def __init__(self,ParamName="",Value="",UserCmd:str="",ServiceName:str=""):
+    def __init__(self,ParamName="",Value="",UserCmd:str="",ServiceName:str="",UserCmdDescription:str=""):
         self.ParamName = ParamName
         self.Value:str = Value
         self.LastUpdate = datetime.now()
         self.UserCmd = UserCmd
+        self.UserCmdDescription = UserCmdDescription
         self.ServiceName = ServiceName
         self.IsOnOff =  (Value==StatusParamListOfValues.OFF or Value==StatusParamListOfValues.ON)
         self.IsInt = Value.isnumeric() 
@@ -114,22 +116,33 @@ class StatusParamList(Common_LogConsoleClass):
         self.LogConsole("Null Retval in SwitchParam()",ConsoleLogLevel.System)
         return ""
          
-    def CreateOrUpdateParam(self,ParamName="",Value="",UserCmd:str="",ServiceName:str=""):
+    def CreateOrUpdateParam(self,ParamName="",Value="",UserCmd:str="",ServiceName:str="",UserCmdDescription:str=""):
         pParam:StatusParam
         pParam, retval = self.GetParam(ParamName)
         if (retval):
             pParam.Update(Value)
         else:
-            pObj:StatusParam = StatusParam(ParamName=ParamName,Value=Value,UserCmd=UserCmd,ServiceName=ServiceName)
+            if (UserCmdDescription==""): UserCmdDescription = UserCmd
+            pObj:StatusParam = StatusParam(ParamName=ParamName,Value=Value,UserCmd=UserCmd,ServiceName=ServiceName,UserCmdDescription=UserCmdDescription)
             self.List.append(pObj)
         return Value
     
+    # def Padding(self,txt,num=40):
+    #     return ("{: <"+ num + "}".format(txt))
+    
     def GetStatusDescription(self):
         pParam:StatusParam
-        retval = "Param Status:\n\n" 
+        
+        retval = "------------------------------------------------------------------------------" + "\n"
+        retval += "Param Status:\n\n" 
+        
         for pParam in self.List:
-            retval += pParam.ParamName + ": " + pParam.Value + "\n"
-
+            A = f"{pParam.ParamName}: {pParam.Value}"
+            B = f">{pParam.UserCmdDescription}"
+            C = f"@{pParam.ServiceName}\n"
+            retval += PaddingTuples((A,40), (B,30),(C,1))
+            
+        retval += "------------------------------------------------------------------------------" + "\n"
         return retval
     
     def Util_IsParamOn(self,ParamName=""):

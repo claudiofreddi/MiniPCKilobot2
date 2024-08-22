@@ -84,6 +84,8 @@ class Socket_Default_Message(Common_LogConsoleClass):
                  Value=0, ValueStr="",ByteData='', ResultList= []
                  , ReplyToTopic=Socket_Default_Message_Topics.NONE 
                  , TargetClientName = Socket_Services_List.NONE
+                 ,ValueStr2=""
+                 ,ValueStr3=""
                  ):
         self.Message = Message
         self.Value = Value
@@ -93,7 +95,8 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.ResultList = ResultList
         self.ReplyToTopic = ReplyToTopic
         self.TargetClientName = TargetClientName
-       
+        self.ValueStr2 = ValueStr2
+        self.ValueStr3 = ValueStr3
 
     def json(self):
         return json.dumps(self,cls=SocketEncoder,indent=4)
@@ -107,9 +110,13 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.ResultList = Source.ResultList
         self.ReplyToTopic = Source.ReplyToTopic
         self.TargetClientName = Source.TargetClientName
+        self.ValueStr2 = Source.ValueStr2
+        self.ValueStr3 = Source.ValueStr3
         
     def GetMessageDescription(self):
-        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr) 
+        Txt =  " Message " + self.Message + " Value: " + str(self.Value) + " Topic: " + self.Topic+ " ValueStr: " + str(self.ValueStr)  
+        if (self.ValueStr2 != ""): Txt += " ValueStr2: " + str(self.ValueStr2)
+        if (self.ValueStr3 != ""): Txt += " ValueStr3: " + str(self.ValueStr3)
         Txt += " Reply To Topic: " + str(self.ReplyToTopic)
         Txt += " Target Client Name: " + str(self.TargetClientName)
         return Txt
