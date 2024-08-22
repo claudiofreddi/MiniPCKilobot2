@@ -21,7 +21,6 @@ class RobotVision_Object_Classifier(Common_LogConsoleClass):
     LookForSpecificObjsConf = 70.0
 
         
-        
     def _LoadObjectDatabase(self):
         with open(self.classFile,'rt') as f:
             self.classNames = f.read().rstrip('\n').split('\n')
