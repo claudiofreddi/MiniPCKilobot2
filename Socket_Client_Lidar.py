@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import threading
-from Robot_lidar_base import lidarfunc
+from Socket_Logic_Lidar import lidarfunc
 from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
 from Robot_Envs import *
@@ -26,7 +26,10 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         self.MaxScale = 200
         self.TraceAllLines = False
         self.TraceSafetyLine = True
+        
+        #TOPIC DATA
         self.last_min_front = 0
+        self.BestNewAngleToFollow = -1 #-1 = Not set
         
         #Used to wati endo of caclulation
         self.SemaphoreReadyToSend = False
@@ -56,7 +59,8 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         self.LogConsole("OnClient_Connect",ConsoleLogLevel.Override_Call)
     
     def On_ClientAfterLogin(self):
-        self.RegisterTopics(Socket_Default_Message_Topics.INPUT_LIDAR)
+        self.RegisterTopics(Socket_Default_Message_Topics.INPUT_LIDAR_BEST_WAYOUT_DIR)
+        self.RegisterTopics(Socket_Default_Message_Topics.INPUT_LIDAR_MIN_DISTANCE)
         #self.SubscribeTopics(Socket_Default_Message_Topics.NONE)
         
                 
@@ -89,11 +93,18 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
             
             if (self.SemaphoreReadyToSend):
                 self.LogConsole("Send LIdar info" ,ConsoleLogLevel.Test)
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_LIDAR, 
-                                                                        Message = "Lidare", Value = self.last_min_front)                
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_LIDAR_MIN_DISTANCE, 
+                                                                        Message = "Min Front Distance", Value = self.last_min_front)                
                     
                 
                 self.SendToServer(ObjToSend) 
+                
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_LIDAR_BEST_WAYOUT_DIR, 
+                                                                        Message = "Best Angle To Follow", Value = self.BestNewAngleToFollow)                
+                    
+                
+                self.SendToServer(ObjToSend) 
+                
                 self.SemaphoreReadyToSend = False
                     
             if (self.IsQuitCalled):
@@ -169,9 +180,9 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         
                         #print(radiusSafe)
                         
-                        BestNewAngleToFollow = self.MyAlgo.GetBestAngleToMove(radiusSafe)
-                        #print("Best Angle To Follow: " + str(BestNewAngleToFollow))
-                        BestNewAngleToFollowRad = (BestNewAngleToFollow/360)*2*np.pi
+                        self.BestNewAngleToFollow = self.MyAlgo.GetBestAngleToMove(radiusSafe)
+                        #print("Best Angle To Follow: " + str(self.BestNewAngleToFollow))
+                        BestNewAngleToFollowRad = (self.BestNewAngleToFollow/360)*2*np.pi
                         if ('line_Path' in locals()):
                             line_Path.remove()
                         line_Path, = self.ax.plot([BestNewAngleToFollowRad]*3,[0,50, 200],  c="red")
@@ -213,7 +224,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
                         if (min_front != self.last_min_front ):
                             
                             if (self.IsConnected):
-                                print("Best Angle To Follow: " + str(BestNewAngleToFollow))
+                                print("Best Angle To Follow: " + str(self.BestNewAngleToFollow))
                                 print("min_front: " + str(min_front))
                                 
                                 # self.SharedMem.LidarInfo.FrontDistance = min_front

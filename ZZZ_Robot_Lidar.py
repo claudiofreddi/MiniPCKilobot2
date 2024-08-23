@@ -9,7 +9,7 @@ import numpy as np
 from multiprocessing import Manager
 import time
 
-from Robot_lidar_base import lidarfunc
+from Socket_Logic_Lidar import lidarfunc
 
 import serial
 from Robot_Envs import *

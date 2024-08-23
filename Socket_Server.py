@@ -9,6 +9,7 @@ from Socket_Struct_Client_Object import *
 from Socket_Logic_GlobalTextCmdMng import *
 from Socket_Struct_Server_Robot_Commands import *
 from PIL import Image
+from Socket_Utils_Text import * 
 
 from Socket_Struct_Server_StatusParamList import * 
 
@@ -17,18 +18,18 @@ import cv2
 
 class Socket_Server(Socket_ClientServer_BaseClass): 
 
-
+    
     client_objects = []
-        
-    # SensorMessage List 
-    MyListOfSensors = []
-    
-    
+   
+ 
     def __init__(self,ServiceName = Socket_Services_List.SERVER, ForceServerIP = '',ForcePort='',LogOptimized=False):
         super().__init__(ServiceName,ForceServerIP,ForcePort, True,LogOptimized)
+        
         self.RunOptimized = LogOptimized
         self.FrameName = 'server'
-        
+        self.SERVER_MAIN_CYCLE_SLEEP = 5 #sec
+        self.MyListOfSensors = []
+        self.MyFramesName = []
         self.MyListOfStatusParams = StatusParamList()
         self.MyListOfStatusParams.CreateOrUpdateParam(ParamName=StatusParamName.SERVER_CAMERA
                                                       ,Value=StatusParamListOfValues.ON
@@ -297,7 +298,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             ########################################################################################  
                             ##SocketObjectClassType.SENSOR : value update      
                             elif (   ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_COMPASS
-                                or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY):
+                                or ReceivedMessage.Topic== Socket_Default_Message_Topics.SENSOR_BATTERY
+                                or ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_LIDAR_MIN_DISTANCE
+                                or ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_LIDAR_BEST_WAYOUT_DIR
+                                ):
                                 self.Specific_Topic_Management_SENSOR(ReceivedMessage=ReceivedMessage)            
                                                            
                             elif ((ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD and ReceivedMessage.Value==0)
@@ -311,8 +315,16 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_IMAGE):
                                 self.Specific_Topic_Management_INPUT_IMAGE(ReceivedMessage=ReceivedMessage,AdditionalData=AdditionaByteData)
      
-                            cv2.waitKey(1)
-                                    
+                            
+                            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.OFF)):
+                                self.LogConsole("destroyAllWindows...",ConsoleLogLevel.CurrentTest)
+                                try:
+                                    cv2.destroyAllWindows()
+                                except Exception as e:
+                                    self.LogConsole(LocalMsgPrefix + " Error in cv2.destroyWindows(self.FrameName) "  + str(e),ConsoleLogLevel.Error)
+                                    pass
+
+                            cv2.waitKey(1)        
                             ########################################################################################                        
                             ##FINE Gestione Messaggi Conosciuti dal server   
                             ########################################################################################   
@@ -375,35 +387,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             # Start Handling Thread For Client
                             thread = threading.Thread(target=self.handle, args=(client,))
                             thread.start()
-                            #else:
-                            #    client.close()
-                            #    self.LogConsole(" Service Name {} Already Exists. Connection Refused".format(servicename),ConsoleLogLevel.Socket_Flow,ConsoleLogLevel.Show)
-                                
+                              
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + " Error in WaitingForNewClient() "  + str(e)+ " " + str(i),ConsoleLogLevel.Error) 
         
-            
-    def Server_BroadCast_Simulation(self):
-        tick = 0
-        self.LogConsole(self.ThisServiceName() +  " Server_BroadCast_Simulation Enabled",ConsoleLogLevel.Socket_Flow)
-        while True:
-            time.sleep(3)
-            
-            message = self.ThisServiceName() +  "SIMULATED Broadcast tick: " + str(tick)            
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.MESSAGE,
-                                                                      Message=message)
-            
-            # s = self.GetClientObjectByServiceName(Socket_Services_List.REMOTE)
-            # if (s != None):
-            #     self.SendToClient(s,ObjToSend)
+    #Scheduled for paralell actions
+    def Server_Main_Cycle(self):
+        
+        while True and not self.IsQuitCalled:
+            time.sleep(self.SERVER_MAIN_CYCLE_SLEEP)
+           
+            self.LogConsole("Server_Main_Cycle",ConsoleLogLevel.Test)
 
-            count = self.broadcastObj(ObjToSend)
-            if (count>0):                
-                self.LogConsole(message,ConsoleLogLevel.Socket_Flow)
-            
-            
-            tick = tick + 1
-            
+           
     ########################################################################################                        
     ##Gestione TOPICS
     ########################################################################################  
@@ -437,6 +433,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 frame= pickle.loads(AdditionalData, fix_imports=True, encoding="bytes")
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
                 self.FrameName = ReceivedMessage.Message
+                self.MyFramesName.append(self.FrameName)
                 try:
                     cv2.imshow(self.FrameName,frame)
                     cv2.setWindowProperty(self.FrameName, cv2.WND_PROP_TOPMOST, 1)
@@ -444,7 +441,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     cv2.destroyAllWindows()
             else:
                 cv2.destroyAllWindows()
-    
+        else:
+            cv2.destroyAllWindows()
    
     def Specific_Topic_Management_SERVER_LOCAL(self,ReceivedMessage:Socket_Default_Message,CurrClientObject:client_object, AdditionalData = b''): 
         
@@ -480,6 +478,12 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             BackToClientMsg = ""
             for co in self.client_objects:
                 BackToClientMsg += co.servicename + "\n"
+                
+        elif  (ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_SENSORS):
+            BackToClientMsg = ""
+            sns:Socket_Default_Message
+            for sns in self.MyListOfSensors:
+                BackToClientMsg += PaddingTuples((f"{sns.Topic}:",40),(f"{sns.Value}",10),(f"{sns.Message}\n",1))
         
         elif  (ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_HELP1 or ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_HELP2):
             BackToClientMsg = ""
@@ -503,11 +507,13 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             self.LogConsole("SendToClient " +  BackToClientMsg, ConsoleLogLevel.Test)
             self.SendToClient(CurrClientObject.client,ObjToSend)  
     
-    def Specific_Topic_Management_SENSOR(self,ReceivedMessage, AdditionalData = b''): 
+    def Specific_Topic_Management_SENSOR(self,ReceivedMessage:Socket_Default_Message, AdditionalData = b''): 
 
         found = False
         if (    ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_BATTERY
-            or  ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_COMPASS):
+            or  ReceivedMessage.Topic == Socket_Default_Message_Topics.SENSOR_COMPASS
+            or ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_LIDAR_MIN_DISTANCE
+            or ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_LIDAR_BEST_WAYOUT_DIR):
             pSensor:Socket_Default_Message
             for pSensor in self.MyListOfSensors:
                 if (pSensor.Topic == ReceivedMessage.Topic):
@@ -519,14 +525,12 @@ class Socket_Server(Socket_ClientServer_BaseClass):
 
     
     
-    def Run_Threads(self,SimulOn = False):
+    def Run_Threads(self):
         simul_thread = threading.Thread(target=self.WaitingForNewClient)
         simul_thread.start()
-        #self.WaitingForNewClient()
         
-        if (SimulOn):
-            simul_thread = threading.Thread(target=self.Server_BroadCast_Simulation)
-            simul_thread.start()
+        Server_Main_Cycle_thread = threading.Thread(target=self.Server_Main_Cycle)
+        Server_Main_Cycle_thread.start()
         
 if (__name__== "__main__"):
     

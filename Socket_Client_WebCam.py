@@ -133,7 +133,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                             self.SleepTime(Multiply=1,CalledBy="OnClient_Core_Task_Cycle",Trace=False)
                             frame = imutils.resize(frame, width=self.IMAGE_SIZE_WIDTH)
 
-                            frame = cv.flip(frame,180)
+                            #frame = cv.flip(frame,180)
                             
                                 
                             diff_percent = -1
@@ -160,12 +160,13 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                             except Exception as e:
                                 self.LogConsole(self.ThisServiceName() + "Error in Comparing Images:  " + str(e),ConsoleLogLevel.Error)
                             
-                            Classify:bool = ((self._Classifier_Enabled == True) 
+                            ClassifyEnabled:bool = ((self._Classifier_Enabled == True) 
                                              and (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_CLASSIFICATION)))
                             
                             FoundNames = []
-                            
-                            if (Classify): 
+                            FoundConfidence = []
+                            FoundBoxes = []
+                            if (ClassifyEnabled): 
                                
                                 self.LogConsole("Classifier_Apply",ConsoleLogLevel.Test)
                                 success,FoundNames,FoundConfidence,FoundBoxes = self.Classifier_Apply(frame)
@@ -184,7 +185,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                 #AdditionaByteData = b''
                                                     
                                 #send
-                                
+                                #Image and Classify Data IF Exists
                                 ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=Socket_Default_Message_Topics.INPUT_IMAGE,
                                                                                         Message = self.FrameName, 
                                                                                         Value = diff_percent,
@@ -192,9 +193,20 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
 
 
                                 self.SendToServer(MyMsg=ObjToSend,AdditionaByteData=AdditionaByteData) 
+                                
+                                # Classify Data to a specific Topic If excists
+                                if (len(FoundNames)>0 and ClassifyEnabled):
+                                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=Socket_Default_Message_Topics.INPUT_IMAGE_CLASSIFY,
+                                                                                            Message = self.FrameName, 
+                                                                                            Value = 0,
+                                                                                            ResultList=FoundNames,
+                                                                                            ResultList2=FoundConfidence
+                                                                                            )                
+
+
+                                    self.SendToServer(MyMsg=ObjToSend,AdditionaByteData=b'') 
                         
-                            
-                                                            
+                                                                                        
                             if (self.SHOW_FRAME):
                                 # Display the resulting frame
                                 try:

@@ -138,9 +138,18 @@ class StatusParamList(Common_LogConsoleClass):
         
         for pParam in self.List:
             A = f"{pParam.ParamName}: {pParam.Value}"
-            B = f">{pParam.UserCmdDescription}"
-            C = f"@{pParam.ServiceName}\n"
-            retval += PaddingTuples((A,40), (B,30),(C,1))
+            if (pParam.ServiceName == "SERVER"):
+                B = f">{pParam.UserCmdDescription}"
+            else:
+                B = f">@{pParam.ServiceName} {pParam.UserCmdDescription}"
+            
+            if (pParam.ServiceName == "SERVER"):
+                C = f"@{pParam.ServiceName}\n"
+            else:
+                C = "\n"
+
+            
+            retval += PaddingTuples((A,40), (B,40),(C,1))
             
         retval += "------------------------------------------------------------------------------" + "\n"
         return retval

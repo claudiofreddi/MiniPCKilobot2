@@ -25,12 +25,16 @@ class Socket_Default_Message_Topics:
     TOPIC_CLIENT_DIRECT_CMD = "/TOPIC/CLIENT_DIRECT"    #Not subscrible    
     TOPIC_CLIENT_PARAM_UPDATED = "/TOPIC/CLIENT_PARAM_UPDATED"    #Not subscrible    
     
+       
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    
     INPUT_IMAGE = "/INPUT/IMAGE"
     INPUT_TELEGRAM = "/INPUT/TELEGRAM"
-    INPUT_LIDAR = "/INPUT/LIDAR"
+    INPUT_LIDAR_MIN_DISTANCE = "/INPUT/LIDAR/MIN_DISTANCE"
+    INPUT_LIDAR_BEST_WAYOUT_DIR = "/INPUT/LIDAR/BEST_WAYOUT_DIR"
     INPUT_TEXT_COMMANDS = "/INPUT/TEXT_COMMANDS"
     INPUT_JOYSTICK = "/INPUT/JOYSTICK"
+    
+    INPUT_IMAGE_CLASSIFY = "/INPUT/IMAGE/CLASSDIFY"
     
     SENSOR_BATTERY = "/SENSOR/BATTERY"
     SENSOR_COMPASS = "/SENSOR/COMPASS"
@@ -82,6 +86,8 @@ class SocketDecoder:
 class Socket_Default_Message(Common_LogConsoleClass):
     def __init__(self,Topic=Socket_Default_Message_Topics.NONE,Message ="",
                  Value=0, ValueStr="",ByteData='', ResultList= []
+                 , ResultList2= []
+                 , ResultList3= []
                  , ReplyToTopic=Socket_Default_Message_Topics.NONE 
                  , TargetClientName = Socket_Services_List.NONE
                  ,ValueStr2=""
@@ -93,6 +99,8 @@ class Socket_Default_Message(Common_LogConsoleClass):
         self.ByteData = ByteData
         self.Topic = Topic
         self.ResultList = ResultList
+        self.ResultList2 = ResultList2
+        self.ResultList3 = ResultList3
         self.ReplyToTopic = ReplyToTopic
         self.TargetClientName = TargetClientName
         self.ValueStr2 = ValueStr2
