@@ -69,9 +69,12 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
         #     if (not IsMessageAlreadyManaged):
         #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
         #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-        #                 MySpecificCommand = ReceivedMessage.Message
-        
+        #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+        #             if (LocalTopicTest.IsValid):
+        #                 pass #here speific topic commands
+        #             else:
+        #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
+        #                     pass #here others topic
         try:
             if (IsMessageAlreadyManaged == False):
                 if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
@@ -124,12 +127,7 @@ class SocketClient_Lidar(Socket_Client_BaseClass,threading.Thread):
             while True:
                 if (self.IsQuitCalled): break
                 
-                
-                pParam, retval  = self.LocalListOfStatusParams.GetParam(self.ServiceName + StatusParamName.THIS_SERVICE_IS_IDLE)
-                if (pParam.Value==StatusParamListOfValues.ON):
-                    time.sleep(self.SLEEP_TIME)
-                    continue
-                
+
                 if (not self.SemaphoreReadyToSend):
                 
                     if (self.IsLidarConnected):

@@ -18,9 +18,11 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
         self.LOCAL_PARAMS_ENABLE_SpeakerUserCmd = "speaker"
         self.LOCAL_PARAMS_ENABLE_SpeakerUserCmdDescr = "speaker [on/off/switch]"
         
-        self.LocalListOfStatusParams.CreateOrUpdateParam(ParamName=self.LOCAL_PARAMS_ENABLE_Speaker ,Value=StatusParamListOfValues.ON
-                                                             ,UserCmd=self.LOCAL_PARAMS_ENABLE_SpeakerUserCmd,ServiceName=ServiceName
-                                                             ,UserCmdDescription=self.LOCAL_PARAMS_ENABLE_SpeakerUserCmdDescr)
+        self.LocalListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
+                                                         ,ParamName=self.LOCAL_PARAMS_ENABLE_Speaker 
+                                                         ,Value=StatusParamListOfValues.ON
+                                                         ,ArgDescr="on|off"
+                                                             )
         #Params Usage:
         #if (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_Speaker)): 
         #
@@ -40,8 +42,12 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
         #     if (not IsMessageAlreadyManaged):
         #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
         #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-        #                 MySpecificCommand = ReceivedMessage.Message
+        #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+        #             if (LocalTopicTest.IsValid):
+        #                 pass #here speific topic commands
+        #             else:
+        #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
+        #                     pass #here others topic
         
         try:
             if (self.IsConnected):

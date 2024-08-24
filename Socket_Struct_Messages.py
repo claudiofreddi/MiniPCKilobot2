@@ -14,7 +14,7 @@ from Socket_Struct_Services_List import Socket_Services_List
 
 class Socket_Default_Message_Topics:
     NONE = ""                                           #Not subscrible 
-    LOGIN = "LOGIN"                                     #Not subscrible 
+    LOGIN = "/LOGIN"                                     #Not subscrible 
     MESSAGE = "/MESSAGE"                                #Not subscrible 
     SERVER_LOCAL = "/TOPIC/SERVER_LOCAL"                #Not subscrible 
     TOPIC_REGISTER = "/TOPIC/ADD"                            #Not subscrible 
@@ -22,8 +22,9 @@ class Socket_Default_Message_Topics:
     TOPIC_UNSUBSCRIBE = "/TOPIC/UNSUBSCRIBE"            #Not subscrible 
     TOPIC_CLIENT_STANDBY_CMD = "/TOPIC/CLIENT_STANDBY_CMD"    #Not subscrible    to remove
     TOPIC_CLIENT_STANDBY_ACK = "/TOPIC/CLIENT_STANDBY_ACK"    #Not subscrible    to remove
-    TOPIC_CLIENT_DIRECT_CMD = "/TOPIC/CLIENT_DIRECT"    #Not subscrible    
-    TOPIC_CLIENT_PARAM_UPDATED = "/TOPIC/CLIENT_PARAM_UPDATED"    #Not subscrible    
+    TOPIC_CLIENT_DIRECT_CMD = "/TOPIC/CLIENT_DIRECT"                #Not subscrible    
+    TOPIC_CLIENT_PARAM_SERVER_REGISTER = "/TOPIC/CLIENT_PARAM_SERVER_REGISTER"    #Not subscrible    
+    TOPIC_CLIENT_COMMAND_SERVER_REGISTER= "/TOPIC/CLIENT_COMMAND_SERVER_REGISTER"    #Not subscrible    
     
        
     INPUT_KEYBOARD = "/INPUT/KEYBOARD"    

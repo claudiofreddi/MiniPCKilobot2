@@ -1,6 +1,4 @@
 import os
-
-import os, sys
 def splitall(path):
     allparts = []
     while 1:
@@ -21,37 +19,39 @@ def splitall(path):
 
 
 
-Request = "/Sensors/*"
-TopicListToMatch =  []
-TopicListToMatch.append("/Sensors/COMPASS/01")
-TopicListToMatch.append("/Sensors/COMPASS/02")
-TopicListToMatch.append("/Sensors/BATTERY")
-TopicListToMatch.append("/Input/Keyboard")
-TopicListToMatch.append("/Input/Telegram")
-TopicListToMatch.append("/Input/Joystic")
+PartialTopic = "/@SAMPLE_Client/#CMD#"
+FullTopicList =  []
+FullTopicList.append("/@SAMPLE_Client/#CMD#/GO/fw")
+FullTopicList.append("/Sensors/COMPASS/02")
+FullTopicList.append("/Sensors/BATTERY")
+FullTopicList.append("/Input/Keyboard")
+FullTopicList.append("/Input/Telegram")
+FullTopicList.append("/Input/Joystic")
 
 
-def SingleTopicMatched(TopicToMatch, Request) -> bool:
-    rs = splitall(Request)
-    ts = splitall(TopicToMatch)
-    print(rs)
-    print(ts)
+def SingleTopicMatched(FullTopic, PartialTopic) -> bool:
+    rs = splitall(PartialTopic)
+    ts = splitall(FullTopic)
+    
     IsMatchOK = True
     for i in range(len(rs)):
         if (rs[i] != ts[i]):
             IsMatchOK = False
+    if (IsMatchOK):
+        print(rs)
+        print(ts)
     return IsMatchOK
      
-def TopicMatched(TopicListToMatch, Request):
+def TopicMatched(FullTopicList, PartialTopic):
     RetList = []
     
-    for t in TopicListToMatch:
-        if SingleTopicMatched(t,Request):
-           RetList.append(t)
+    for ft in FullTopicList:
+        if SingleTopicMatched(ft,PartialTopic):
+           RetList.append(ft)
            
     return RetList
             
 
-print(TopicMatched(TopicListToMatch, Request))
+print(TopicMatched(FullTopicList, PartialTopic))
         
     

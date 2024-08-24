@@ -1,6 +1,6 @@
 import socket
 from Socket_Struct_Messages import * 
-import queue
+import os
 
 class client_object:
     client:socket = None
@@ -25,8 +25,8 @@ class client_object:
 
         Text = "******************************************"+ "\n"
         Text += self.servicename + " " + str(self.address) + "\n"
-        Text += "registered topics:        NONE" if len(self.Topics)==0 else f"registered topics:        {self.Topics}" + "\n"
-        Text += "registered subscriptions: NONE" if len(self.TopicSubscriptions)==0 else f"registered subscriptions: {self.TopicSubscriptions}" + "\n"
+        Text += "registered topics:        NONE\n" if len(self.Topics)==0 else f"registered topics:        {self.Topics}" + "\n"
+        Text += "registered subscriptions: NONE\n" if len(self.TopicSubscriptions)==0 else f"registered subscriptions: {self.TopicSubscriptions}" + "\n"
         Text += "\n"
         print(Text)
         return Text
@@ -77,8 +77,54 @@ class client_object:
        
         return False 
 
-    def IsSubscribedToThisTopic(self, TopicToCheck):
+    def IsSubscribedToThisTopic(self, PartialTopic):
         for t in self.TopicSubscriptions:
-            if (t == TopicToCheck):
+            if (self.SingleTopicMatched(t,PartialTopic)):
                return True 
+        
         return False
+    
+    
+    def splitall(self,path):
+        allparts = []
+        while 1:
+            parts = os.path.split(path)
+            if parts[0] == path:  # sentinel for absolute paths
+                if (parts[0] != "*"):
+                    allparts.insert(0, parts[0])
+                break
+            elif parts[1] == path: # sentinel for relative paths
+                if (parts[1] != "*"):
+                    allparts.insert(0, parts[1])
+                break
+            else:
+                path = parts[0]
+                if (parts[1] != "*"):
+                    allparts.insert(0, parts[1])
+        return allparts
+
+    def SingleTopicMatched(self,FullTopic, PartialTopic) -> bool:
+        pt = self.splitall(PartialTopic)
+        ft = self.splitall(FullTopic)
+        
+        IsMatchOK = True
+        minlen = len(pt) 
+        if len(ft)<len(pt): minlen = len(ft)  
+        
+        for i in range(minlen):
+            if (pt[i] != ft[i]):
+                IsMatchOK = False
+        # if (IsMatchOK):
+        #     print(pt)
+        #     print(ft)
+        return IsMatchOK
+        
+    def TopicMatched(self,FullTopicList, PartialTopic):
+        RetList = []
+        
+        for ft in FullTopicList:
+            if self.SingleTopicMatched(ft,PartialTopic):
+                RetList.append(ft)
+            
+        return RetList
+            

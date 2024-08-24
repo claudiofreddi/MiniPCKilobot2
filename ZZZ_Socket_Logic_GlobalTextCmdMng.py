@@ -2,48 +2,7 @@ from Socket_Struct_Messages import *
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Server_Robot_Commands import * 
 from Socket_Utils_Text import Padding, PaddingTuples
-
-#Utils
-class Socket_TextCommandParser():
-    
-    def __init__(self,CmdToParse):
-        self.CmdToParse = str.lower(CmdToParse)
-        
-    
-    def _parseText(self,InputCmd, pos, GetAllTailParams = False)->str:
-        ValSplitted = str(InputCmd).split()
-        if (pos<len(ValSplitted)):
-            if (not GetAllTailParams):
-                return str(ValSplitted[pos])
-            else:
-                return ' '.join(ValSplitted[pos:])
-        return ''    
-        
-  
-    def GetSpecificCommand(self):
-        return self._parseText(self.CmdToParse,0)
-    
-    def GetSpecificCommandParam(self, paramPos, GetAllTailParams = False)-> str:
-        return self._parseText(self.CmdToParse,paramPos,GetAllTailParams)
-    
-    def Utils_Split_Cmd_Param(self, CmdToParse="",Lowered=True):
-        if (CmdToParse!=""):
-            self.CmdToParse = CmdToParse
-        if (Lowered):self.CmdToParse =self.CmdToParse.lower()
-        return self.GetSpecificCommand(), self.GetSpecificCommandParam(1,True)
-     
-    def Utils_Split_Cmd_Param_Param(self, CmdToParse="",Lowered=True):
-        if (CmdToParse!=""):
-            self.CmdToParse = CmdToParse
-        if (Lowered):self.CmdToParse =self.CmdToParse.lower()
-        return self.GetSpecificCommand(), self.GetSpecificCommandParam(1,False), self.GetSpecificCommandParam(2,True)
-        
-#Sample
-# MyTP = Socket_TextCommandParser("pippo pluto e paparino")
-# print(MyTP.Utils_Split_Cmd_Param())
-# print(MyTP.Utils_Split_Cmd_Param_Param())
-# print(MyTP.Utils_Split_Cmd_Param("Testo 1"))
-# print(MyTP.Utils_Split_Cmd_Param_Param("Testo 1"))
+from Socket_Utils_TextCommand_Parser import * 
 
 #Main Class    
 class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
@@ -54,6 +13,7 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
     GET_STATUS = "get status"
     GET_CLIENTS = "get clients"
     GET_SENSORS = "get sensors"
+    GET_COMMANDS = "get commands"
     SHOW_SERVER_MSGS = "togglemsgs"
     SHOW_SERVER_IMAGE = "toggleimage"
     TARGET_CLIENT_PREFIX = "@"    
@@ -87,7 +47,7 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
         Txt += "------------------------------------------------------------------------------" + "\n"
         return Txt
         
-    def ParseCommandAndGetMsgs(self,ReceivedMessage:Socket_Default_Message):
+    def  ParseCommandAndGetMsgs(self,ReceivedMessage:Socket_Default_Message):
         try:
             RetValMsgs = []
             InputCmd = ReceivedMessage.Message
@@ -123,6 +83,7 @@ class Socket_Logic_GlobalTextCmdMng(Common_LogConsoleClass):
             #Server Side
             if (CmdLowered==RobotListOfAvailableCommands.CTRL_T
                 or CmdLowered==RobotListOfAvailableCommands.CTRL_S
+                or CmdLowered==Socket_Logic_GlobalTextCmdMng.GET_COMMANDS
                 or CmdLowered==RobotListOfAvailableCommands.CTRL_I
                 or CmdLowered==RobotListOfAvailableCommands.CTRL_M
                 or CmdLowered==Socket_Logic_GlobalTextCmdMng.GET_HELP1 

@@ -2,7 +2,7 @@ from Socket_Struct_Client_BaseClass import *
 from pynput import keyboard
 from  datetime import datetime
 import enum
-from Socket_Struct_Server_StatusParamList import * 
+from Socket_Struct_ParamList import * 
 
 class SocketClient_Keyboard(Socket_Client_BaseClass):
     
@@ -33,6 +33,7 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
     _Alt_Pressed = False
     _MaxKeyCount = 3
     _KeyCount = 0
+    
     def IsKeyAllowed(self,Key:str):
         return (self._AllowAllKeys or self.SPECIAL_KEYS_ON_PRESS.__contains__(Key) or self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key))
         
@@ -61,13 +62,16 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
     
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreadyManaged=False):
 
-        if (self.IsConnected):
-            if (not IsMessageAlreadyManaged):
-                if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                    ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-                    if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                        pass
-        
+        # if (self.IsConnected):
+        #     if (not IsMessageAlreadyManaged):
+        #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+        #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+        #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+        #             if (LocalTopicTest.IsValid):
+        #                 pass #here speific topic commands
+        #             else:
+        #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
+        #                     pass #here others topic
         pass
     
     def OnClient_Disconnect(self):

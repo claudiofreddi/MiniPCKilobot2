@@ -2,14 +2,7 @@ from datetime import datetime
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Messages import *
 from Socket_Utils_Text import Padding, PaddingTuples
-
-class StatusParamName:
-    #Common suffix and local param name
-    THIS_SERVICE_IS_IDLE = "_IS_IDLE"   #The Service do nothing during Main Cycle or Cyling Functions (for eavy duty clients)
-                                        #Receve Messages (to allow re-enable)
-    SERVER_CAMERA = "SERVER_CAMERA" 
-    SERVER_SHOW_RECEIVED_MSGS = "SERVER_SHOW_RECEIVED_MSGS"
-    SERVER_SHOW_SEND_MSGS = "SERVER_SHOW_SEND_MSGS"
+from Socket_Logic_Topics import *  
 
 
 class StatusParamListOfValues:
@@ -17,13 +10,20 @@ class StatusParamListOfValues:
     OFF = "OFF"
 
 class StatusParam():
-    def __init__(self,ParamName="",Value="",UserCmd:str="",ServiceName:str="",UserCmdDescription:str=""):
-        self.ParamName = ParamName
-        self.Value:str = Value
-        self.LastUpdate = datetime.now()
-        self.UserCmd = UserCmd
-        self.UserCmdDescription = UserCmdDescription
+    def __init__(self,ServiceName:str="",ParamName="",Value="",ArgDescr=""):
         self.ServiceName = ServiceName
+        self.ParamName = ParamName
+        self.GlobalParamName = ServiceName + "_" + ParamName
+        self.Value:str = Value
+        self.ArgDescr = ArgDescr
+        self.LastUpdate = datetime.now()
+        self.URL = ""
+        self.URL += TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At + ServiceName
+        self.URL += TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_For_Param
+        self.URL += TopicReserved.ReservedTopic_Starts_With_Slash + ParamName
+        if (ArgDescr !=""):
+            self.URL += TopicReserved.ReservedTopic_Starts_With_Slash + "[" + ArgDescr + "]"
+        
         self.IsOnOff =  (Value==StatusParamListOfValues.OFF or Value==StatusParamListOfValues.ON)
         self.IsInt = Value.isnumeric() 
         self.IsFloat = Value.isdecimal() 
@@ -40,8 +40,16 @@ class StatusParam():
         elif (self.IsFloat):
             return Value.isdecimal() 
         
-    
-    
+    def GetDescription(self):
+        retval = ""
+        
+        A = f"{self.GlobalParamName}: {self.Value}"
+        B=  f"{self.ParamName}"
+        C = f"{self.URL}\n"
+        
+        retval += PaddingTuples((A,40), (B,40),(C,1))
+        return retval
+
 class StatusParamList(Common_LogConsoleClass):
    
     def __init__(self):
@@ -54,12 +62,12 @@ class StatusParamList(Common_LogConsoleClass):
                     return pParam, True
         return None, False
     
-    def GetParamByUserCmd(self,UserCmd):
-        pParam:StatusParam
-        for pParam in self.List:
-            if (pParam.UserCmd == UserCmd):
-                    return pParam,True
-        return None,False
+    # def GetParamByUserCmd(self,UserCmd):
+    #     pParam:StatusParam
+    #     for pParam in self.List:
+    #         if (pParam.ParamName == UserCmd):
+    #                 return pParam,True
+    #     return None,False
     
     def GetValue(self,ParamName=""):
         pParam:StatusParam
@@ -116,40 +124,25 @@ class StatusParamList(Common_LogConsoleClass):
         self.LogConsole("Null Retval in SwitchParam()",ConsoleLogLevel.System)
         return ""
          
-    def CreateOrUpdateParam(self,ParamName="",Value="",UserCmd:str="",ServiceName:str="",UserCmdDescription:str=""):
+    def CreateOrUpdateParam(self,ServiceName="",ParamName="",Value="",ArgDescr=""):
         pParam:StatusParam
         pParam, retval = self.GetParam(ParamName)
         if (retval):
             pParam.Update(Value)
         else:
-            if (UserCmdDescription==""): UserCmdDescription = UserCmd
-            pObj:StatusParam = StatusParam(ParamName=ParamName,Value=Value,UserCmd=UserCmd,ServiceName=ServiceName,UserCmdDescription=UserCmdDescription)
+            pObj:StatusParam = StatusParam(ServiceName=ServiceName,ParamName=ParamName,Value=Value,ArgDescr=ArgDescr)
             self.List.append(pObj)
         return Value
     
-    # def Padding(self,txt,num=40):
-    #     return ("{: <"+ num + "}".format(txt))
     
-    def GetStatusDescription(self):
+    def GetDescription(self):
         pParam:StatusParam
         
         retval = "------------------------------------------------------------------------------" + "\n"
         retval += "Param Status:\n\n" 
         
         for pParam in self.List:
-            A = f"{pParam.ParamName}: {pParam.Value}"
-            if (pParam.ServiceName == "SERVER"):
-                B = f">{pParam.UserCmdDescription}"
-            else:
-                B = f">@{pParam.ServiceName} {pParam.UserCmdDescription}"
-            
-            if (pParam.ServiceName == "SERVER"):
-                C = f"@{pParam.ServiceName}\n"
-            else:
-                C = "\n"
-
-            
-            retval += PaddingTuples((A,40), (B,40),(C,1))
+            retval += pParam.GetDescription()
             
         retval += "------------------------------------------------------------------------------" + "\n"
         return retval
@@ -176,20 +169,21 @@ class StatusParamList(Common_LogConsoleClass):
         NewVal = pPar.Value
         if (pPar.IsOnOff):
             if (NewValue=="on"):
-                NewVal = self.CreateOrUpdateParam(pPar.ParamName,StatusParamListOfValues.ON)
+                NewVal = self.CreateOrUpdateParam(ParamName=pPar.ParamName,Value=StatusParamListOfValues.ON)
             elif (NewValue=="off"):
-                NewVal = self.CreateOrUpdateParam(pPar.ParamName,StatusParamListOfValues.OFF)
+                NewVal = self.CreateOrUpdateParam(ParamName=pPar.ParamName,Value=StatusParamListOfValues.OFF)
             elif (NewValue=="switch"):
                 NewVal = self.SwitchParam(pPar.ParamName)
         elif (pPar.IsInt) or (pPar.IsFloat):
-            NewVal = self.CreateOrUpdateParam(pPar.ParamName,str(NewValue))
+            NewVal = self.CreateOrUpdateParam(ParamName=pPar.ParamName,Value=str(NewValue))
         return NewVal        
     
     def Util_Params_ConfimationMsg(self,ParamName,NewVal,AlsoReplyToTopic=False,ReplyToTopic:str="")->Socket_Default_Message:
-        ObjToServer:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED
+        ObjToServer:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_SERVER_REGISTER
                                                                             #Suffix to service name
                                                                             ,Message = ParamName
                                                                             ,ValueStr= NewVal)
+        
         if (AlsoReplyToTopic and ReplyToTopic!=""):
             ObjToReplyTopic:Socket_Default_Message = Socket_Default_Message(Topic = ReplyToTopic
                                                                             #Suffix to service name

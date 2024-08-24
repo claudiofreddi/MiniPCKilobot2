@@ -9,6 +9,9 @@ import pickle
 from Socket_Utils_Send_Receive import *
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Messages import * 
+from Socket_Struct_ParamList import * 
+from Socket_Struct_CommandList import * 
+from  Socket_Logic_Topics import * 
 
 from Socket_Struct_Services_List import Socket_Services_List
 
@@ -25,6 +28,63 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
     SLEEP_TIME:float = 0.0 #time.sleep(self.SLEEP_TIME)
     
     MySocket_SendReceive = Socket_SendReceive()
+    
+ 
+    
+    def __init__(self,ServiceName = '', ForceServerIP = '',ForcePort='', IsServer=False,LogOptimized=False):
+            
+            
+                
+       
+        
+        # Connection Data
+        self.ServerIP = ''
+        self.ServerPort = SOCKET_SERVER_PORT
+        self.buffer = SOCKET_BUFFER
+        self.ServiceName:str = ""
+        self.IsServer:bool = False
+        self.ServerConnection:socket
+        self.client:socket
+        self.IsConnected = False
+        self.IsQuitCalled = False
+        
+        
+        self.RunOptimized = LogOptimized
+        
+        self.IsServer = IsServer
+        
+        if (ServiceName != ''):
+            self.ServiceName = ServiceName
+        
+        # Starting Server
+        if (ForceServerIP!= ''):
+            self.ServerIP = ForceServerIP
+        else:
+            IPToUse , isValid =self.ServerIPToUse()
+            if (isValid):
+                self.ServerIP = IPToUse
+            else:
+                self.LogConsole("Can't find IP. Quitting",ConsoleLogLevel.Always)
+                self.Quit()
+            
+        if (ForcePort!= ''):
+            self.ServerPort = ForcePort  
+            
+        if (ServiceName == ''):
+            if (self.IsServer):
+                self.ServiceName = self.ServerIP
+            else:
+                #Assign Random
+                self.ServiceName = str(uuid.uuid4())
+        
+        if (self.IsServer):
+            self.LogConsole(self.ServiceName + " started on " + self.ServerIP + ":" + str(self.ServerIP) + " buffer:" +  str(self.buffer),ConsoleLogLevel.Socket_Flow) 
+        else:
+            self.LogConsole("init Service: " + str(self.ServiceName),ConsoleLogLevel.Socket_Flow)         
+        
+        
+
+        
     
     def SleepTime(self, Multiply:float=1.0,CalledBy="",Trace=False):
         sec:float= self.SLEEP_TIME*Multiply
@@ -50,55 +110,7 @@ class Socket_ClientServer_BaseClass(Common_LogConsoleClass):
                     self.LogConsole(Err,ConsoleLogLevel.Always)
                     return Err, False
 
-    
-    def __init__(self,ServiceName = '', ForceServerIP = '',ForcePort='', IsServer=False,LogOptimized=False):
-            
-            # Connection Data
-            self.ServerIP = ''
-            self.ServerPort = SOCKET_SERVER_PORT
-            self.buffer = SOCKET_BUFFER
-            self.ServiceName:str = ""
-            self.IsServer:bool = False
-            self.ServerConnection:socket
-            self.client:socket
-            self.IsConnected = False
-            self.IsQuitCalled = False
-            
-            
-            self.RunOptimized = LogOptimized
-            
-            self.IsServer = IsServer
-            
-            if (ServiceName != ''):
-                self.ServiceName = ServiceName
-            
-            # Starting Server
-            if (ForceServerIP!= ''):
-                self.ServerIP = ForceServerIP
-            else:
-                IPToUse , isValid =self.ServerIPToUse()
-                if (isValid):
-                    self.ServerIP = IPToUse
-                else:
-                    self.LogConsole("Can't find IP. Quitting",ConsoleLogLevel.Always)
-                    self.Quit()
-                
-            if (ForcePort!= ''):
-                self.ServerPort = ForcePort  
-                
-            if (ServiceName == ''):
-                if (self.IsServer):
-                    self.ServiceName = self.ServerIP
-                else:
-                    #Assign Random
-                    self.ServiceName = str(uuid.uuid4())
-            
-            if (self.IsServer):
-                self.LogConsole(self.ServiceName + " started on " + self.ServerIP + ":" + str(self.ServerIP) + " buffer:" +  str(self.buffer),ConsoleLogLevel.Socket_Flow) 
-            else:
-                self.LogConsole("init Service: " + str(self.ServiceName),ConsoleLogLevel.Socket_Flow)         
-            
-    
+
     def Connect(self)->bool:
         try:
             if (self.IsServer):

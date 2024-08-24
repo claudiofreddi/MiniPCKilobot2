@@ -1,6 +1,6 @@
 from Socket_Struct_Client_BaseClass import * 
 from Socket_Utils_Timer import * 
-from Socket_Logic_GlobalTextCmdMng import *
+
 
 class SocketClient_Console(Socket_Client_BaseClass):
 
@@ -23,8 +23,13 @@ class SocketClient_Console(Socket_Client_BaseClass):
         #     if (not IsMessageAlreadyManaged):
         #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
         #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-        #                 MySpecificCommand = ReceivedMessage.Message
+        #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+        #             if (LocalTopicTest.IsValid):
+        #                 pass #here speific topic commands
+        #             else:
+        #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
+        #                     pass #here others topic
+        
         self.LogConsole("OnClient_Receive " +  ReceivedEnvelope.From, ConsoleLogLevel.Test)
         try:
             if (IsMessageAlreadyManaged == False):
@@ -53,16 +58,29 @@ class SocketClient_Console(Socket_Client_BaseClass):
             if (self.IsConnected):
 
                 #Default
-                self.LogConsole(self.ThisServiceName() + "Waiting for your command...",ConsoleLogLevel.Test)
+                self.LogConsole(self.ThisServiceName() + "Waiting for your command..",ConsoleLogLevel.Always)
                 FullTextCommand = '{}'.format(input(''))
+
+                #Send Text into topic of message                
+                prefix = TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At
+                if (FullTextCommand.startswith(prefix)):
+                    self.LogConsole("Special Topic Sent. ",ConsoleLogLevel.Test)
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = FullTextCommand,
+                                                                    Message =FullTextCommand
+                                                                    ,ReplyToTopic=self.Standard_Topics_For_Service.ServiceReplyToTopic #Reply to Client Special Topic
+                                                                    )                    
                 
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS,
-                                                                Message =FullTextCommand
-                                                                ,ReplyToTopic=Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS
-                                                                )
-                    
-                self.SendToServer( ObjToSend)   
-                        
+                else:                
+                    #Send As Tex Command To parse
+                    self.LogConsole("Clear Text Sent.: ",ConsoleLogLevel.Test)
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS,
+                                                                    Message =FullTextCommand
+                                                                    ,ReplyToTopic=self.Standard_Topics_For_Service.ServiceReplyToTopic  #Reply to Client Special Topic
+                                                                    )
+                if (ObjToSend):
+                    self.SendToServer( ObjToSend)   
+                
+                               
                 if (self.IsQuitCalled):
                     return self.OnClient_Core_Task_RETVAL_QUIT
             

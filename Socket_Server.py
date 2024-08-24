@@ -6,15 +6,33 @@ from Robot_Envs import *
 from Socket_Struct_ClientServer_BaseClass import * 
 from Socket_Struct_Messages import * 
 from Socket_Struct_Client_Object import *
-from Socket_Logic_GlobalTextCmdMng import *
 from Socket_Struct_Server_Robot_Commands import *
 from PIL import Image
 from Socket_Utils_Text import * 
 
-from Socket_Struct_Server_StatusParamList import * 
+from Socket_Struct_ParamList import * 
+from Socket_Struct_CommandList import *
+from Socket_Logic_Topics import * 
+#from Socket_Server_Commands import * 
+
+class ServerLocalCommands:
+
+    GET_HELP = "?"
+    GET_TOPICS = "get topics"
+    GET_STATUS = "get status"
+    GET_CLIENTS = "get clients"
+    GET_SENSORS = "get sensors"
+    GET_COMMANDS = "get commands"
+    SHOW_SERVER_MSGS = "togglemsgs"
+    SHOW_SERVER_IMAGE = "toggleimage"
+    
+
+class ServerLocalParamNames:
+    SERVER_CAMERA = "SERVER_CAMERA" 
+    SERVER_SHOW_RECEIVED_MSGS = "SERVER_SHOW_RECEIVED_MSGS"
+    SERVER_SHOW_SEND_MSGS = "SERVER_SHOW_SEND_MSGS"
 
 import cv2
-
 
 class Socket_Server(Socket_ClientServer_BaseClass): 
 
@@ -30,29 +48,54 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.SERVER_MAIN_CYCLE_SLEEP = 5 #sec
         self.MyListOfSensors = []
         self.MyFramesName = []
-        self.MyListOfStatusParams = StatusParamList()
-        self.MyListOfStatusParams.CreateOrUpdateParam(ParamName=StatusParamName.SERVER_CAMERA
-                                                      ,Value=StatusParamListOfValues.ON
-                                                      ,UserCmd=Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_IMAGE
-                                                      ,ServiceName=ServiceName
-                                                      ,UserCmdDescription= Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_IMAGE)
-         
-        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS
-                                                      ,StatusParamListOfValues.OFF
-                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS
-                                                      ,ServiceName
-                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS) 
         
-        self.MyListOfStatusParams.CreateOrUpdateParam(StatusParamName.SERVER_SHOW_SEND_MSGS
-                                                      ,StatusParamListOfValues.OFF
-                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS
-                                                      ,ServiceName
-                                                      ,Socket_Logic_GlobalTextCmdMng.SHOW_SERVER_MSGS) 
+        #NEW MNG
+        self.ServerListOfStatusParams = StatusParamList()
+        self.ServerListOfCommands = ServiceCommandList()
+        
+        #NEW MNG
+        # define for Server
+        self.Standard_Topics_For_Server = Topics_Standard_For_Service(self.ServiceName)
+       
+        #Command Definition (Common)
+        self.LocalCommand_TESTSERVER = "TESTSERVER"
+        LocalParamName, UserCmd, UserCmdDescription = self.Standard_Topics_For_Server.GetInfoForCommands(CommandName=self.LocalCommand_TESTSERVER,ArgsDescription="")
+        self.ServerListOfCommands.CreateCommand(UserCmd=UserCmd, UserCmdDescription=UserCmdDescription,GiveFeedback=True,AltCommand="")
+        
+        #XYZ
+        #Command Definition
+        self.AddCommand(Name=ServerLocalCommands.GET_HELP)
+        self.AddCommand(Name=ServerLocalCommands.GET_CLIENTS)
+        self.AddCommand(Name=ServerLocalCommands.GET_TOPICS,AltCommand="ctrl+T")
+        self.AddCommand(Name=ServerLocalCommands.GET_STATUS,AltCommand="ctrl+T")
+        self.AddCommand(Name=ServerLocalCommands.GET_COMMANDS)
+        self.AddCommand(Name=ServerLocalCommands.GET_SENSORS)
+        self.AddCommand(Name=ServerLocalCommands.SHOW_SERVER_MSGS,AltCommand="ctrl+M")
+        self.AddCommand(Name=ServerLocalCommands.SHOW_SERVER_IMAGE,AltCommand="ctrl+I")
+        
+        
+        self.ServerListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
+                                                          ,ParamName=ServerLocalParamNames.SERVER_CAMERA
+                                                          ,Value=StatusParamListOfValues.ON
+                                                          ,ArgDescr="on|off")
+         
+        self.ServerListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
+                                                        ,ParamName=ServerLocalParamNames.SERVER_SHOW_RECEIVED_MSGS
+                                                        ,Value=StatusParamListOfValues.OFF
+                                                        ,ArgDescr="on|off")
+        
+        self.ServerListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
+                                                          ,ParamName=ServerLocalParamNames.SERVER_SHOW_SEND_MSGS
+                                                          ,Value=StatusParamListOfValues.OFF
+                                                          ,ArgDescr="on|off")
           
         
         self.Connect()    
 
-
+    def AddCommand(self, Name:str,ArgsDescr="",GiveFeedback=True,AltCommand=""):
+        LocalParamName, UserCmd, UserCmdDescription = self.Standard_Topics_For_Server.GetInfoForCommands(CommandName=Name,ArgsDescription=ArgsDescr)
+        self.ServerListOfCommands.CreateCommand(UserCmd, UserCmdDescription,GiveFeedback=True,AltCommand=AltCommand)
+    
     def SendToClient(self,TargetClient, MyMsg:Socket_Default_Message,From='',AdditionaByteData=b''): 
         c:client_object
         try:
@@ -64,7 +107,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             
             self.MySocket_SendReceive.send_msg(TargetClient,SerializedObj,AdditionaByteData)
             
-            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.ON)):
+            if (self.ServerListOfStatusParams.CheckParam(ServerLocalParamNames.SERVER_SHOW_SEND_MSGS,StatusParamListOfValues.ON)):
                 LogParam = ConsoleLogLevel.Show
             else:
                 LogParam = 0
@@ -95,7 +138,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
  
             if (retval):
             
-                if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
+                if (self.ServerListOfStatusParams.CheckParam(ServerLocalParamNames.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
                     LogParam = ConsoleLogLevel.Show
                 else:
                     LogParam = 0
@@ -193,26 +236,13 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     #Used to send Messages based on subscriptions
     def BroadCastMessageByTopic(self, ReceivedMessage:Socket_Default_Message,AdditionaByteData=b''):
         c:client_object
+        
         if (not Socket_Default_Message_Topics().IsTopicReserved(ReceivedMessage.Topic)):
             for c in self.client_objects:
-                #if (c.servicename != CurrClientObject.servicename):
                 if (c.IsSubscribedToThisTopic(ReceivedMessage.Topic)):
                     self.SendToClient(TargetClient=c.client,MyMsg=ReceivedMessage,From= Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
     
-    #Direct Messages to Specific Client    
-    def PassThroughtMsg(self, ReceivedMessage:Socket_Default_Message,AdditionaByteData=b''):
-        try:
-            c:client_object
-            if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                
-                if (ReceivedMessage.TargetClientName != Socket_Default_Message_Topics.NONE 
-                    and ReceivedMessage.TargetClientName != ""):
-                    c = self.GetClientObjectByServiceName(ReceivedMessage.TargetClientName)
-                    if (c):
-                        self.SendToClient(TargetClient=c.client,MyMsg=ReceivedMessage,From=Socket_Services_List.SERVER,AdditionaByteData=AdditionaByteData)
-
-        except Exception as e:
-            self.LogConsole("Server Error in broadcastObj() " + str(e),ConsoleLogLevel.Error)                  
+           
                 
     def GetSensor(self,Topic):
         pSensor:Socket_Default_Message
@@ -247,13 +277,14 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                         break
                     else:
                         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                                            
-                            ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
                             
+                            
+                            ReceivedMessage = ReceivedEnvelope.GetReceivedMessage()
+
                             ########################################################################################    
                             #ENABLE/DISABLE SHOW OF ALL MESSAGES FROM CLIENT
                             ########################################################################################    
-                            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
+                            if (self.ServerListOfStatusParams.CheckParam(ServerLocalParamNames.SERVER_SHOW_RECEIVED_MSGS,StatusParamListOfValues.ON)):
                                 LogParam = ConsoleLogLevel.Show
                             else:
                                 LogParam = 0
@@ -274,7 +305,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                             ##Gestione Messaggi Conosciuti dal server   
                             ########################################################################################  
                              
-                            ## SEZIONE MESSAGGI SPECIALI
+                            ## SEZIONE TOPIC SPECIALI
                        
                             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_REGISTER):
                                 if (CurrClientObject.RegisterTopic(ReceivedMessage.Message)):
@@ -284,15 +315,19 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                 if (CurrClientObject.SubscribeTopic(ReceivedMessage.Message)):
                                     self.LogConsole("[" + CurrClientObject.servicename +  "] Subscribed to Topic [" + ReceivedMessage.Message + "]",ConsoleLogLevel.System)
                                     
-                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_UPDATED):
-                                self.MyListOfStatusParams.CreateOrUpdateParam(ParamName=ReceivedMessage.Message,Value=ReceivedMessage.ValueStr
-                                                                              ,UserCmd=ReceivedMessage.ValueStr2
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_SERVER_REGISTER):
+                                self.ServerListOfStatusParams.CreateOrUpdateParam(ServiceName=ReceivedMessage.ValueStr2
+                                                                                  ,ParamName=ReceivedMessage.Message
+                                                                                  ,Value=ReceivedMessage.ValueStr
+                                                                                  ,ArgDescr=ReceivedMessage.ValueStr3)
+                            
+                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_COMMAND_SERVER_REGISTER):   
+                                self.ServerListOfCommands.CreateCommand(UserCmd=ReceivedMessage.ValueStr2
                                                                               ,UserCmdDescription=ReceivedMessage.ValueStr3
                                                                               ,ServiceName=CurrClientObject.servicename)
                                 
-                            elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                                self.PassThroughtMsg(ReceivedMessage,AdditionaByteData)
-                                                                                           
+
+                                                                                                                      
                             ########################################################################################                        
                             ## TOPIC TO BE MANAGED  
                             ########################################################################################  
@@ -309,20 +344,84 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_JOYSTICK
                                  ):
-                                #self.Specific_Topic_Management_INPUT_KEYBOARD(ReceivedMessage=ReceivedMessage)    
                                 self.Specific_Topic_Management_INPUT_TEXT_COMMAND(ReceivedMessage=ReceivedMessage,CurrClientObject=CurrClientObject,AdditionalData=AdditionaByteData)
         
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_IMAGE):
                                 self.Specific_Topic_Management_INPUT_IMAGE(ReceivedMessage=ReceivedMessage,AdditionalData=AdditionaByteData)
      
                             
-                            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.OFF)):
-                                self.LogConsole("destroyAllWindows...",ConsoleLogLevel.CurrentTest)
-                                try:
-                                    cv2.destroyAllWindows()
-                                except Exception as e:
-                                    self.LogConsole(LocalMsgPrefix + " Error in cv2.destroyWindows(self.FrameName) "  + str(e),ConsoleLogLevel.Error)
-                                    pass
+                            else:
+                                #######################################################
+                                # CLIENT SPECIFIC TOPIC (PARAMS UPDATE AND COMMANDS)
+                                #######################################################                         
+                                LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+                                
+                                VarChanged = False
+                                bAlsoReplyToTopic=True
+                                MyParamName = ""
+                                CommandExecuted = False
+                                CommandRetval = ""
+
+                                
+                                self.LogConsole(LocalTopicTest.Describe(),ConsoleLogLevel.Test)
+                                
+                                if (LocalTopicTest.IsValid):
+                                    if (LocalTopicTest.IsParam):
+                                        pPar:StatusParam
+                                        pPar, retval = self.ServerListOfStatusParams.GetParam(LocalTopicTest.Param)
+                                        if (retval):
+                                            self.LogConsole(pPar.ParamName,ConsoleLogLevel.Test)    
+                                            MyParamName = pPar.ParamName
+                                            if (pPar.Util_Params_IsValid(LocalTopicTest.ParamVal)):
+                                                
+                                                NewVal = self.ServerListOfStatusParams.Util_Params_SetValue(pPar,LocalTopicTest.ParamVal)
+                                                VarChanged = True 
+                                                self.LogConsole(NewVal,ConsoleLogLevel.Test)    
+                                                
+                                    elif (LocalTopicTest.IsCommand):
+                                        pCmd:ServiceCommand
+                                        pCmd, retval = self.ServerListOfCommands.Get(LocalTopicTest.Param)
+                                        if (retval):
+                                            CurrCmd = pCmd.UserCmd
+                                            CurrArgs = LocalTopicTest.Args
+
+                                            CommandExecuted, CommandRetval, bAlsoReplyToTopic = self.Execute_Service_SpecificCommand(Command=CurrCmd,Args=CurrArgs, 
+                                                                                                                                ReceivedMessage=ReceivedMessage,
+                                                                                                                                AdditionaByteData=AdditionaByteData)
+                                            
+                                            LocalIsMessageAlreadyManaged = CommandExecuted
+                                        
+                                    elif (LocalTopicTest.IsReplyTo):
+                                        print(ReceivedMessage.Message)
+  
+                                
+                                    #Notify Changes Change Variable
+                                    if (False):
+                                        if ((VarChanged and MyParamName !="") or CommandExecuted):
+                                            
+                                            ObjToServer:Socket_Default_Message
+                                            ObjToReplyTopic:Socket_Default_Message
+                                            
+                                            if (LocalTopicTest.IsParam):
+                                                ObjToServer,ObjToReplyTopic = self.ServerListOfStatusParams.Util_Params_ConfimationMsg(ParamName=MyParamName,NewVal=NewVal
+                                                                                                    ,AlsoReplyToTopic=bAlsoReplyToTopic
+                                                                                                    ,ReplyToTopic=ReceivedMessage.ReplyToTopic)
+                                            if (LocalTopicTest.IsCommand):
+                                                ObjToServer,ObjToReplyTopic = self.ServerListOfCommands.Util_Command_ConfimationMsg(CommandName=MyParamName,CommandRetval=CommandRetval
+                                                                                                    ,AlsoReplyToTopic=bAlsoReplyToTopic
+                                                                                                    ,ReplyToTopic=ReceivedMessage.ReplyToTopic)
+                                                
+                                            
+                                            if (ObjToServer): 
+                                                self.LogConsole(ObjToServer.GetMessageDescription(),ConsoleLogLevel.CurrentTest)    
+                                                #self.SendToServer(ObjToServer) 
+                                            
+                                            if (ObjToReplyTopic): 
+                                                self.LogConsole(ObjToReplyTopic.GetMessageDescription(),ConsoleLogLevel.CurrentTest)    
+                                                #self.SendToServer(ObjToReplyTopic) 
+                                                
+                                
+                            
 
                             cv2.waitKey(1)        
                             ########################################################################################                        
@@ -334,7 +433,43 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 except Exception as e:
                     self.LogConsole(LocalMsgPrefix + " Error in handle() "  + str(e),ConsoleLogLevel.Error)
                     break
-           
+    
+
+    def Execute_Service_SpecificCommand(self,Command:str,Args:str, ReceivedMessage:Socket_Default_Message,AdditionaByteData=b''):
+        CommandExecuted = False
+        CommandRetval=  ""
+        bAlsoReplyToTopic = True
+        
+        ###################################################
+        #Define Here Common Parent Commands
+        ###################################################
+        if (Command == self.LocalCommand_TESTSERVER):
+            CommandExecuted = True
+            CommandRetval =  "text client Received"
+                        
+    
+        ###################################################
+        #END OF LOCAL MANAGED COMMANDS
+        ###################################################
+        if (CommandExecuted):     
+            return CommandExecuted, CommandRetval, bAlsoReplyToTopic
+    
+        ###################################################
+        #FORWARD TO CHILD COMMANDS
+        ###################################################
+        return self.After_Execute_Service_SpecificCommands(Command=Command,Args=Args, ReceivedMessage= ReceivedMessage,AdditionaByteData=AdditionaByteData)
+        
+    
+    #OVERRIDE
+    def After_Execute_Service_SpecificCommands(self,Command:str,Args:str, ReceivedMessage:Socket_Default_Message,AdditionaByteData=b''):
+        CommandExecuted = False
+        CommandRetval=  ""
+        bAlsoReplyToTopic = True
+        
+        
+        return CommandExecuted, CommandRetval, bAlsoReplyToTopic
+    
+        
     # Receiving / Listening Function
     def WaitingForNewClient(self):
         
@@ -405,16 +540,40 @@ class Socket_Server(Socket_ClientServer_BaseClass):
     ########################################################################################  
     def Specific_Topic_Management_INPUT_TEXT_COMMAND(self,ReceivedMessage:Socket_Default_Message,CurrClientObject:client_object, AdditionalData = b''):
         
-        self.LogConsole("Receiving Command Text Data " +  ReceivedMessage.Message, ConsoleLogLevel.Test)
+        self.LogConsole("Receiving Command Text Data " +  ReceivedMessage.Message, ConsoleLogLevel.CurrentTest)
         
+        #NEW MNG
+        #Check if local command
+        pCmd:ServiceCommand
+        CommandExecuted = False
+        CommandRetval = ""
+        pCmd, retval = self.ServerListOfCommands.Get(ReceivedMessage.Message)
+        if (retval):
+            #Is Known Message
+            self.LogConsole("Execute command..." + pCmd.UserCmd, ConsoleLogLevel.Test)
+            CommandExecuted, CommandRetval = self.Execute_Listed_Command(ReceivedMessage=ReceivedMessage,pCmd=pCmd)
+            if (not CommandExecuted):
+                self.LogConsole("Not Executed", ConsoleLogLevel.Test)
+            else:
+                self.LogConsole("......" + CommandRetval, ConsoleLogLevel.Test)
+                if (CommandExecuted):
+                    if (pCmd.GiveFeedback):
+                        self.LogConsole("Give feedback...", ConsoleLogLevel.Test)
+                        
+                        ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = ReceivedMessage.ReplyToTopic ,Message=CommandRetval)
+                        
+                        self.LogConsole("SendToClient " +  ReceivedMessage.ReplyToTopic, ConsoleLogLevel.Test)
+                        self.SendToClient(CurrClientObject.client,ObjToSend)  
+    
+    if (False):
         GlobalTextCommandsManagement = Socket_Logic_GlobalTextCmdMng()
         AnyFound, MsgsToSend = GlobalTextCommandsManagement.ParseCommandAndGetMsgs(ReceivedMessage)
         
         if (AnyFound):
             ObjToSend:Socket_Default_Message
             for ObjToSend in MsgsToSend:
-                if (ObjToSend.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                    self.PassThroughtMsg(ObjToSend,AdditionalData)
+                # if (ObjToSend.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
+                #     self.PassThroughtMsg(ObjToSend,AdditionalData)
                 if (ObjToSend.Topic == Socket_Default_Message_Topics.SERVER_LOCAL):
                     self.LogConsole(self.ThisServiceName() + " " + ObjToSend.GetMessageDescription(),ConsoleLogLevel.Always)
                     self.Specific_Topic_Management_SERVER_LOCAL(ReceivedMessage=ObjToSend,CurrClientObject=CurrClientObject, AdditionalData=AdditionalData)
@@ -423,13 +582,68 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     self.BroadCastMessageByTopic(ObjToSend,AdditionaByteData=AdditionalData)
 
  
+    def Execute_Listed_Command(self,ReceivedMessage:Socket_Default_Message,pCmd:ServiceCommand):
+        self.LogConsole(f"Execute_Listed_Command Msg:{ReceivedMessage.Message} Cmd:{pCmd.UserCmd} Alt:{pCmd.AltCommand.lower()}", ConsoleLogLevel.Test)
+        co:client_object
+        try:
+            CommandExecuted = False
+            CommandRetval = ""
+            Msg = ReceivedMessage.Message.lower()
+            #XYZ
+            if (pCmd.UserCmd==ServerLocalCommands.GET_HELP): #like get commands
+                CommandRetval = self.ServerListOfCommands.GetDescription() + "\n"              
+                CommandExecuted = True
 
+            elif (pCmd.UserCmd==ServerLocalCommands.GET_TOPICS):
+                CommandRetval = ""
+                for co in self.client_objects:
+                    CommandRetval += co.ShowDetails()   
+                CommandExecuted = True
+
+            elif (pCmd.UserCmd==ServerLocalCommands.GET_COMMANDS):
+                CommandRetval = self.ServerListOfCommands.GetDescription() + "\n"              
+                CommandExecuted = True
+            
+            elif (pCmd.UserCmd==ServerLocalCommands.GET_STATUS):
+                CommandRetval = self.ServerListOfStatusParams.GetDescription() + "\n"           
+                CommandExecuted = True
+            
+            elif (pCmd.UserCmd==ServerLocalCommands.GET_CLIENTS):
+                CommandRetval = ""
+                for co in self.client_objects:
+                    CommandRetval += co.servicename + "\n"              
+                CommandExecuted = (len(CommandRetval)>0)
+                
+            elif (pCmd.UserCmd==ServerLocalCommands.GET_SENSORS):
+                CommandRetval = ""
+                sns:Socket_Default_Message
+                for sns in self.MyListOfSensors:
+                    CommandRetval += PaddingTuples((f"{sns.Topic}:",40),(f"{sns.Value}",10),(f"{sns.Message}\n",1))           
+                CommandExecuted = (len(CommandRetval)>0)
+                
+            elif (pCmd.UserCmd==ServerLocalCommands.SHOW_SERVER_MSGS):
+                NewVal = self.ServerListOfStatusParams.SwitchParam(ServerLocalParamNames.SERVER_SHOW_RECEIVED_MSGS)
+                CommandRetval =f"SHOW_RECEIVED_MSGS is {NewVal}\n"
+                NewVal = self.ServerListOfStatusParams.SwitchParam(ServerLocalParamNames.SERVER_SHOW_SEND_MSGS)
+                CommandRetval += f"SERVER_SHOW_SEND_MSGS is {NewVal}\n"
+                CommandExecuted = True
+            
+            elif (pCmd.UserCmd==ServerLocalCommands.SHOW_SERVER_IMAGE):
+                NewVal = self.ServerListOfStatusParams.SwitchParam(ServerLocalParamNames.SERVER_CAMERA)
+                CommandRetval = f"SERVER_CAMERA is {NewVal}\n"
+                CommandExecuted = True
+                
+            return CommandExecuted, CommandRetval    
+        
+        except Exception as e:
+            self.LogConsole("Error in Execute_Listed_Command()  " + str(e),ConsoleLogLevel.Error)
+            return False,""
             
     def Specific_Topic_Management_INPUT_IMAGE(self,ReceivedMessage:Socket_Default_Message, AdditionalData = b''):
         self.LogConsole("Receiving Image Data " + str(len(AdditionalData)),ConsoleLogLevel.Test)
         self.LogConsole("Detection List " + str(ReceivedMessage.ResultList),ConsoleLogLevel.Test)
         if (len(AdditionalData)>0):
-            if (self.MyListOfStatusParams.CheckParam(StatusParamName.SERVER_CAMERA,StatusParamListOfValues.ON)):
+            if (self.ServerListOfStatusParams.CheckParam(ServerLocalParamNames.SERVER_CAMERA,StatusParamListOfValues.ON)):
                 frame= pickle.loads(AdditionalData, fix_imports=True, encoding="bytes")
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)  
                 self.FrameName = ReceivedMessage.Message
@@ -443,69 +657,6 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 cv2.destroyAllWindows()
         else:
             cv2.destroyAllWindows()
-   
-    def Specific_Topic_Management_SERVER_LOCAL(self,ReceivedMessage:Socket_Default_Message,CurrClientObject:client_object, AdditionalData = b''): 
-        
-        
-        BackToClientMsg = ""
-        co:client_object
-        if (ReceivedMessage.Message == RobotListOfAvailableCommands.CTRL_M): #Ctrl + M (Alle Messages about send and receive)
-            NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_SHOW_RECEIVED_MSGS)
-            BackToClientMsg =f"SHOW_RECEIVED_MSGS is {NewVal}"
-            self.LogConsole(BackToClientMsg,ConsoleLogLevel.System) 
-            
-            NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_SHOW_SEND_MSGS)
-            BackToClientMsg =f"SHOW_SEND_MSGS is {NewVal}"
-            self.LogConsole(BackToClientMsg,ConsoleLogLevel.System) 
-            
-        elif  (ReceivedMessage.Message == RobotListOfAvailableCommands.CTRL_T): 
-            BackToClientMsg = ""
-            for co in self.client_objects:
-                BackToClientMsg += co.ShowDetails()
-            
-                    
-        elif  (ReceivedMessage.Message == RobotListOfAvailableCommands.CTRL_I): #Ctrl + I (Image On Off)
-            NewVal = self.MyListOfStatusParams.SwitchParam(StatusParamName.SERVER_CAMERA)
-            BackToClientMsg = f"SERVER_CAMERA is {NewVal}"
-            self.LogConsole(BackToClientMsg,ConsoleLogLevel.System) 
-            
-
-        elif  (ReceivedMessage.Message == RobotListOfAvailableCommands.CTRL_S): #Ctrl + S Param Status
-            BackToClientMsg = self.MyListOfStatusParams.GetStatusDescription()
-            self.LogConsole(BackToClientMsg,ConsoleLogLevel.Show)     
-
-        elif  (ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_CLIENTS):
-            BackToClientMsg = ""
-            for co in self.client_objects:
-                BackToClientMsg += co.servicename + "\n"
-                
-        elif  (ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_SENSORS):
-            BackToClientMsg = ""
-            sns:Socket_Default_Message
-            for sns in self.MyListOfSensors:
-                BackToClientMsg += PaddingTuples((f"{sns.Topic}:",40),(f"{sns.Value}",10),(f"{sns.Message}\n",1))
-        
-        elif  (ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_HELP1 or ReceivedMessage.Message == Socket_Logic_GlobalTextCmdMng.GET_HELP2):
-            BackToClientMsg = ""
-            Tmp = Socket_Logic_GlobalTextCmdMng()
-            BackToClientMsg = Tmp.ShowCommands()
-        
-        else: ### ERROR
-            BackToClientMsg = "Command not found: " +  ReceivedMessage.Message 
-            self.LogConsole(BackToClientMsg , ConsoleLogLevel.System)
-            BackToClientMsg  = "" #Do not reply          
-                    
-        #For TEST PORPOUSE
-        if (BackToClientMsg!=""):
-            if (ReceivedMessage.ReplyToTopic != Socket_Default_Message_Topics.NONE):
-                TopicToUse = ReceivedMessage.ReplyToTopic 
-            else:
-                TopicToUse = Socket_Default_Message_Topics.OUTPUT_TEXT_COMMANDS
-            
-            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = TopicToUse,Message=BackToClientMsg)
-            
-            self.LogConsole("SendToClient " +  BackToClientMsg, ConsoleLogLevel.Test)
-            self.SendToClient(CurrClientObject.client,ObjToSend)  
     
     def Specific_Topic_Management_SENSOR(self,ReceivedMessage:Socket_Default_Message, AdditionalData = b''): 
 

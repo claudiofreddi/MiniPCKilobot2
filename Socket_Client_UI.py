@@ -44,8 +44,12 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
         #     if (not IsMessageAlreadyManaged):
         #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
         #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-        #             if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-        #                 MySpecificCommand = ReceivedMessage.Message
+        #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+        #             if (LocalTopicTest.IsValid):
+        #                 pass #here speific topic commands
+        #             else:
+        #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
+        #                     pass #here others topic
         
         if (self.IsWindowOn == False):
             return
