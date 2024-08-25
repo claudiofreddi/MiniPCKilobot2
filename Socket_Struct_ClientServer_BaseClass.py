@@ -9,8 +9,8 @@ import pickle
 from Socket_Utils_Send_Receive import *
 from Socket_Utils_ConsoleLog import * 
 from Socket_Struct_Messages import * 
-from Socket_Struct_ParamList import * 
-from Socket_Struct_CommandList import * 
+from Socket_Struct_ListOfParams import * 
+from Socket_Struct_ListOfCommands import * 
 from  Socket_Logic_Topics import * 
 
 from Socket_Struct_Services_List import Socket_Services_List

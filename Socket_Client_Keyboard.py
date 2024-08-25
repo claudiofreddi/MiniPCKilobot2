@@ -2,7 +2,7 @@ from Socket_Struct_Client_BaseClass import *
 from pynput import keyboard
 from  datetime import datetime
 import enum
-from Socket_Struct_ParamList import * 
+from Socket_Struct_ListOfParams import * 
 
 class SocketClient_Keyboard(Socket_Client_BaseClass):
     
@@ -33,6 +33,15 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
     _Alt_Pressed = False
     _MaxKeyCount = 3
     _KeyCount = 0
+
+    def __init__(self, ServiceName = Socket_Services_List.KEYBOARD, ForceServerIP = '',ForcePort='',LogOptimized = False):
+        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
+        self.listener = keyboard.Listener(
+            on_press=self.on_press,
+            on_release=self.on_release)
+        self.listener.start()
+        self.LogConsole("Keyboard Listener Started",ConsoleLogLevel.System)
+
     
     def IsKeyAllowed(self,Key:str):
         return (self._AllowAllKeys or self.SPECIAL_KEYS_ON_PRESS.__contains__(Key) or self.SPECIAL_KEYS_ON_RELEASE.__contains__(Key))
@@ -47,13 +56,6 @@ class SocketClient_Keyboard(Socket_Client_BaseClass):
         return (self.SPECIAL_KEYS_CONTINUE_SENDING.__contains__(Key))
     
        
-    def __init__(self, ServiceName = Socket_Services_List.KEYBOARD, ForceServerIP = '',ForcePort='',LogOptimized = False):
-        super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
-        self.listener = keyboard.Listener(
-            on_press=self.on_press,
-            on_release=self.on_release)
-        self.listener.start()
-        self.LogConsole("Keyboard Listener Started",ConsoleLogLevel.System)
         
     def On_ClientAfterLogin(self):
         

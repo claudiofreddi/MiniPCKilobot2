@@ -45,6 +45,7 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
     def __init__(self, ServiceName = Socket_Services_List.TELEGRAM, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         
+        self.DoNotMaskReplyToMessage = True #to pass throught commands to UI
         self.Telegram_Enabled = True
         self.GlbFlagProcessKilled = False
         self.TelegramMsgQ = Socket_Q[str]("Telegram Msgs")
@@ -98,13 +99,37 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
             # else:
             #     self.bot.sendMessage(chat_id, f'Mi spiace {name}, non capisco {MyCmd}\nUsa /help per sapere cosa posso fare!')
             if (IsToSendToServer):
-                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
-                                                                                Message = MyCmd
-                                                                                , Value = 0
-                                                                                ,ReplyToTopic=Socket_Default_Message_Topics.OUTPUT_TELEGRAM
-                                                                                )
+                # ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
+                #                                                                 Message = MyCmd
+                #                                                                 , Value = 0
+                #                                                                 ,ReplyToTopic=Socket_Default_Message_Topics.OUTPUT_TELEGRAM
+                #                                                                 )
                                 
-                self.SendToServer(ObjToSend) 
+                # self.SendToServer(ObjToSend) 
+
+
+                FullTextCommand = MyCmd.lower()
+                
+                #Send Text into topic of message                
+                prefix = TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At
+                if (FullTextCommand.startswith(prefix)):
+                    #self.LogConsole("Special Topic Sent. ",ConsoleLogLevel.CurrentTest)
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = FullTextCommand,
+                                                                    Message =FullTextCommand
+                                                                    ,ReplyToTopic=self.Standard_Topics_For_Service.ServiceReplyToTopic #Reply to Client Special Topic
+                                                                    )                    
+                
+                else:                
+                    #Send As Tex Command To parse
+                    #self.LogConsole("Clear Text Sent.: ",ConsoleLogLevel.CurrentTest)
+                    print(self.Standard_Topics_For_Service.ServiceReplyToTopic)
+                    ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TELEGRAM,
+                                                                    Message =FullTextCommand
+                                                                    ,ReplyToTopic=self.Standard_Topics_For_Service.ServiceReplyToTopic  #Reply to Client Special Topic
+                                                                    )
+                if (ObjToSend):
+                    self.SendToServer( ObjToSend) 
+
 
 
     def on_chat_send_master_message(self,bot, text_msg):
@@ -144,7 +169,9 @@ class SocketClient_Telegram(Socket_Client_BaseClass):
                     # if (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_KEYBOARD):
                     #     self.TelegramMsgQ.put(ReceivedMessage.Message)   
                         
-                    if (ReceivedMessage.Topic == Socket_Default_Message_Topics.OUTPUT_TELEGRAM):
+                    if (ReceivedMessage.Topic == Socket_Default_Message_Topics.OUTPUT_TELEGRAM #from other clients
+                        or ReceivedMessage.Topic == self.Standard_Topics_For_Service.ServiceReplyToTopic #from reply to commands
+                        ):
                         self.TelegramMsgQ.put(ReceivedMessage.Message)     
                         
                     if (ReceivedMessage.Topic== Socket_Default_Message_Topics.INPUT_IMAGE):

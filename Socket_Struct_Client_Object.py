@@ -28,7 +28,7 @@ class client_object:
         Text += "registered topics:        NONE\n" if len(self.Topics)==0 else f"registered topics:        {self.Topics}" + "\n"
         Text += "registered subscriptions: NONE\n" if len(self.TopicSubscriptions)==0 else f"registered subscriptions: {self.TopicSubscriptions}" + "\n"
         Text += "\n"
-        print(Text)
+        #print(Text)
         return Text
     
     def ExistsTopic(self,Topic):

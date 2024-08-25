@@ -3,7 +3,7 @@ from Socket_Utils_ConsoleLog import *
 from Socket_Struct_Server_Robot_Commands import * 
 from Socket_Utils_Text import Padding, PaddingTuples
 from Socket_Utils_TextCommand_Parser import * 
-from Socket_Struct_CommandList import * 
+from Socket_Struct_ListOfCommands import * 
 
 class ServerLocalCommands:
 

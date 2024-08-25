@@ -4,13 +4,12 @@ import time
 from typing import cast
 from Robot_Envs import *
 from Socket_Struct_ClientServer_BaseClass import * 
-from Socket_Struct_ParamList import * 
-from Socket_Struct_CommandList import * 
+from Socket_Struct_ListOfParams import * 
+from Socket_Struct_ListOfCommands import * 
 from  Socket_Logic_Topics import * 
 
 
-   
-class Local_Params_User_Command:
+class ClientLocalCommands:
     QUIT = "quit"
                                           
 class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
@@ -25,10 +24,11 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         super().__init__(ServiceName,ForceServerIP,ForcePort, False,LogOptimized)    
         
         self.DisconnectCount = 0
-
+        self.DoNotMaskReplyToMessage = False #Used for Telegram or other clients with different output than console.  
+        
         #NEW MNG
-        self.LocalListOfStatusParams = StatusParamList()
-        self.LocalListOfCommands = ServiceCommandList()
+        self.LocalListOfStatusParams = ServiceParamList(ServiceName)
+        self.LocalListOfCommands = ServiceCommandList(ServiceName)
         
         #NEW MNG
         # define for all Clients
@@ -38,28 +38,27 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         #NEW MNG
         #Param Definition (Common)
         self.ServiceParamStdBy =  "STANDBY"
-        #LocalParamName, UserCmd, UserCmdDescription = self.Standard_Topics_For_Service.GetInfoForStatusParam(self.ServiceParamStdBy,"on/off/switch")
+        
         self.LocalListOfStatusParams.CreateOrUpdateParam(ServiceName=self.ServiceName
-                                                         , ParamName=self.ServiceParamStdBy
+                                                         , Name=self.ServiceParamStdBy
                                                          ,Value=StatusParamListOfValues.OFF
                                                          ,ArgDescr="on|off")
         
         #NEW MNG
         #Param Definition (Common)
         self.LocalParamSleepTime = "SLEEPTIME"
-        #LocalParamName, UserCmd, UserCmdDescription = self.Standard_Topics_For_Service.GetInfoForStatusParam(self.LocalParamSleepTime,"value")
+        
         self.LocalListOfStatusParams.CreateOrUpdateParam(ServiceName=self.ServiceName,
-                                                         ParamName=self.LocalParamSleepTime
+                                                         Name=self.LocalParamSleepTime
                                                          ,Value="10"
                                                         ,ArgDescr="on|off")
         
         #Command Definition (Common)
-        self.LocalCommand_TESTCLIENT = "TESTCLIENT"
-        LocalParamName, UserCmd, UserCmdDescription = self.Standard_Topics_For_Service.GetInfoForCommands(self.LocalCommand_TESTCLIENT,"")
-        self.LocalListOfCommands.CreateCommand(UserCmd, UserCmdDescription)
+        self.LocalListOfCommands.CreateCommand(ServiceName=ServiceName
+                                               ,Name=ClientLocalCommands.QUIT)
+            
         
-        
-        
+  
     def SendToServer(self,MyMsg:Socket_Default_Message, 
                         Target=SocketMessageEnvelopeTargetType.SERVER,AdditionaByteData=b''):
         
@@ -67,7 +66,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             
             MyEnvelope:SocketMessageEnvelope = self.Prepare_StandardEnvelope(MsgToSend=MyMsg,To=Target,From=self.ServiceName)
             
-            self.LogConsole("Client ["+ self.ServiceName + "] SendToServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+            #self.LogConsole("Client ["+ self.ServiceName + "] SendToServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
             
             self.LogConsole("Client ["+ self.ServiceName + "] SendToServer: " + MyMsg.GetMessageDescription(),ConsoleLogLevel.Socket_Flow)
             
@@ -89,7 +88,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             if (len(ser_obj)>0):
                 MyEnvelope , retval = self.UnPack_StandardEnvelope_And_Deserialize(ser_obj)
                 
-                self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                #self.LogConsole("Client ["+ self.ServiceName + "] ReceiveFromServer: " + MyEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
                 
             return MyEnvelope,AdditionaByteData 
 
@@ -146,8 +145,10 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                     # If 'NICK' Send ServiceName
                     
                     ReceivedEnvelope, AdditionaByteData = self.ReceiveFromServer()
+                    
                     if (ReceivedEnvelope != None):
-                        self.LogConsole(self.ThisServiceName() + " ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                        #self.LogConsole(self.ThisServiceName() + " ReceiveFromServer: " + ReceivedEnvelope.GetEnvelopeDescription(),ConsoleLogLevel.Socket_Flow)
+                        pass
                     
                     IsMessageAlreadyManaged = False                   
                     if (ReceivedEnvelope != None):
@@ -168,41 +169,21 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                             ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.LOGIN
                                                                                         ,Message =str(self.ServiceName)
                                                                                        )
-                            
                             self.SendToServer(ObjToSend)    
                             
+                            #Register Local Topics
                             self._ClientAfterLoginLocal()
                             
+                            #Call Overridable Method
                             self.On_ClientAfterLogin()
                             
                             
                             #######################################################
                             # Send First Param Status of all parameters to server 
                             #######################################################
-                            pParam:StatusParam
-                            for pParam in self.LocalListOfStatusParams.List:
-                                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_SERVER_REGISTER
-                                                                #Suffix to service name
-                                                                ,Message = pParam.ParamName
-                                                                ,ValueStr= pParam.Value
-                                                                ,ValueStr2= pParam.ServiceName
-                                                                ,ValueStr3= pParam.ArgDescr)
-
-                                self.SendToServer( ObjToSend)    
-                                
-                            pCmd:ServiceCommand
-                            
-                            for pCmd in self.LocalListOfCommands.List:
-                                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_COMMAND_SERVER_REGISTER
-                                                                #Suffix to service name
-                                                                ,Message = ""
-                                                                ,ValueStr= ""
-                                                                ,ValueStr2= pCmd.UserCmd
-                                                                ,ValueStr3= pCmd.UserCmdDescription)
-
-                                self.SendToServer( ObjToSend)    
-                            
+                            self.RegisterParamsAndCommands()
                             IsMessageAlreadyManaged = True  
+    
 
                         #######################################################
                         # CLIENT SPECIFIC TOPIC (PARAMS UPDATE AND COMMANDS)
@@ -215,45 +196,47 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
                         CommandExecuted = False
                         CommandRetval = ""
                         
-                        
                         #self.LogConsole(LocalTopicTest.Describe(),ConsoleLogLevel.CurrentTest)
                         
                         if (LocalTopicTest.IsValid):
                             if (LocalTopicTest.IsParam):
-                                pPar:StatusParam
-                                pPar, retval = self.LocalListOfStatusParams.GetParam(LocalTopicTest.Param)
+                                pPar:ServiceParam
+                                pPar, retval = self.LocalListOfStatusParams.GetByLocalName(LocalTopicTest.Param)
                                 if (retval):
-                                    MyParamName = pPar.ParamName
+                                    MyParamName = pPar.Name
                                     if (pPar.Util_Params_IsValid(LocalTopicTest.ParamVal)):
                                         NewVal = self.LocalListOfStatusParams.Util_Params_SetValue(pPar,LocalTopicTest.ParamVal)
+                                        #print(f"*** Client Param Updated:{NewVal}")
                                         VarChanged = True 
                                         IsMessageAlreadyManaged = True #PARAM SET
                                         
                             elif (LocalTopicTest.IsCommand):
                                 pCmd:ServiceCommand
-                                pCmd, retval = self.LocalListOfCommands.Get(LocalTopicTest.Param)
+                                pCmd, retval = self.LocalListOfCommands.GetByLocalName(LocalTopicTest.Command  )
                                 if (retval):
-                                    CurrCmd = pCmd.UserCmd
-                                    CurrArgs = LocalTopicTest.Args
-
-                                    CommandExecuted, CommandRetval, bAlsoReplyToTopic = self.Execute_Service_SpecificCommand(Command=CurrCmd,Args=CurrArgs, 
-                                                                                                                      ReceivedMessage=ReceivedMessage,
-                                                                                                                      AdditionaByteData=AdditionaByteData)
+                                    #print(pCmd.GetDescription())
+                                    CommandExecuted, CommandRetVal, bAlsoReplyToTopic = self.Execute_Service_SpecificCommand(Command=pCmd.Name
+                                                                                                                             ,Args= LocalTopicTest.Args
+                                                                                                                             ,ReceivedMessage=ReceivedMessage
+                                                                                                                             ,AdditionaByteData=AdditionaByteData)
                                     
                                     IsMessageAlreadyManaged = CommandExecuted
                                 
                             elif (LocalTopicTest.IsReplyTo):
                                 print(ReceivedMessage.Message)
-                                IsMessageAlreadyManaged = True
-                        
+                                if (not self.DoNotMaskReplyToMessage):
+                                    IsMessageAlreadyManaged = True
+                            
                             #Notify Changes Change Variable
                             if ((VarChanged and MyParamName !="") or CommandExecuted):
                                 if (LocalTopicTest.IsParam):
-                                    ObjToServer,ObjToReplyTopic = self.LocalListOfStatusParams.Util_Params_ConfimationMsg(ParamName=MyParamName,NewVal=NewVal
+                                    #print(f"*** Util_Params_ConfimationMsg")
+                                    ObjToServer,ObjToReplyTopic = self.LocalListOfStatusParams.Util_Params_ConfimationMsg(Name=MyParamName,NewVal=NewVal
                                                                                         ,AlsoReplyToTopic=bAlsoReplyToTopic
                                                                                         ,ReplyToTopic=ReceivedMessage.ReplyToTopic)
+                                
                                 if (LocalTopicTest.IsCommand):
-                                    ObjToServer,ObjToReplyTopic = self.LocalListOfCommands.Util_Command_ConfimationMsg(CommandName=MyParamName,CommandRetval=CommandRetval
+                                    ObjToServer,ObjToReplyTopic = self.LocalListOfCommands.Util_Command_ConfimationMsg(Name=MyParamName,CommandRetVal=CommandRetVal
                                                                                         ,AlsoReplyToTopic=bAlsoReplyToTopic
                                                                                         ,ReplyToTopic=ReceivedMessage.ReplyToTopic)
                                     
@@ -291,14 +274,16 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         CommandRetval=  ""
         bAlsoReplyToTopic = True
         
+        self.LogConsole("Execute_Service_SpecificCommand",ConsoleLogLevel.Test)
+        
         ###################################################
         #Define Here Common Parent Commands
         ###################################################
-        if (Command == self.LocalCommand_TESTCLIENT):
-            CommandExecuted = True
-            CommandRetval =  "text client Received"
+        if (Command == ClientLocalCommands.QUIT):
+            self.IsQuitCalled = True
+            return True, "quitted", False
+            #CommandExecuted, CommandRetval, bAlsoReplyToTopic
             
-    
         ###################################################
         #END OF LOCAL MANAGED COMMANDS
         ###################################################
@@ -319,6 +304,33 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
         
         
         return CommandExecuted, CommandRetval, bAlsoReplyToTopic
+    
+    def RegisterParamsAndCommands(self):
+        pParam:ServiceParam
+        for pParam in self.LocalListOfStatusParams.List:
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_PARAM_SERVER_REGISTER
+                                            #Suffix to service name
+                                            ,Message = pParam.Name
+                                            ,ValueStr= pParam.Value
+                                            ,ValueStr2= pParam.ServiceName
+                                            ,ValueStr3= pParam.ArgDescr)
+
+            self.SendToServer( ObjToSend)    
+            
+        pCmd:ServiceCommand
+        
+        for pCmd in self.LocalListOfCommands.List:
+            ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.TOPIC_CLIENT_COMMAND_SERVER_REGISTER
+                                            #Suffix to service name
+                                           ,Message = pCmd.Name
+                                            ,ValueStr= pCmd.AltCommand
+                                            ,ValueStr2= pCmd.ServiceName
+                                            ,ValueStr3= pCmd.ArgDescr
+                                            ,Value=pCmd.GiveFeedback)
+
+            self.SendToServer( ObjToSend)    
+        
+        
     
     #OVERRIDE   
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreadyManaged=False):
@@ -376,7 +388,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
     #OVERRIDE: CORE TASK CYCLE: inner main cycle of Service
     def OnClient_Core_Task_Cycle(self):
         try:
-            pParam, retval = self.LocalListOfStatusParams.GetParam(self.ServiceParamStdBy)
+            pParam, retval = self.LocalListOfStatusParams.GetByLocalName(self.ServiceParamStdBy)
             if (pParam.Value==StatusParamListOfValues.ON):
                 return self.OnClient_Core_Task_RETVAL_OK
             
@@ -393,7 +405,7 @@ class Socket_Client_BaseClass(Socket_ClientServer_BaseClass):
             while not self.IsQuitCalled:
                 
                 #Basic Management of Service Idle 
-                pParam, retval  = self.LocalListOfStatusParams.GetParam(self.ServiceParamStdBy)
+                pParam, retval  = self.LocalListOfStatusParams.GetByLocalName(self.ServiceParamStdBy)
                 if (retval):
                     if (pParam.Value==StatusParamListOfValues.ON): 
                         time.sleep(self.SLEEP_TIME)

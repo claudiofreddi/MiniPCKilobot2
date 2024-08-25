@@ -29,7 +29,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
         self._Classifier_Loaded = False
         
         self.LocalListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName,
-                                                         ParamName=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION 
+                                                         Name=self.LOCAL_PARAMS_ENABLE_CLASSIFICATION 
                                                          ,Value=StatusParamListOfValues.OFF
                                                          ,ArgDescr="on|off")
     
@@ -166,7 +166,7 @@ class SocketClient_Webcam(Socket_Client_BaseClass):
                                 self.LogConsole(self.ThisServiceName() + "Error in Comparing Images:  " + str(e),ConsoleLogLevel.Error)
                             
                             ClassifyEnabled:bool = ((self._Classifier_Enabled == True) 
-                                             and (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_CLASSIFICATION)))
+                                             and (self.LocalListOfStatusParams.Util_IsParamOn(self.ServiceName,self.LOCAL_PARAMS_ENABLE_CLASSIFICATION)))
                             
                             FoundNames = []
                             FoundConfidence = []

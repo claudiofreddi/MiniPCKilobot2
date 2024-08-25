@@ -15,17 +15,12 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
         self.MessageQ = queue.Queue()
         
         self.LOCAL_PARAMS_ENABLE_Speaker = "ENABLE_SPEAKER"
-        self.LOCAL_PARAMS_ENABLE_SpeakerUserCmd = "speaker"
-        self.LOCAL_PARAMS_ENABLE_SpeakerUserCmdDescr = "speaker [on/off/switch]"
         
         self.LocalListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
-                                                         ,ParamName=self.LOCAL_PARAMS_ENABLE_Speaker 
+                                                         ,Name=self.LOCAL_PARAMS_ENABLE_Speaker 
                                                          ,Value=StatusParamListOfValues.ON
                                                          ,ArgDescr="on|off"
                                                              )
-        #Params Usage:
-        #if (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_Speaker)): 
-        #
     
     def OnClient_Connect(self):
         
@@ -76,7 +71,7 @@ class SocketClient_Speaker(Socket_Client_BaseClass):
 
     def OnClient_Core_Task_Cycle(self):
         try:
-            if (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_Speaker)):
+            if (self.LocalListOfStatusParams.Util_IsParamOn(self.ServiceName,self.LOCAL_PARAMS_ENABLE_Speaker)):
                 if (not self.MessageQ.empty()):
                     M = self.MessageQ.get()
                     self.MySpeak.Speak(M)

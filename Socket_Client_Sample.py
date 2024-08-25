@@ -5,6 +5,7 @@ from  Socket_Logic_Topics import *
 class SocketClient_Sample(Socket_Client_BaseClass):
 
     LOCAL_PARAMS_ENABLE_Sample = "PARAM"
+    LOCAL_COMMAND_PRINT_THIS = "print_this"
     
     def __init__(self, ServiceName = Socket_Services_List.SAMPLE, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
@@ -16,12 +17,13 @@ class SocketClient_Sample(Socket_Client_BaseClass):
         
         #Params Definition:
         self.LocalListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
-                                                         ,ParamName=self.LOCAL_PARAMS_ENABLE_Sample 
+                                                         ,Name=self.LOCAL_PARAMS_ENABLE_Sample 
                                                          ,Value=StatusParamListOfValues.OFF
                                                          ,ArgDescr="on|off")
-        #Params Usage:
-        #if (self.LocalListOfStatusParams.Util_IsParamOn(self.LOCAL_PARAMS_ENABLE_Sample)): 
-        #
+        
+        #Command Definition (Common)
+        self.LocalListOfCommands.CreateCommand(ServiceName=ServiceName
+                                               ,Name=self.LOCAL_COMMAND_PRINT_THIS)
         
     def OnClient_Connect(self):
         
@@ -37,50 +39,44 @@ class SocketClient_Sample(Socket_Client_BaseClass):
 
         
         pass
+    
+    #Define here this client commands
+    def After_Execute_Service_SpecificCommands(self,Command:str,Args:str, ReceivedMessage:Socket_Default_Message,AdditionaByteData=b''):
+        
+        try:
+            CommandExecuted = False
+            CommandRetval=  ""
+            bAlsoReplyToTopic = True
+            
+            if (Command == self.LOCAL_COMMAND_PRINT_THIS):
+                print("THIS")
+                CommandRetval=  "Printed"
+                CommandExecuted = True
+            
+            self.LogConsole("*After_Execute_Service_SpecificCommands" + Command,ConsoleLogLevel.CurrentTest)
+            
+            
+            return CommandExecuted, CommandRetval, bAlsoReplyToTopic
+        
+        
+        except Exception as e:
+            self.LogConsole(self.ThisServiceName() + "Error in OnClient_Receive()  " + str(e),ConsoleLogLevel.Error)
+            return False, self.ThisServiceName() + "Error in OnClient_Receive()  " + str(e), True
+        
         
     def OnClient_Receive(self,ReceivedEnvelope:SocketMessageEnvelope,AdditionaByteData=b'',IsMessageAlreadyManaged=False):
-        # if (self.IsConnected):
-        #     if (not IsMessageAlreadyManaged):
-        #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-        #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-        #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
-        #             if (LocalTopicTest.IsValid):
-        #                 pass #here speific topic commands
-        #             else:
-        #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
-        #                     pass #here others topic
         try:
-            if (self.IsConnected):
-                if (not IsMessageAlreadyManaged):
-                    if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
-                        ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
-                        print("Topic:" + ReceivedMessage.Topic)
-                        MyTopicManager = TopicManager(ReceivedMessage.Topic)
-                        if (MyTopicManager.IsValid):
-                            if (MyTopicManager.IsCommand):
-                                print("Command:")
-                                print("Exec: " + MyTopicManager.Command + " " + MyTopicManager.Args)
-                            
-                            elif (MyTopicManager.IsParam):
-                                print("Param:")
-                                print(MyTopicManager.Describe())
-                                
-                                pPar , retval = self.LocalListOfStatusParams.GetParam(MyTopicManager.Param)
-                                if (retval):
-                                    pPar.Update(MyTopicManager.ParamVal)
-                            
-                            elif (MyTopicManager.IsReplyTo): 
-                                print("ReplyTo:")  
-                                print(ReceivedMessage.Message)       
-                            
-                        else:
-                            print("Invalid")   
-                        
-                        if (ReceivedMessage.Topic == Socket_Default_Message_Topics.TOPIC_CLIENT_DIRECT_CMD):
-                            #Add Sample for Change Params
-                            pass
-                            
-    
+            # if (self.IsConnected):
+            #     if (not IsMessageAlreadyManaged):
+            #         if (ReceivedEnvelope.ContentType == SocketMessageEnvelopeContentType.STANDARD):
+            #             ReceivedMessage:Socket_Default_Message = ReceivedEnvelope.GetReceivedMessage()
+            #             LocalTopicTest = TopicManager(ReceivedMessage.Topic)
+            #             if (LocalTopicTest.IsValid):
+            #                 pass #here speific topic commands
+            #             else:
+            #                 if (ReceivedMessage.Topic == Socket_Default_Message_Topics.MESSAGE):
+            #                     pass #here others topic
+            pass    
                             
         except Exception as e:
             self.LogConsole(self.ThisServiceName() + "Error in OnClient_Receive()  " + str(e),ConsoleLogLevel.Error)

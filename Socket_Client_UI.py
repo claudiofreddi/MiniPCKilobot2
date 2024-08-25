@@ -25,6 +25,7 @@ class Socket_Client_UI(Socket_Client_BaseClass,threading.Thread):
     def __init__(self, ServiceName = Socket_Services_List.USERINTERFACE, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         threading.Thread.__init__(self)
+        self.DoNotMaskReplyToMessage = True #to pass throught commands to UI
         self.CreateUI()
         self.MyTimer.start(30)
         

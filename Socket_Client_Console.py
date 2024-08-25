@@ -60,11 +60,12 @@ class SocketClient_Console(Socket_Client_BaseClass):
                 #Default
                 self.LogConsole(self.ThisServiceName() + "Waiting for your command..",ConsoleLogLevel.Always)
                 FullTextCommand = '{}'.format(input(''))
-
+                FullTextCommand = FullTextCommand.lower()
+                
                 #Send Text into topic of message                
                 prefix = TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At
                 if (FullTextCommand.startswith(prefix)):
-                    self.LogConsole("Special Topic Sent. ",ConsoleLogLevel.Test)
+                    #self.LogConsole("Special Topic Sent. ",ConsoleLogLevel.CurrentTest)
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = FullTextCommand,
                                                                     Message =FullTextCommand
                                                                     ,ReplyToTopic=self.Standard_Topics_For_Service.ServiceReplyToTopic #Reply to Client Special Topic
@@ -72,7 +73,7 @@ class SocketClient_Console(Socket_Client_BaseClass):
                 
                 else:                
                     #Send As Tex Command To parse
-                    self.LogConsole("Clear Text Sent.: ",ConsoleLogLevel.Test)
+                    #self.LogConsole("Clear Text Sent.: ",ConsoleLogLevel.CurrentTest)
                     ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS,
                                                                     Message =FullTextCommand
                                                                     ,ReplyToTopic=self.Standard_Topics_For_Service.ServiceReplyToTopic  #Reply to Client Special Topic

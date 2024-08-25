@@ -3,14 +3,25 @@ from Socket_Struct_Messages import *
 class TopicReserved:
     ReservedTopic_Starts_With_Slash = "/"
     ReservedTopic_Starts_With_At = "@" 
-    ReservedTopic_For_Command = "#CMD#"
-    ReservedTopic_For_Param = "#PARAM#"
-    ReservedTopic_For_Param_Bool = "#B#"
-    ReservedTopic_For_Param_Int = "#I#"
-    ReservedTopic_For_Param_Float = "#F#"
-    ReservedTopic_For_Param_Str = "#S#"
-    ReservedTopic_For_ReplyTo = "#REPLYTO#"
-    
+    ReservedTopic_For_Command = "#cmd#"
+    ReservedTopic_For_Param = "#param#"
+    ReservedTopic_For_Param_Bool = "#b#"
+    ReservedTopic_For_Param_Int = "#i#"
+    ReservedTopic_For_Param_Float = "#f#"
+    ReservedTopic_For_Param_Str = "#s#"
+    ReservedTopic_For_ReplyTo = "#replyto#"
+ 
+    def Compose_URL(Type,ServiceName, Name,ArgDescr):
+        URL = TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At + ServiceName
+        if (Type == "P"):
+            URL += TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_For_Param
+        if (Type == "C"):
+            URL += TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_For_Command
+        URL += TopicReserved.ReservedTopic_Starts_With_Slash + Name
+        if (ArgDescr !=""):
+            URL += TopicReserved.ReservedTopic_Starts_With_Slash + "[" + ArgDescr + "]"
+        return URL   
+
 class TopicType:
     Specific = "S"
     Generic = "G"
@@ -26,38 +37,26 @@ class Topics_Standard_For_Service():
     def __init__(self,ServiceName:str):
         self.ServiceName = ServiceName
         
-        #Std Topics
+        #Std Topics 
+        "/@ServiceName"
         self.ServiceTopic = TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At + self.ServiceName
+        
+        "/@ServiceName/#CMD#"
         self.ServiceCommandTopic = self.ServiceTopic  + "/" + TopicReserved.ReservedTopic_For_Command
+        "/@ServiceName/#PARAM#"
         self.ServiceParamsTopic = self.ServiceTopic  + "/" + TopicReserved.ReservedTopic_For_Param
+        "/@ServiceName/#REPLYTO#"
         self.ServiceReplyToTopic = self.ServiceTopic + "/" + TopicReserved.ReservedTopic_For_ReplyTo
     
-    def GetInfoForStatusParam(self,ParamName, ArgsDescription):
-        LocalParamName = self.ServiceName + "_" + ParamName
-        UserCmd=self.ServiceParamsTopic + "/" + ParamName
-        if (ArgsDescription!=""):
-            UserCmdDescription = UserCmd + "/[" + ArgsDescription + "]"
-        else:
-            UserCmdDescription = UserCmd  
-        return  LocalParamName, UserCmd, UserCmdDescription
-    
-    def GetInfoForCommands(self,CommandName, ArgsDescription):
-        LocalParamName = self.ServiceName + "_" + CommandName
-        if (self.ServiceName == Socket_Services_List.SERVER):
-            UserCmd=CommandName
-        else:
-            UserCmd=self.ServiceCommandTopic + "/" + CommandName
-        if (ArgsDescription!=""):
-            UserCmdDescription = UserCmd + "/[" + ArgsDescription + "]"
-        else:   
-            UserCmdDescription = UserCmd
-        return  LocalParamName, UserCmd, UserCmdDescription
+
+        
+                    
     
 class TopicManager():
     
     def __init__(self,Topic:str):
        
-        self.Topic = Topic
+        self.Topic = Topic.lower()
         self.IsValid = False
         self.TopicType = ""
         self.TargetService = ""
@@ -138,33 +137,33 @@ if (__name__== "__main__"):
     #     "/@SAMPLE_Client/#PARAM#"
     #     "/@SAMPLE_Client/#REPLYTO#"
     
-    MyTopicTest = TopicManager("/#CMD#/PIPPO")
+    MyTopicTest = TopicManager("/@keyboard_client/#cmd#/quit")
     print(MyTopicTest.Describe()) 
-    MyTopicTest = TopicManager("/#PARAM#/PLUTO")
-    print(MyTopicTest.Describe()) 
-    MyTopicTest = TopicManager("/#REPLYTO#")
-    print(MyTopicTest.Describe()) 
+    # MyTopicTest = TopicManager("/#PARAM#/PLUTO")
+    # print(MyTopicTest.Describe()) 
+    # MyTopicTest = TopicManager("/#REPLYTO#")
+    # print(MyTopicTest.Describe()) 
     
-    #Client Specific Command   
-    MyTopicTest = TopicManager("/@SAMPLE_Client/#CMD#/SPEAK/PIPPO ciao")
-    print(MyTopicTest.Describe()) 
+    # #Client Specific Command   
+    # MyTopicTest = TopicManager("/@SAMPLE_Client/#CMD#/SPEAK/PIPPO ciao")
+    # print(MyTopicTest.Describe()) 
     
-    #Client Specific: Set Param Value
-    MyTopicTest = TopicManager("/@SAMPLE_Client/#PARAM#/STANDBY/1")
-    print(MyTopicTest.Describe()) 
+    # #Client Specific: Set Param Value
+    # MyTopicTest = TopicManager("/@SAMPLE_Client/#PARAM#/STANDBY/1")
+    # print(MyTopicTest.Describe()) 
     
-    #Client Specific: Not Valid
-    MyTopicTest = TopicManager("/@SAMPLE_Client/#PARAM_B#/STANDBY/ON")
-    print(MyTopicTest.Describe())  
+    # #Client Specific: Not Valid
+    # MyTopicTest = TopicManager("/@SAMPLE_Client/#PARAM_B#/STANDBY/ON")
+    # print(MyTopicTest.Describe())  
     
-    #Client Specific: ReplyTo
-    MyTopicTest = TopicManager("/@SAMPLE_Client/#REPLYTO#")
-    print(MyTopicTest.Describe()) 
+    # #Client Specific: ReplyTo
+    # MyTopicTest = TopicManager("/@SAMPLE_Client/#REPLYTO#")
+    # print(MyTopicTest.Describe()) 
     
-    #Client Specific: Command
-    MyTopicTest = TopicManager("/@SAMPLE_Client/#CMD#/MOV/FW")
-    print(MyTopicTest.Describe()) 
+    # #Client Specific: Command
+    # MyTopicTest = TopicManager("/@SAMPLE_Client/#CMD#/MOV/FW")
+    # print(MyTopicTest.Describe()) 
 
-    #Generic
-    MyTopicTest = TopicManager("/INPUT/SENSOR/COMPASS")
-    print(MyTopicTest.Describe()) 
+    # #Generic
+    # MyTopicTest = TopicManager("/INPUT/SENSOR/COMPASS")
+    # print(MyTopicTest.Describe()) 
