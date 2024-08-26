@@ -62,6 +62,7 @@ class SocketClient_Console(Socket_Client_BaseClass):
                 FullTextCommand = '{}'.format(input(''))
                 FullTextCommand = FullTextCommand.lower()
                 
+                
                 #Send Text into topic of message                
                 prefix = TopicReserved.ReservedTopic_Starts_With_Slash + TopicReserved.ReservedTopic_Starts_With_At
                 if (FullTextCommand.startswith(prefix)):

@@ -35,3 +35,6 @@ LIDAR_COM_PORT = "COM10"
 LIDAR_BOAD_RATE = 230400
 
 THIS_MACHINE_NAME = "KILOBOT"
+
+PYTHON_EXEC_PATH = 'C:/Users/user/AppData/Local/Programs/Python/Python311/python.exe'
+PYTHON_CLIENT_DIR = "c:/Dati/MiniPCKilobot2/"

@@ -15,6 +15,7 @@ from Socket_Struct_ListOfCommands import *
 from Socket_Struct_ListOfSensors import *
 from Socket_Logic_Topics import * 
 #from Socket_Server_Commands import * 
+import subprocess
 
 class ServerLocalCommands:
 
@@ -26,6 +27,8 @@ class ServerLocalCommands:
     GET_COMMANDS = "get commands"
     SHOW_SERVER_MSGS = "togglemsgs"
     SHOW_SERVER_IMAGE = "toggleimage"
+    RUN_CLIENT = "run client"
+    QUIT_ALL_CLIENTS = "quit all"
     
 
 class ServerLocalParamNames:
@@ -70,7 +73,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.GET_SENSORS)
         self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.SHOW_SERVER_MSGS,AltCommand="ctrl+M")
         self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.SHOW_SERVER_IMAGE,AltCommand="ctrl+I")
-        
+        self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.RUN_CLIENT, ArgDescr="servicecommandkey")
+        self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.QUIT_ALL_CLIENTS, ArgDescr="")
         
         self.ServerListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
                                                           ,Name=ServerLocalParamNames.SERVER_CAMERA
@@ -86,8 +90,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                                           ,Name=ServerLocalParamNames.SERVER_SHOW_SEND_MSGS
                                                           ,Value=StatusParamListOfValues.OFF
                                                           ,ArgDescr="on|off")
-          
-        
+
         self.Connect()    
 
 
@@ -179,8 +182,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         c:client_object
         for c in self.client_objects:
             if (c.servicename.lower() == ServiceNameToFind.lower()):
-                return c
-        return None
+                return c, True
+        return None, False
     
     
     def CheckIfServiceNameExists(self,ServiceNameToFind)->bool:
@@ -259,6 +262,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                     
                     
                     if (not retval): 
+                        self.client_objects.remove(CurrClientObject)
                         self.LogConsole(LocalMsgPrefix + " handle() Evelope Not Correct. Assume Break Connection. Quit.",ConsoleLogLevel.System)
                         break
                     else:
@@ -332,8 +336,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_JOYSTICK
                                  ):
-                                
-                                CommandExecuted, CommandRetval = self.Execute_Listed_Command(ReceivedMessage=ReceivedMessage,CommandName=ReceivedMessage.Message)
+                                CommandExecuted, CommandRetval = self.Execute_Listed_Command(ReceivedMessage=ReceivedMessage
+                                                                                             ,CommandName=ReceivedMessage.Message
+                                                                                             ,Args=""
+                                                                                             ,CommandFromServiceName=ReceivedEnvelope.From)
                                 NeedReply = True
                                 
                             elif (ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_IMAGE):
@@ -373,8 +379,11 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                             pCmd, retval = self.ServerListOfCommands.GetByGlobalName(LocalTopicTest.TargetService + "_" + LocalTopicTest.Command)
                                             print(retval, " ", LocalTopicTest.Command)
                                             if (retval):
-                                                CommandExecuted, CommandRetval = self.Execute_Listed_Command(ReceivedMessage=ReceivedMessage,CommandName=pCmd.Name)
-                                                if (not CommandExecuted): CommandRetval = f"Command {pCmd.Name} failed !"
+                                                CommandExecuted, CommandRetval = self.Execute_Listed_Command(ReceivedMessage=ReceivedMessage
+                                                                                                             ,CommandName=pCmd.Name
+                                                                                                             ,Args=LocalTopicTest.Args
+                                                                                                             ,CommandFromServiceName=ReceivedEnvelope.From)
+                                                if (not CommandExecuted): CommandRetval = f"Command {pCmd.Name} failed: {CommandRetval} !"
                                             
                                         elif (LocalTopicTest.IsReplyTo):
                                             print(ReceivedMessage.Message)
@@ -387,11 +396,11 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                             
                                             if (ReplyTopicTest.IsValid):
                                                 c:client_object
-                                                c = self.GetClientObjectByServiceName(ReplyTopicTest.TargetService)
-                                                if (c):  #do not send to SERVER itself
+                                                c, retval = self.GetClientObjectByServiceName(ReplyTopicTest.TargetService)
+                                                if (retval):  #do not send to SERVER itself
                                                     ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic=ReceivedMessage.ReplyToTopic
                                                                                                               ,Message=CommandRetval)
-                                                    self.LogConsole("SendToClient " +  ReplyTopicTest.TargetService, ConsoleLogLevel.CurrentTest)
+                                                    self.LogConsole("*SendToClient " +  ReplyTopicTest.TargetService, ConsoleLogLevel.CurrentTest)
                                                     self.SendToClient(c.client,ObjToSend)  
                                                 
                             if (NeedReply): #For Text Commands
@@ -478,28 +487,14 @@ class Socket_Server(Socket_ClientServer_BaseClass):
             self.LogConsole("Server_Main_Cycle",ConsoleLogLevel.Test)
 
            
-    ########################################################################################                        
-    ##Gestione TOPICS
-    ########################################################################################  
-    def Specific_Topic_Management_INPUT_TEXT_COMMAND(self,ReceivedMessage:Socket_Default_Message,CurrClientObject:client_object, AdditionalData = b''):
-        
-        self.LogConsole("Receiving Command Text Data " +  ReceivedMessage.Message, ConsoleLogLevel.CurrentTest)
-        
-        #NEW MNG
-        #Check if local command
-        pCmd:ServiceCommand
-        pCmd, retval = self.ServerListOfCommands.GetByLocalName(ReceivedMessage.Message)
-        self.LogConsole("Retval" + str(retval), ConsoleLogLevel.CurrentTest)
-        if (retval):
-            #Is Known Message
-            self.Execute_Listed_Command_And_GiveFeedback(ReceivedMessage=ReceivedMessage,pCmd=pCmd,CurrClientObject=CurrClientObject)
-                
-   
 
- 
-    def Execute_Listed_Command(self,ReceivedMessage:Socket_Default_Message,CommandName=""):
-        self.LogConsole(f"Execute_Listed_Command Msg:{CommandName}", ConsoleLogLevel.Test)
+    def Execute_Listed_Command(self,ReceivedMessage:Socket_Default_Message,CommandName="", Args="", CommandFromServiceName=""):
+        self.LogConsole(f"Execute_Listed_Command Msg:{CommandName}", ConsoleLogLevel.CurrentTest)
         
+        CheckCommand = CommandName.split('/')
+        CommandName = CheckCommand[0]
+        if (len(CheckCommand)>1): Args = CheckCommand[1]
+            
         co:client_object
         
         if (CommandName == ""): return False,"Command not set"
@@ -548,6 +543,32 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 NewVal = self.ServerListOfStatusParams.SwitchParam(ServerLocalParamNames.SERVER_CAMERA)
                 CommandRetval = f"SERVER_CAMERA is {NewVal}\n"
                 CommandExecuted = True
+                
+            elif (CommandName == ServerLocalCommands.QUIT_ALL_CLIENTS):
+                for co in self.client_objects:
+                    if (co.servicename != CommandFromServiceName): #Do not quit the caller
+                        Topic = f"/@{co.servicename}/#cmd#/quit"
+                        ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Topic ,Message="quitted")
+                        self.SendToClient(co.client, ObjToSend)
+                        CommandRetval += co.servicename + " quitted\n"   
+                
+                    
+            elif (CommandName == ServerLocalCommands.RUN_CLIENT):
+                print("Run  " + Args)
+                for obj in RunnableClients:
+                    #(commandkey, filename, servocename, mode)
+                    if (obj[0] == Args and obj[3] != ExecMode.Disabled ):
+                        c:client_object
+                        c, retval  =  self.GetClientObjectByServiceName(obj[2])
+                        if (not retval):
+                            Thiscreationflags= 0 
+                            if (obj[3] == ExecMode.OpenNewConsole): Thiscreationflags = subprocess.CREATE_NEW_CONSOLE 
+                            subprocess.Popen(args=[PYTHON_EXEC_PATH ,obj[1]],shell = False, creationflags=Thiscreationflags)
+                            CommandRetval=  f"{Args} launched !"
+                            CommandExecuted = True
+                        else:
+                            CommandRetval=  f"{Args} already running !"
+                            CommandExecuted = False
                 
             return CommandExecuted, CommandRetval    
         

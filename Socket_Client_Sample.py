@@ -7,6 +7,7 @@ class SocketClient_Sample(Socket_Client_BaseClass):
     LOCAL_PARAMS_ENABLE_Sample = "PARAM"
     LOCAL_COMMAND_PRINT_THIS = "print_this"
     
+    
     def __init__(self, ServiceName = Socket_Services_List.SAMPLE, ForceServerIP = '',ForcePort='',LogOptimized = False):
         super().__init__(ServiceName,ForceServerIP,ForcePort,LogOptimized)
         
@@ -24,6 +25,8 @@ class SocketClient_Sample(Socket_Client_BaseClass):
         #Command Definition (Common)
         self.LocalListOfCommands.CreateCommand(ServiceName=ServiceName
                                                ,Name=self.LOCAL_COMMAND_PRINT_THIS)
+        
+
         
     def OnClient_Connect(self):
         
@@ -52,6 +55,10 @@ class SocketClient_Sample(Socket_Client_BaseClass):
                 print("THIS")
                 CommandRetval=  "Printed"
                 CommandExecuted = True
+                
+                
+
+                
             
             self.LogConsole("*After_Execute_Service_SpecificCommands" + Command,ConsoleLogLevel.CurrentTest)
             
