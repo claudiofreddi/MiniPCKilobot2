@@ -29,7 +29,9 @@ class ServerLocalCommands:
     SHOW_SERVER_IMAGE = "toggleimage"
     RUN_CLIENT = "run client"
     QUIT_ALL_CLIENTS = "quit all"
-    
+    GET_IPADDRESS = "get ip"
+    SPEAK_TEXT = "speak"
+        
 
 class ServerLocalParamNames:
     SERVER_CAMERA = "SERVER_CAMERA" 
@@ -74,7 +76,8 @@ class Socket_Server(Socket_ClientServer_BaseClass):
         self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.SHOW_SERVER_MSGS,AltCommand="ctrl+M")
         self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.SHOW_SERVER_IMAGE,AltCommand="ctrl+I")
         self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.RUN_CLIENT, ArgDescr="servicecommandkey")
-        self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.QUIT_ALL_CLIENTS, ArgDescr="")
+        self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.GET_IPADDRESS, ArgDescr="")
+        self.ServerListOfCommands.CreateCommand(ServiceName=ServiceName,Name=ServerLocalCommands.SPEAK_TEXT,ArgDescr="Text to speak")
         
         self.ServerListOfStatusParams.CreateOrUpdateParam(ServiceName=ServiceName
                                                           ,Name=ServerLocalParamNames.SERVER_CAMERA
@@ -544,6 +547,10 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                 CommandRetval = f"SERVER_CAMERA is {NewVal}\n"
                 CommandExecuted = True
                 
+            elif (CommandName==ServerLocalCommands.GET_IPADDRESS): 
+                CommandRetval = f"SERVER address:port is {self.ServerIP}:{self.ServerPort}\n"
+                CommandExecuted = True 
+                
             elif (CommandName == ServerLocalCommands.QUIT_ALL_CLIENTS):
                 for co in self.client_objects:
                     if (co.servicename != CommandFromServiceName): #Do not quit the caller
@@ -552,7 +559,14 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                         self.SendToClient(co.client, ObjToSend)
                         CommandRetval += co.servicename + " quitted\n"   
                 
-                    
+            elif (CommandName == ServerLocalCommands.SPEAK_TEXT):
+                
+                Topic = Socket_Default_Message_Topics.OUTPUT_SPEAKER
+                ObjToSend:Socket_Default_Message = Socket_Default_Message(Topic = Topic ,Message=Args)
+                self.BroadCastMessageByTopic(ReceivedMessage=ObjToSend,AdditionaByteData=b'')
+                CommandRetval = ""
+                CommandExecuted = True
+                
             elif (CommandName == ServerLocalCommands.RUN_CLIENT):
                 print("Run  " + Args)
                 for obj in RunnableClients:
