@@ -14,3 +14,4 @@ class Socket_Services_List:
     LIDAR = "lidar_client"
     CONSOLE = "console_client"
     JOYSTICK = "joystick_client"
+    VOICE_COMMANDS= "voicecommands_client"

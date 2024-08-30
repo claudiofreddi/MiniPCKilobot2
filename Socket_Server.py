@@ -16,9 +16,10 @@ from Socket_Struct_ListOfSensors import *
 from Socket_Logic_Topics import * 
 #from Socket_Server_Commands import * 
 import subprocess
+from enum import Enum
 
-class ServerLocalCommands:
-
+class ServerLocalCommands():
+   
     GET_HELP = "?"
     GET_TOPICS = "get topics"
     GET_PARAMS = "get params"
@@ -31,6 +32,21 @@ class ServerLocalCommands:
     QUIT_ALL_CLIENTS = "quit all"
     GET_IPADDRESS = "get ip"
     SPEAK_TEXT = "speak"
+
+    def __init__(self):
+        self.GET_HELP = "?"
+        self.GET_TOPICS = "get topics"
+        self.GET_PARAMS = "get params"
+        self.GET_CLIENTS = "get clients"
+        self.GET_SENSORS = "get sensors"
+        self.GET_COMMANDS = "get commands"
+        self.SHOW_SERVER_MSGS = "togglemsgs"
+        self.SHOW_SERVER_IMAGE = "toggleimage"
+        self.RUN_CLIENT = "run client"
+        self.QUIT_ALL_CLIENTS = "quit all"
+        self.GET_IPADDRESS = "get ip"
+        self.SPEAK_TEXT = "speak"
+        pass
         
 
 class ServerLocalParamNames:
@@ -338,6 +354,7 @@ class Socket_Server(Socket_ClientServer_BaseClass):
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_TELEGRAM
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_TEXT_COMMANDS
                                  or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_JOYSTICK
+                                 or ReceivedMessage.Topic == Socket_Default_Message_Topics.INPUT_VOICE_COMMAND
                                  ):
                                 CommandExecuted, CommandRetval = self.Execute_Listed_Command(ReceivedMessage=ReceivedMessage
                                                                                              ,CommandName=ReceivedMessage.Message
